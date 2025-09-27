@@ -1,4 +1,5 @@
 import { Router } from "express";
+import passport from "passport";
 import {
   register,
   login,
@@ -10,6 +11,8 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
+  googleAuth,
+  googleCallback,
 } from "../controllers/auth.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 
@@ -281,5 +284,32 @@ router.post("/reset-password", resetPassword);
  *       401: { description: Authentication required }
  */
 router.post("/change-password", authenticateToken, changePassword);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth login
+ *     tags: [Authentication]
+ *     responses:
+ *       302:
+ *          description: Redirect to Google OAuth
+ */
+router.get("/google", googleAuth);
+
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     tags: [Authentication]
+ *     responses:
+ *       302:
+ *          description: Redirect to frontend with authentication result
+ */
+router.get("/google/callback", 
+  passport.authenticate("google", { failureRedirect: "/auth/error" }),
+  googleCallback
+);
 
 export default router;

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import passport from "passport";
 import { UserModel } from "../models/user.models";
 import { generateToken } from "../utils/jwt.utils";
 import { verificationService } from "../services/verification.services";
@@ -393,5 +394,43 @@ export const changePassword = async (
   } catch (error) {
     console.error("Change password error:", error);
     res.status(500).json({ message: "Error changing password", error });
+  }
+};
+
+// Google OAuth Controllers
+export const googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
+});
+
+export const googleCallback = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      res.status(401).json({ message: "Google authentication failed" });
+      return;
+    }
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user._id!.toString(),
+      email: user.email,
+      username: user.username,
+      role: user.role,
+    });
+
+    // Set HTTP-only cookie
+    res.cookie("token", token, getCookieOptions());
+
+    // Redirect to frontend with success
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/auth/success?token=${token}`);
+  } catch (error) {
+    console.error("Google callback error:", error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }
 };

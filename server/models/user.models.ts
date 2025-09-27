@@ -8,15 +8,25 @@ import type {
 import mongoose from "mongoose";
 
 export class UserModel {
-  async create(userData: RegisterInput): Promise<IUser> {
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
-    const user = new User({
+  async create(userData: RegisterInput & {
+    provider?: "local" | "google";
+    providerId?: string;
+    googleId?: string;
+    profilePicture?: string;
+    isEmailVerified?: boolean;
+    isVerified?: boolean;
+  }): Promise<IUser> {
+    const userDoc: any = {
       ...userData,
-      password: hashedPassword,
-    });
+    };
 
+    // Only hash password for local users
+    if (userData.provider === "local" && userData.password) {
+      const saltRounds = 12;
+      userDoc.password = await bcrypt.hash(userData.password, saltRounds);
+    }
+
+    const user = new User(userDoc);
     return await user.save();
   }
 
@@ -32,15 +42,33 @@ export class UserModel {
     return await User.findById(id).select("-password");
   }
 
+  async getByGoogleId(googleId: string): Promise<IUser | null> {
+    return await User.findOne({ googleId, isActive: true });
+  }
+
   async validatePassword(
     email: string,
     password: string,
   ): Promise<IUser | null> {
     const user = await User.findOne({ email, isActive: true });
-    if (!user) return null;
+    if (!user || !user.password) return null;
 
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
+  }
+
+  async linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null> {
+    return await User.findByIdAndUpdate(
+      userId,
+      {
+        googleId,
+        provider: "google",
+        providerId: googleId,
+        isEmailVerified: true,
+        isVerified: true,
+      },
+      { new: true }
+    );
   }
 
   async updateUser(
