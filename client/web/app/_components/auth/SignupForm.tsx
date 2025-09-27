@@ -89,30 +89,30 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
   if (success) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-gruvbox-green-light dark:bg-gruvbox-green-dark rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gruvbox-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Đăng ký thành công! 🎉
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gruvbox-gray mb-6">
               Chúng tôi đã gửi email xác thực đến <strong>{formData.email}</strong>. 
               Vui lòng kiểm tra hộp thư và nhấp vào liên kết để kích hoạt tài khoản.
             </p>
             <div className="space-y-3">
               <button
                 onClick={() => router.push("/auth/verify-email")}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
               >
                 Kiểm tra email
               </button>
               <Link
                 href="/auth/login"
-                className="block w-full border-2 border-purple-600 text-purple-600 py-3 px-4 rounded-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                className="block w-full border-2 border-gruvbox-orange text-gruvbox-orange py-3 px-4 rounded-lg font-semibold hover:bg-gruvbox-orange-light hover:text-gruvbox-light-bg0 transition-colors"
               >
                 Quay lại đăng nhập
               </Link>
@@ -125,29 +125,29 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gruvbox-orange-light dark:bg-gruvbox-orange-dark rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-xl">🌊</span>
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
               Old Vibes
             </h1>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
             Đăng ký tài khoản
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gruvbox-gray">
             Tham gia cộng đồng Old Vibes ngay hôm nay!
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+          <div className="mb-6 p-4 bg-gruvbox-red-light dark:bg-gruvbox-red-dark border border-gruvbox-red rounded-lg">
+            <p className="text-gruvbox-red text-sm">{error}</p>
           </div>
         )}
 
@@ -155,12 +155,12 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Field */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Họ và tên
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconUser className="h-5 w-5 text-gray-400" />
+                <IconUser className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="name"
@@ -169,7 +169,7 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 required
                 value={formData.name}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập họ và tên"
                 disabled={isLoading}
               />
@@ -178,12 +178,12 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
 
           {/* Username Field */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="username" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Tên người dùng
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconUserCheck className="h-5 w-5 text-gray-400" />
+                <IconUserCheck className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="username"
@@ -192,24 +192,24 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 required
                 value={formData.username}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập tên người dùng"
                 disabled={isLoading}
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs text-gruvbox-gray">
               Chỉ được chứa chữ cái, số và dấu gạch dưới
             </p>
           </div>
 
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconMail className="h-5 w-5 text-gray-400" />
+                <IconMail className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="email"
@@ -218,7 +218,7 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập email của bạn"
                 disabled={isLoading}
               />
@@ -227,12 +227,12 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Mật khẩu
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconLock className="h-5 w-5 text-gray-400" />
+                <IconLock className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="password"
@@ -241,7 +241,7 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập mật khẩu"
                 disabled={isLoading}
               />
@@ -252,25 +252,25 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 disabled={isLoading}
               >
                 {showPassword ? (
-                  <IconEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEyeOff className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 ) : (
-                  <IconEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEye className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs text-gruvbox-gray">
               Tối thiểu 6 ký tự
             </p>
           </div>
 
           {/* Confirm Password Field */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Xác nhận mật khẩu
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconLock className="h-5 w-5 text-gray-400" />
+                <IconLock className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="confirmPassword"
@@ -279,7 +279,7 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập lại mật khẩu"
                 disabled={isLoading}
               />
@@ -290,9 +290,9 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
                 disabled={isLoading}
               >
                 {showConfirmPassword ? (
-                  <IconEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEyeOff className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 ) : (
-                  <IconEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEye className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 )}
               </button>
             </div>
@@ -302,7 +302,7 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+            className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
           >
             {isLoading ? (
               <>
@@ -317,11 +317,11 @@ export default function SignupForm({ redirectTo = "/auth/verify-email", onSucces
 
         {/* Login Link */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gruvbox-gray">
             Đã có tài khoản?{" "}
             <Link
               href="/auth/login"
-              className="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-500 transition-colors"
+              className="font-medium text-gruvbox-orange hover:text-gruvbox-orange-dark transition-colors"
             >
               Đăng nhập ngay
             </Link>

@@ -41,29 +41,29 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gruvbox-orange-light dark:bg-gruvbox-orange-dark rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-xl">🌊</span>
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
               Old Vibes
             </h1>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
             Đăng nhập
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gruvbox-gray">
             Chào mừng bạn quay trở lại!
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+          <div className="mb-6 p-4 bg-gruvbox-red-light dark:bg-gruvbox-red-dark border border-gruvbox-red rounded-lg">
+            <p className="text-gruvbox-red text-sm">{error}</p>
           </div>
         )}
 
@@ -71,12 +71,12 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconMail className="h-5 w-5 text-gray-400" />
+                <IconMail className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="email"
@@ -84,7 +84,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập email của bạn"
                 disabled={isLoading}
               />
@@ -93,12 +93,12 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
               Mật khẩu
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IconLock className="h-5 w-5 text-gray-400" />
+                <IconLock className="h-5 w-5 text-gruvbox-gray" />
               </div>
               <input
                 id="password"
@@ -106,7 +106,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
                 placeholder="Nhập mật khẩu"
                 disabled={isLoading}
               />
@@ -117,9 +117,9 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
                 disabled={isLoading}
               >
                 {showPassword ? (
-                  <IconEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEyeOff className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 ) : (
-                  <IconEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IconEye className="h-5 w-5 text-gruvbox-gray hover:text-gruvbox-light-fg1 dark:hover:text-gruvbox-dark-fg1" />
                 )}
               </button>
             </div>
@@ -129,7 +129,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
           <div className="flex justify-end">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 font-medium transition-colors"
+              className="text-sm text-gruvbox-orange hover:text-gruvbox-orange-dark font-medium transition-colors"
             >
               Quên mật khẩu?
             </Link>
@@ -139,7 +139,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+            className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
           >
             {isLoading ? (
               <>
@@ -154,11 +154,11 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
 
         {/* Sign Up Link */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gruvbox-gray">
             Chưa có tài khoản?{" "}
             <Link
               href="/auth/signup"
-              className="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-500 transition-colors"
+              className="font-medium text-gruvbox-orange hover:text-gruvbox-orange-dark transition-colors"
             >
               Đăng ký ngay
             </Link>
