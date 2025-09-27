@@ -1,3 +1,5 @@
+"use client";
+
 import {
   IconPhoto,
   IconClock,
@@ -7,9 +9,13 @@ import {
   IconCheck,
 } from "@tabler/icons-react";
 import Image from "next/image";
+import Link from "next/link";
 import Wrapper from "./_sections/wrapper";
+import { useAuth } from "./_contexts/AuthContext";
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Wrapper>
       {/* Hero Section */}
@@ -35,18 +41,52 @@ export default function HomePage() {
             Connect with friends and the community—discover unique finds, or
             give your old treasures a new home.
           </p>
+          
+          {/* Authentication CTA */}
+          {!isAuthenticated ? (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Link
+                href="/auth/signup"
+                className="inline-block px-6 py-3 rounded-lg bg-gruvbox-orange text-gruvbox-bg font-bold shadow hover:bg-gruvbox-yellow transition text-lg"
+              >
+                Get Started Free
+              </Link>
+              <Link
+                href="/auth/login"
+                className="inline-block px-6 py-3 rounded-lg border border-gruvbox-orange text-gruvbox-orange font-bold hover:bg-gruvbox-orange hover:text-gruvbox-dark-bg0 transition text-lg"
+              >
+                Sign In
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Link
+                href="/dashboard"
+                className="inline-block px-6 py-3 rounded-lg bg-gruvbox-orange text-gruvbox-bg font-bold shadow hover:bg-gruvbox-yellow transition text-lg"
+              >
+                Go to Dashboard
+              </Link>
+              <a
+                href="#features"
+                className="inline-block px-6 py-3 rounded-lg border border-gruvbox-orange text-gruvbox-orange font-bold hover:bg-gruvbox-orange hover:text-gruvbox-dark-bg0 transition text-lg"
+              >
+                See How It Works
+              </a>
+            </div>
+          )}
+          
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-2">
             <a
               href="#download"
-              className="inline-block px-6 py-3 rounded-lg bg-gruvbox-orange text-gruvbox-bg font-bold shadow hover:bg-gruvbox-yellow transition text-lg"
+              className="inline-block px-6 py-3 rounded-lg bg-gruvbox-blue text-white font-bold shadow hover:bg-gruvbox-blue-dark transition text-lg"
             >
               Download the App
             </a>
             <a
               href="#features"
-              className="inline-block px-6 py-3 rounded-lg border border-gruvbox-orange text-gruvbox-orange font-bold hover:bg-gruvbox-orange hover:text-gruvbox-dark-bg0 transition text-lg"
+              className="inline-block px-6 py-3 rounded-lg border border-gruvbox-blue text-gruvbox-blue font-bold hover:bg-gruvbox-blue hover:text-white transition text-lg"
             >
-              See How It Works
+              Learn More
             </a>
           </div>
         </div>
@@ -210,28 +250,60 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Authentication CTA Section */}
+      {!isAuthenticated && (
+        <section className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 py-16 px-4 sm:px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold font-mono text-gruvbox-orange-light dark:text-gruvbox-orange-dark mb-4">
+              Join the Old Vibes Community
+            </h2>
+            <p className="text-gruvbox-gray mb-8 text-lg">
+              Start sharing your vintage finds and discover amazing treasures from other collectors. 
+              It's free to join and takes less than 2 minutes to get started!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Link
+                href="/auth/signup"
+                className="inline-block px-8 py-4 rounded-lg bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-gruvbox-bg font-bold shadow-lg hover:shadow-xl transition-all text-lg transform hover:scale-105"
+              >
+                Create Free Account
+              </Link>
+              <Link
+                href="/auth/login"
+                className="inline-block px-8 py-4 rounded-lg border-2 border-gruvbox-orange text-gruvbox-orange font-bold hover:bg-gruvbox-orange hover:text-gruvbox-dark-bg0 transition-all text-lg"
+              >
+                Already have an account?
+              </Link>
+            </div>
+            <p className="text-sm text-gruvbox-gray">
+              ✨ No credit card required • 🚀 Instant access • 🔒 Secure & private
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Download Section */}
       <section
         id="download"
         className="max-w-3xl mx-auto py-12 px-4 sm:px-8 text-center"
       >
         <h2 className="text-2xl font-bold font-mono text-gruvbox-orange-light dark:text-gruvbox-orange-dark mb-4">
-          Ready to Share Your Old Vibes?
+          Download the Mobile App
         </h2>
         <p className="text-gruvbox-gray mb-6">
-          Download the Old Vibes app and start sharing, selling, and discovering
-          unique finds today!
+          Get the full Old Vibes experience on your mobile device. 
+          Available for iOS and Android.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="#"
-            className="inline-block px-6 py-3 rounded-lg bg-gruvbox-orange text-gruvbox-bg font-bold shadow hover:bg-gruvbox-yellow transition text-lg"
+            className="inline-block px-6 py-3 rounded-lg bg-gruvbox-blue text-white font-bold shadow hover:bg-gruvbox-blue-dark transition text-lg"
           >
             Download for iOS
           </a>
           <a
             href="#"
-            className="inline-block px-6 py-3 rounded-lg border border-gruvbox-orange text-gruvbox-orange font-bold hover:bg-gruvbox-orange hover:text-gruvbox-dark-bg0 transition text-lg"
+            className="inline-block px-6 py-3 rounded-lg border border-gruvbox-blue text-gruvbox-blue font-bold hover:bg-gruvbox-blue hover:text-white transition text-lg"
           >
             Download for Android
           </a>

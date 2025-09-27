@@ -1,4 +1,5 @@
 import Image from "next/image";
+import UserMenu from "../../../_components/auth/UserMenu";
 
 export default function Header() {
   return (
@@ -51,16 +52,15 @@ export default function Header() {
             >
               Contact
             </a>
-            <a
-              href="#post"
-              className="ml-4 px-4 py-2 rounded-lg bg-gruvbox-orange text-gruvbox-bg font-bold shadow hover:bg-gruvbox-yellow transition"
-            >
-              Post Your Vibe
-            </a>
+            
+            {/* Authentication Section */}
+            <div className="ml-4">
+              <UserMenu />
+            </div>
           </nav>
-          {/* Mobile menu placeholder */}
+          {/* Mobile menu */}
           <div className="md:hidden">
-            {/* You can add a hamburger menu here if needed */}
+            <UserMenu />
           </div>
         </div>
       </div>
