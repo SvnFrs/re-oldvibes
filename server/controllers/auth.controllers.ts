@@ -270,3 +270,128 @@ export const refreshToken = async (
     res.status(500).json({ message: "Error refreshing token", error });
   }
 };
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    const user = await userModel.getByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      res.json({ message: "If the email exists, a password reset link has been sent" });
+      return;
+    }
+
+    // Generate password reset token
+    const resetToken = await verificationService.sendPasswordResetEmail(
+      email,
+      user.name,
+      user._id!.toString(),
+    );
+
+    res.json({
+      message: "If the email exists, a password reset link has been sent",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Error processing forgot password request", error });
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      res.status(400).json({ message: "Token and password are required" });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ message: "Password must be at least 6 characters long" });
+      return;
+    }
+
+    const result = await verificationService.verifyPasswordResetToken(token);
+
+    if (!result.success) {
+      res.status(400).json({ message: result.message });
+      return;
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const bcrypt = require("bcrypt");
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Update user password
+    await userModel.updatePassword(result.userId!, hashedPassword);
+
+    res.json({
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Error resetting password", error });
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: "Current password and new password are required" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ message: "New password must be at least 6 characters long" });
+      return;
+    }
+
+    // Verify current password
+    const user = await userModel.getById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const bcrypt = require("bcrypt");
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      res.status(400).json({ message: "Current password is incorrect" });
+      return;
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await userModel.updatePassword(userId, hashedNewPassword);
+
+    res.json({
+      message: "Password has been changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Error changing password", error });
+  }
+};

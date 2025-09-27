@@ -281,4 +281,16 @@ export class UserModel {
       .skip(offset)
       .limit(limit);
   }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<boolean> {
+    const result = await User.findByIdAndUpdate(
+      userId,
+      { 
+        password: hashedPassword,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    return !!result;
+  }
 }

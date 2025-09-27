@@ -7,6 +7,9 @@ import {
   refreshToken,
   verifyEmail,
   resendVerification,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 } from "../controllers/auth.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 
@@ -209,5 +212,74 @@ router.get("/me", authenticateToken, me);
  *       403: { description: Invalid or expired token }
  */
 router.post("/refresh", authenticateToken, refreshToken);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: Password reset email sent (if email exists) }
+ *       400: { description: Missing email }
+ */
+router.post("/forgot-password", forgotPassword);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string, description: "Password reset token" }
+ *               password: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Password reset successfully }
+ *       400: { description: Invalid token or password requirements not met }
+ */
+router.post("/reset-password", resetPassword);
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change password (authenticated user)
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword: { type: string }
+ *               newPassword: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Password changed successfully }
+ *       400: { description: Invalid current password or requirements not met }
+ *       401: { description: Authentication required }
+ */
+router.post("/change-password", authenticateToken, changePassword);
 
 export default router;
