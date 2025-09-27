@@ -13,6 +13,7 @@ interface AuthResponse {
     isVerified: boolean;
     profilePicture?: string;
     bio?: string;
+    provider?: "local" | "google";
   };
 }
 
@@ -139,6 +140,16 @@ class AuthAPI {
         newPassword,
       }),
     });
+  }
+
+  // Google OAuth methods
+  initiateGoogleAuth() {
+    const googleAuthUrl = `${API_BASE}/auth/google`;
+    window.location.href = googleAuthUrl;
+  }
+
+  getGoogleAuthUrl(): string {
+    return `${API_BASE}/auth/google`;
   }
 }
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconEye, IconEyeOff, IconMail, IconLock, IconLoader2 } from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconMail, IconLock, IconLoader2, IconBrandGoogle } from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
 
 interface LoginFormProps {
@@ -26,13 +26,11 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
     const result = await login(email, password);
 
     if (result.success) {
-      // Call success callback if provided
+
       if (onSuccess) {
         onSuccess();
       } else {
-        // Default redirect behavior
         router.push(redirectTo);
-        router.refresh();
       }
     } else {
       setError(result.error || "Đăng nhập thất bại");
@@ -151,6 +149,29 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
             )}
           </button>
         </form>
+
+        {/* Google Login */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 text-gruvbox-gray">Hoặc</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_ENDPOINT}/auth/google`}
+              className="w-full flex items-center justify-center px-4 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg3 dark:hover:bg-gruvbox-dark-bg3 transition-colors"
+              disabled={isLoading}
+            >
+              <IconBrandGoogle className="w-5 h-5 mr-3" />
+              Đăng nhập bằng Google
+            </button>
+          </div>
+        </div>
 
         {/* Sign Up Link */}
         <div className="mt-6 text-center">

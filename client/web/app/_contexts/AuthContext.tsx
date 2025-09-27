@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface User {
@@ -35,13 +35,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasCheckedAuth = useRef(false);
   const router = useRouter();
 
   const isAuthenticated = !!user;
 
-  // Check authentication status on mount
   useEffect(() => {
-    checkAuthStatus();
+    if (!hasCheckedAuth.current) {
+      hasCheckedAuth.current = true;
+      checkAuthStatus();
+    }
   }, []);
 
   const checkAuthStatus = async () => {
@@ -65,13 +68,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
@@ -106,20 +107,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const refreshUser = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error("Refresh user failed:", error);
-      setUser(null);
+    // Chỉ refresh khi cần thiết
+    if (!hasCheckedAuth.current) {
+      await checkAuthStatus();
     }
   };
 
