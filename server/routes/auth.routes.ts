@@ -13,6 +13,7 @@ import {
   changePassword,
   googleAuth,
   googleCallback,
+  checkPasswordStatus,
 } from "../controllers/auth.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 
@@ -194,7 +195,34 @@ router.post("/logout", logout);
  *       401: { description: Authentication required }
  *       403: { description: Invalid or expired token }
  */
-router.get("/me", authenticateToken, me);
+router.get("/me", authenticateToken as any, me);
+
+/**
+ * @swagger
+ * /auth/password-status:
+ *   get:
+ *     summary: Check user password status for password management
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Password status information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 hasPassword: { type: boolean }
+ *                 isGoogleUser: { type: boolean }
+ *                 canCreatePassword: { type: boolean }
+ *                 canChangePassword: { type: boolean }
+ *                 userType: { type: string, enum: ["local", "google"] }
+ *       401: { description: Authentication required }
+ *       403: { description: Invalid or expired token }
+ */
+router.get("/password-status", authenticateToken as any, checkPasswordStatus);
 
 /**
  * @swagger
@@ -214,7 +242,7 @@ router.get("/me", authenticateToken, me);
  *       401: { description: Authentication required }
  *       403: { description: Invalid or expired token }
  */
-router.post("/refresh", authenticateToken, refreshToken);
+router.post("/refresh", authenticateToken as any, refreshToken);
 
 /**
  * @swagger
@@ -274,16 +302,16 @@ router.post("/reset-password", resetPassword);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [currentPassword, newPassword]
+ *             required: [newPassword]
  *             properties:
  *               currentPassword: { type: string }
  *               newPassword: { type: string, minLength: 6 }
  *     responses:
- *       200: { description: Password changed successfully }
+ *       200: { description: Password changed/created successfully }
  *       400: { description: Invalid current password or requirements not met }
  *       401: { description: Authentication required }
  */
-router.post("/change-password", authenticateToken, changePassword);
+router.post("/change-password", authenticateToken as any, changePassword);
 
 /**
  * @swagger

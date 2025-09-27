@@ -16,13 +16,13 @@ export default function UserMenu() {
       <div className="flex items-center space-x-4">
         <Link
           href="/auth/login"
-          className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
+          className="text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:text-gruvbox-orange font-medium transition-colors"
         >
           Đăng nhập
         </Link>
         <Link
           href="/auth/signup"
-          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+          className="bg-gruvbox-orange text-gruvbox-light-bg0 px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200"
         >
           Đăng ký
         </Link>
@@ -39,10 +39,10 @@ export default function UserMenu() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
         disabled={isLoading}
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+        <div className="w-8 h-8 bg-gruvbox-orange rounded-full flex items-center justify-center">
           {user.profilePicture ? (
             <img
               src={user.profilePicture}
@@ -50,13 +50,13 @@ export default function UserMenu() {
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
-            <IconUser className="w-5 h-5 text-white" />
+            <IconUser className="w-5 h-5 text-gruvbox-light-bg0" />
           )}
         </div>
-        <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span className="hidden md:block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1">
           {user.name}
         </span>
-        <IconChevronDown className="w-4 h-4 text-gray-500" />
+        <IconChevronDown className="w-4 h-4 text-gruvbox-gray" />
       </button>
 
       {isOpen && (
@@ -68,20 +68,20 @@ export default function UserMenu() {
           />
           
           {/* Menu */}
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+          <div className="absolute right-0 mt-2 w-48 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg shadow-lg border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 z-20">
             <div className="py-2">
-              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="px-4 py-2 border-b border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3">
+                <p className="text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1">
                   {user.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gruvbox-gray">
                   {user.email}
                 </p>
               </div>
               
               <Link
                 href="/profile"
-                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center px-4 py-2 text-sm text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <IconUser className="w-4 h-4 mr-3" />
@@ -90,7 +90,7 @@ export default function UserMenu() {
               
               <Link
                 href="/settings"
-                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center px-4 py-2 text-sm text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <IconSettings className="w-4 h-4 mr-3" />
@@ -100,7 +100,7 @@ export default function UserMenu() {
               <button
                 onClick={handleLogout}
                 disabled={isLoading}
-                className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="w-full flex items-center px-4 py-2 text-sm text-gruvbox-red hover:bg-gruvbox-red-light dark:hover:bg-gruvbox-red-dark transition-colors"
               >
                 <IconLogout className="w-4 h-4 mr-3" />
                 {isLoading ? "Đang đăng xuất..." : "Đăng xuất"}

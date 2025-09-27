@@ -46,6 +46,10 @@ export class UserModel {
     return await User.findOne({ googleId, isActive: true });
   }
 
+  async getByIdWithPassword(id: string): Promise<IUser | null> {
+    return await User.findById(id);
+  }
+  
   async validatePassword(
     email: string,
     password: string,

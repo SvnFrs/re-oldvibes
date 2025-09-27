@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
   email: string;
-  password?: string; // Optional for OAuth users
+  password?: string; // Optional - null for Google users
   name: string;
   username: string;
   role: "admin" | "staff" | "user" | "guest";
@@ -14,9 +14,7 @@ export interface IUser extends Document {
   isEmailVerified: boolean;
   isActive: boolean;
   // OAuth fields
-  googleId?: string;
-  provider?: "local" | "google";
-  providerId?: string;
+  googleId?: string; // Only Google users have this
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +31,8 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       required: function(this: IUser) {
-        return this.provider === "local";
+        // Password required only if no googleId (local users)
+        return !this.googleId;
       },
       minlength: 6,
     },
@@ -93,15 +92,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       unique: true,
       sparse: true, // Allows null values but ensures uniqueness when present
-    },
-    provider: {
-      type: String,
-      enum: ["local", "google"],
-      default: "local",
-    },
-    providerId: {
-      type: String,
-      sparse: true,
     },
   },
   {

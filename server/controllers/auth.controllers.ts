@@ -43,7 +43,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // create user (not email verified yet)
+    // create user (local user - no googleId)
     const newUser = await userModel.create({ email, password, name, username });
 
     // Send verification email
@@ -348,17 +348,42 @@ export const resetPassword = async (
   }
 };
 
+export const checkPasswordStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user.userId;
+    const user = await userModel.getByIdWithPassword(userId);
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const hasPassword = !!user.password;
+    const isGoogleUser = !!user.googleId;
+
+    res.json({
+      hasPassword,
+      isGoogleUser,
+      canCreatePassword: !hasPassword, 
+      canChangePassword: hasPassword, 
+    });
+  } catch (error) {
+    console.error("Check password status error:", error);
+    res.status(500).json({ message: "Error checking password status", error });
+  }
+};
+
 export const changePassword = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (req as any).user.userId;
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      res.status(400).json({ message: "Current password and new password are required" });
+    if (!newPassword) {
+      res.status(400).json({ message: "New password is required" });
       return;
     }
 
@@ -367,33 +392,54 @@ export const changePassword = async (
       return;
     }
 
-    // Verify current password
-    const user = await userModel.getById(userId);
+    // Get user with password field included
+    const user = await userModel.getByIdWithPassword(userId);
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
 
-    const bcrypt = require("bcrypt");
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      res.status(400).json({ message: "Current password is incorrect" });
-      return;
+    // Check if user has existing password (local user)
+    if (user.password) {
+      // User has password - verify current password
+      if (!currentPassword) {
+        res.status(400).json({ message: "Current password is required" });
+        return;
+      }
+
+      const bcrypt = require("bcrypt");
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        res.status(400).json({ message: "Current password is incorrect" });
+        return;
+      }
+    } else {
+      // User has no password (Google user) - create new password
+      console.log("Creating new password for Google user");
     }
 
     // Hash new password
     const saltRounds = 12;
+    const bcrypt = require("bcrypt");
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
     await userModel.updatePassword(userId, hashedNewPassword);
 
+    const message = user.password 
+      ? "Password has been changed successfully"
+      : "Password has been created successfully";
+
     res.json({
-      message: "Password has been changed successfully",
+      message,
+      passwordCreated: !user.password
     });
   } catch (error) {
     console.error("Change password error:", error);
-    res.status(500).json({ message: "Error changing password", error });
+    res.status(500).json({ 
+      message: "Error changing password", 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    });
   }
 };
 

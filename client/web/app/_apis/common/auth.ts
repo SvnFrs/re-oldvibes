@@ -42,6 +42,13 @@ interface VerifyEmailData {
   token: string;
 }
 
+interface PasswordStatusResponse {
+  hasPassword: boolean;
+  isGoogleUser: boolean;
+  canCreatePassword: boolean;
+  canChangePassword: boolean;
+}
+
 class AuthAPI {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`;
@@ -98,6 +105,13 @@ class AuthAPI {
     });
   }
 
+  // New method to check password status
+  async getPasswordStatus(): Promise<PasswordStatusResponse> {
+    return this.request<PasswordStatusResponse>("/auth/password-status", {
+      method: "GET",
+    });
+  }
+
   async refreshToken(): Promise<AuthResponse> {
     return this.request<AuthResponse>("/auth/refresh", {
       method: "POST",
@@ -132,13 +146,19 @@ class AuthAPI {
     });
   }
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>("/auth/change-password", {
+  async changePassword(currentPassword: string | undefined, newPassword: string): Promise<{ message: string; passwordCreated?: boolean }> {
+    const body: any = {
+      newPassword,
+    };
+
+    // Only include currentPassword if provided (for existing password users)
+    if (currentPassword !== undefined) {
+      body.currentPassword = currentPassword;
+    }
+
+    return this.request<{ message: string; passwordCreated?: boolean }>("/auth/change-password", {
       method: "POST",
-      body: JSON.stringify({
-        currentPassword,
-        newPassword,
-      }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -154,4 +174,4 @@ class AuthAPI {
 }
 
 export const authAPI = new AuthAPI();
-export type { RegisterData, LoginData, ForgotPasswordData, ResetPasswordData, VerifyEmailData, AuthResponse };
+export type { RegisterData, LoginData, ForgotPasswordData, ResetPasswordData, VerifyEmailData, AuthResponse, PasswordStatusResponse };

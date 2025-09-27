@@ -1,4 +1,5 @@
 import passport from "passport";
+
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { UserModel } from "../models/user.models";
 import { generateToken } from "../utils/jwt.utils";
@@ -44,15 +45,13 @@ passport.use(
         const username = email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 4);
         
         user = await userModel.create({
-          email,
           password: "",
+          email,
           name: displayName,
           username,
-          provider: "google",
-          providerId: id,
           googleId: id,
           profilePicture,
-          isEmailVerified: true, // Google emails are pre-verified
+          isEmailVerified: true, 
           isVerified: true,
         });
 
@@ -65,12 +64,12 @@ passport.use(
   )
 );
 
-// Serialize user for session
+
 passport.serializeUser((user: any, done) => {
   done(null, user._id.toString());
 });
 
-// Deserialize user from session
+
 passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await userModel.getById(id);
