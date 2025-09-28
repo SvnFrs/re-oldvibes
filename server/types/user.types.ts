@@ -7,6 +7,16 @@ export interface RegisterInput {
   username: string;
 }
 
+export interface GoogleUserInput {
+  email: string;
+  name: string;
+  username: string;
+  googleId: string;
+  profilePicture?: string;
+  isEmailVerified?: boolean;
+  isVerified?: boolean;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

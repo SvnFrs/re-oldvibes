@@ -2,31 +2,29 @@ import bcrypt from "bcrypt";
 import { User, type IUser } from "../schema/user.schema";
 import type {
   RegisterInput,
+  GoogleUserInput,
   UpdateUserInput,
   UserResponse,
 } from "../types/user.types";
 import mongoose from "mongoose";
 
 export class UserModel {
-  async create(userData: RegisterInput & {
-    provider?: "local" | "google";
-    providerId?: string;
-    googleId?: string;
-    profilePicture?: string;
-    isEmailVerified?: boolean;
-    isVerified?: boolean;
-  }): Promise<IUser> {
-    const userDoc: any = {
+  async create(userData: RegisterInput): Promise<IUser> {
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+    
+    const user = new User({
       ...userData,
-    };
+      password: hashedPassword,
+    });
+    return await user.save();
+  }
 
-    // Only hash password for local users
-    if (userData.provider === "local" && userData.password) {
-      const saltRounds = 12;
-      userDoc.password = await bcrypt.hash(userData.password, saltRounds);
-    }
-
-    const user = new User(userDoc);
+  async createGoogleUser(userData: GoogleUserInput): Promise<IUser> {
+    const user = new User({
+      ...userData,
+      // No password field for Google users
+    });
     return await user.save();
   }
 
@@ -66,8 +64,6 @@ export class UserModel {
       userId,
       {
         googleId,
-        provider: "google",
-        providerId: googleId,
         isEmailVerified: true,
         isVerified: true,
       },

@@ -44,8 +44,7 @@ passport.use(
         // Create new user
         const username = email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 4);
         
-        user = await userModel.create({
-          password: "",
+        user = await userModel.createGoogleUser({
           email,
           name: displayName,
           username,
