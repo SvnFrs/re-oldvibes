@@ -78,6 +78,45 @@ class VerificationService {
       message: "Email verified successfully",
     };
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    userId: string,
+  ): Promise<string> {
+    const token = this.generateVerificationToken();
+
+    await this.storeVerificationToken(email, token, { userId, name });
+    await emailService.sendPasswordResetEmail(email, name, token);
+
+    return token;
+  }
+
+  async verifyPasswordResetToken(token: string): Promise<{
+    success: boolean;
+    userId?: string;
+    email?: string;
+    message: string;
+  }> {
+    const verificationData = await this.getVerificationData(token);
+
+    if (!verificationData) {
+      return {
+        success: false,
+        message: "Invalid or expired password reset token",
+      };
+    }
+
+    // Delete the token after successful verification
+    await this.deleteVerificationToken(token);
+
+    return {
+      success: true,
+      userId: verificationData.userId,
+      email: verificationData.email,
+      message: "Password reset token verified successfully",
+    };
+  }
 }
 
 export const verificationService = new VerificationService();

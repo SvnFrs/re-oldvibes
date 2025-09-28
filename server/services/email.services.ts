@@ -145,6 +145,95 @@ class EmailService {
       html: htmlContent,
     });
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    resetToken: string,
+  ): Promise<void> {
+    const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #ef4444; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .button {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+          }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Password Reset Request 🔐</h1>
+          </div>
+          <div class="content">
+            <h2>Hi ${name}!</h2>
+            <p>We received a request to reset your password for your Old Vibes account.</p>
+            <p>To reset your password, please click the button below:</p>
+
+            <div style="text-align: center;">
+              <a href="${resetUrl}" class="button">Reset Password</a>
+            </div>
+
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px; font-family: monospace;">
+              ${resetUrl}
+            </p>
+
+            <p><strong>Important:</strong> This password reset link will expire in 24 hours for security reasons.</p>
+
+            <p>If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+
+            <p>Stay vibing!<br>The Old Vibes Team</p>
+          </div>
+          <div class="footer">
+            <p>This email was sent from Old Vibes. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textContent = `
+      Password Reset Request
+
+      Hi ${name}!
+
+      We received a request to reset your password for your Old Vibes account.
+
+      To reset your password, please visit this link:
+
+      ${resetUrl}
+
+      Important: This password reset link will expire in 24 hours for security reasons.
+
+      If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.
+
+      Stay vibing!
+      The Old Vibes Team
+    `;
+
+    await this.transporter.sendMail({
+      from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+      to: email,
+      subject: "Reset your Old Vibes password",
+      text: textContent,
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

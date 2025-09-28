@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { User, type IUser } from "../schema/user.schema";
 import type {
   RegisterInput,
+  GoogleUserInput,
   UpdateUserInput,
   UserResponse,
 } from "../types/user.types";
@@ -11,12 +12,19 @@ export class UserModel {
   async create(userData: RegisterInput): Promise<IUser> {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
+    
     const user = new User({
       ...userData,
       password: hashedPassword,
     });
+    return await user.save();
+  }
 
+  async createGoogleUser(userData: GoogleUserInput): Promise<IUser> {
+    const user = new User({
+      ...userData,
+      // No password field for Google users
+    });
     return await user.save();
   }
 
@@ -32,15 +40,35 @@ export class UserModel {
     return await User.findById(id).select("-password");
   }
 
+  async getByGoogleId(googleId: string): Promise<IUser | null> {
+    return await User.findOne({ googleId, isActive: true });
+  }
+
+  async getByIdWithPassword(id: string): Promise<IUser | null> {
+    return await User.findById(id);
+  }
+  
   async validatePassword(
     email: string,
     password: string,
   ): Promise<IUser | null> {
     const user = await User.findOne({ email, isActive: true });
-    if (!user) return null;
+    if (!user || !user.password) return null;
 
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
+  }
+
+  async linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null> {
+    return await User.findByIdAndUpdate(
+      userId,
+      {
+        googleId,
+        isEmailVerified: true,
+        isVerified: true,
+      },
+      { new: true }
+    );
   }
 
   async updateUser(
@@ -280,5 +308,17 @@ export class UserModel {
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit);
+  }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<boolean> {
+    const result = await User.findByIdAndUpdate(
+      userId,
+      { 
+        password: hashedPassword,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    return !!result;
   }
 }

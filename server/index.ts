@@ -6,9 +6,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import session from "express-session";
+import passport from "passport";
 import { redis } from "./config/redis.config";
 import { setupSwagger } from "./config/swagger.config";
 import { initializeSocket } from "./services/socket.service";
+import "./config/passport.config"; // Initialize passport
 import authRoutes from "./routes/auth.routes";
 import vibeRoutes from "./routes/vibe.routes";
 import userRoutes from "./routes/user.routes";
@@ -55,7 +58,10 @@ app.use(
 if (process.env.NODE_ENV === "development") {
   app.use(
     cors({
-      origin: "*",
+      origin: [
+        "http://localhost:3000",
+        "http://localhost:5173",
+      ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
@@ -75,6 +81,23 @@ if (process.env.NODE_ENV === "development") {
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Session configuration for Passport
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Database connection
 const connectDB = async () => {

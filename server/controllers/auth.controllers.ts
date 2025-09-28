@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import passport from "passport";
 import { UserModel } from "../models/user.models";
 import { generateToken } from "../utils/jwt.utils";
 import { verificationService } from "../services/verification.services";
@@ -42,7 +43,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // create user (not email verified yet)
+    // create user (local user - no googleId)
     const newUser = await userModel.create({ email, password, name, username });
 
     // Send verification email
@@ -229,7 +230,31 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 export const me = async (req: Request, res: Response): Promise<void> => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.json({ user: (req as any).user });
+    const jwtUser = (req as any).user;
+    
+    // Fetch full user data from database
+    const user = await userModel.getById(jwtUser.userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Return full user data
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
   } catch (error) {
     console.error("Me endpoint error:", error);
     res.status(500).json({ message: "Error getting user info", error });
@@ -268,5 +293,214 @@ export const refreshToken = async (
   } catch (error) {
     console.error("Refresh token error:", error);
     res.status(500).json({ message: "Error refreshing token", error });
+  }
+};
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    const user = await userModel.getByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      res.json({ message: "If the email exists, a password reset link has been sent" });
+      return;
+    }
+
+    // Generate password reset token
+    const resetToken = await verificationService.sendPasswordResetEmail(
+      email,
+      user.name,
+      user._id!.toString(),
+    );
+
+    res.json({
+      message: "If the email exists, a password reset link has been sent",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Error processing forgot password request", error });
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      res.status(400).json({ message: "Token and password are required" });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ message: "Password must be at least 6 characters long" });
+      return;
+    }
+
+    const result = await verificationService.verifyPasswordResetToken(token);
+
+    if (!result.success) {
+      res.status(400).json({ message: result.message });
+      return;
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const bcrypt = require("bcrypt");
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Update user password
+    await userModel.updatePassword(result.userId!, hashedPassword);
+
+    res.json({
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Error resetting password", error });
+  }
+};
+
+export const checkPasswordStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user.userId;
+    const user = await userModel.getByIdWithPassword(userId);
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const hasPassword = !!user.password;
+    const isGoogleUser = !!user.googleId;
+
+    res.json({
+      hasPassword,
+      isGoogleUser,
+      canCreatePassword: !hasPassword, 
+      canChangePassword: hasPassword, 
+    });
+  } catch (error) {
+    console.error("Check password status error:", error);
+    res.status(500).json({ message: "Error checking password status", error });
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = (req as any).user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword) {
+      res.status(400).json({ message: "New password is required" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ message: "New password must be at least 6 characters long" });
+      return;
+    }
+
+    // Get user with password field included
+    const user = await userModel.getByIdWithPassword(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Check if user has existing password (local user)
+    if (user.password) {
+      // User has password - verify current password
+      if (!currentPassword) {
+        res.status(400).json({ message: "Current password is required" });
+        return;
+      }
+
+      const bcrypt = require("bcrypt");
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        res.status(400).json({ message: "Current password is incorrect" });
+        return;
+      }
+    } else {
+      // User has no password (Google user) - create new password
+      console.log("Creating new password for Google user");
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const bcrypt = require("bcrypt");
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await userModel.updatePassword(userId, hashedNewPassword);
+
+    const message = user.password 
+      ? "Password has been changed successfully"
+      : "Password has been created successfully";
+
+    res.json({
+      message,
+      passwordCreated: !user.password
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ 
+      message: "Error changing password", 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    });
+  }
+};
+
+// Google OAuth Controllers
+export const googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
+});
+
+export const googleCallback = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      res.status(401).json({ message: "Google authentication failed" });
+      return;
+    }
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user._id!.toString(),
+      email: user.email,
+      username: user.username,
+      role: user.role,
+    });
+
+    // Set HTTP-only cookie
+    res.cookie("token", token, getCookieOptions());
+
+    // Redirect to frontend with success
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/auth/success?token=${token}`);
+  } catch (error) {
+    console.error("Google callback error:", error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }
 };
