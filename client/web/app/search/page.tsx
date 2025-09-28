@@ -189,15 +189,15 @@ export default function SearchPage() {
   return (
     <Wrapper>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* Search Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-4">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-4">
               Search Results
             </h1>
 
             {/* Search Form */}
-            <form onSubmit={handleSearch} className="mb-6">
+            <form onSubmit={handleSearch} className="mb-4 md:mb-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <input

@@ -1,9 +1,11 @@
 import ChangePasswordForm from "../_components/auth/ChangePasswordForm";
+import AuthGuard from "../_components/auth/AuthGuard";
 import { Suspense } from "react";
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 py-8 px-4">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -107,6 +109,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

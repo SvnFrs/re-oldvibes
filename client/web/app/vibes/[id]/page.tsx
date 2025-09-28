@@ -336,25 +336,25 @@ export default function VibeDetailPage() {
   return (
     <Wrapper>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
           {/* Back Button */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-gruvbox-gray hover:text-gruvbox-orange transition mb-6"
+            className="inline-flex items-center gap-2 text-gruvbox-gray hover:text-gruvbox-orange transition mb-4 md:mb-6"
           >
             <IconArrowLeft size={20} />
             Back to Marketplace
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Media Gallery */}
             <MediaCarousel mediaFiles={vibe.mediaFiles || []} itemName={vibe.itemName} />
 
             {/* Vibe Details */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Header */}
               <div>
-                <h1 className="text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
                   {vibe.itemName}
                 </h1>
                 <div className="flex items-center gap-4 mb-4">

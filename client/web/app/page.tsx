@@ -155,10 +155,10 @@ function CategoriesSection() {
             <Link
               key={category.name}
               href={`/search?category=${encodeURIComponent(category.name)}`}
-              className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg1 rounded-xl p-4 text-center hover:shadow-md transition-shadow border border-gruvbox-light-bg1 dark:border-gruvbox-dark-bg2 hover:border-gruvbox-orange"
+              className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg1 rounded-xl p-3 md:p-4 text-center hover:shadow-md transition-shadow border border-gruvbox-light-bg1 dark:border-gruvbox-dark-bg2 hover:border-gruvbox-orange"
             >
               <div className="mb-2 flex justify-center">
-                <IconComponent size={32} className="text-gruvbox-orange" />
+                <IconComponent size={24} className="text-gruvbox-orange md:w-8 md:h-8" />
               </div>
               <h3 className="font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 text-sm">
                 {category.name}
@@ -228,7 +228,7 @@ export default function HomePage() {
   return (
     <Wrapper>
       {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow py-16 px-4">
+      <section className="bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow py-12 md:py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Discover Amazing Finds
@@ -266,12 +266,12 @@ export default function HomePage() {
         </div>
       </section>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-8 ">
+        <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* Categories */}
           <CategoriesSection />
 
           {/* Featured Vibes */}
-          <section className="py-8">
+          <section className="py-6 md:py-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
                 Latest Vibes
