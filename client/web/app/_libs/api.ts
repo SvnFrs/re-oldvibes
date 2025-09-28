@@ -80,6 +80,13 @@ class ApiClient {
     return this.request<T>(endpoint, { method: "DELETE" });
   }
 
+  async patch<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
   // Request interceptor for adding auth tokens or other headers
   setAuthHeader(token: string) {
     this.defaultHeaders["Authorization"] = `Bearer ${token}`;

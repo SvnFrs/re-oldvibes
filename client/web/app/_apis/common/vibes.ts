@@ -63,7 +63,74 @@ export interface SearchVibesParams {
   limit?: number;
 }
 
+// Upload Vibe interfaces
+export interface CreateVibeInput {
+  itemName: string;
+  description: string;
+  price: number;
+  category: string;
+  condition: 'new' | 'like-new' | 'good' | 'fair' | 'poor';
+  tags: string[];
+  location: string;
+}
+
+export interface CreateVibeResponse {
+  message: string;
+  vibe: {
+    id: string;
+    status: string;
+    expiresAt: string;
+  };
+}
+
+export interface MediaFile {
+  type: 'image' | 'video';
+  url: string;
+  thumbnail?: string;
+}
+
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  percentage: number;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:4000/api';
+
+// Helper function to validate file
+export function validateFile(file: File, index: number): void {
+  // Check file size (10MB max)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error(`File ${index + 1} exceeds 10MB limit`);
+  }
+
+  // Check file type
+  const allowedTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'video/mp4', 'video/avi', 'video/mov', 'video/wmv'
+  ];
+  
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(`File ${index + 1} has unsupported type: ${file.type}`);
+  }
+}
+
+// Helper function to get file extension from MIME type
+export function getFileExtension(mimeType: string): string {
+  const extensions: { [key: string]: string } = {
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'video/mp4': '.mp4',
+    'video/avi': '.avi',
+    'video/mov': '.mov',
+    'video/wmv': '.wmv'
+  };
+  
+  return extensions[mimeType] || '.jpg';
+}
 
 // Get all approved vibes with pagination
 export async function getVibes(filters?: SearchVibesParams): Promise<VibesListResponse> {
@@ -254,4 +321,154 @@ export async function markVibeAsSold(vibeId: string): Promise<void> {
   if (!response.ok) {
     throw new Error('Failed to mark vibe as sold');
   }
+}
+
+// Create a new vibe
+export async function createVibe(vibeData: CreateVibeInput): Promise<CreateVibeResponse> {
+  const response = await fetch(`${API_BASE}/vibes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(vibeData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to create vibe');
+  }
+
+  return response.json();
+}
+
+// Upload media files for a vibe
+export async function uploadVibeMedia(vibeId: string, files: File[]): Promise<{ mediaFiles: MediaFile[] }> {
+  if (!files || files.length === 0) {
+    throw new Error('No files provided for upload');
+  }
+
+  if (files.length > 5) {
+    throw new Error('Maximum 5 files allowed');
+  }
+
+  // Validate all files before processing
+  files.forEach((file, idx) => {
+    validateFile(file, idx);
+  });
+
+  const formData = new FormData();
+  
+  files.forEach((file, idx) => {
+    // Use original filename or generate one if not available
+    let fileName = file.name;
+    if (!fileName) {
+      const extension = getFileExtension(file.type);
+      fileName = `media_${idx}${extension}`;
+    }
+
+    // Create a new File object with the proper name
+    const fileWithName = new File([file], fileName, { type: file.type });
+    formData.append('media', fileWithName);
+  });
+
+  const response = await fetch(`${API_BASE}/vibes/${vibeId}/media`, {
+    method: 'POST',
+    credentials: 'include',
+    // Don't set Content-Type header - let browser set it for FormData
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Failed to upload media';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+// Upload media files with progress tracking
+export async function uploadVibeMediaWithProgress(
+  vibeId: string, 
+  files: File[], 
+  onProgress?: (progress: UploadProgress) => void
+): Promise<{ mediaFiles: MediaFile[] }> {
+  if (!files || files.length === 0) {
+    throw new Error('No files provided for upload');
+  }
+
+  if (files.length > 5) {
+    throw new Error('Maximum 5 files allowed');
+  }
+
+  // Validate all files before processing
+  files.forEach((file, idx) => {
+    validateFile(file, idx);
+  });
+
+  const formData = new FormData();
+  
+  files.forEach((file, idx) => {
+    // Use original filename or generate one if not available
+    let fileName = file.name;
+    if (!fileName) {
+      const extension = getFileExtension(file.type);
+      fileName = `media_${idx}${extension}`;
+    }
+
+    // Create a new File object with the proper name
+    const fileWithName = new File([file], fileName, { type: file.type });
+    formData.append('media', fileWithName);
+  });
+
+  // Create XMLHttpRequest for progress tracking
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable && onProgress) {
+        const progress: UploadProgress = {
+          loaded: event.loaded,
+          total: event.total,
+          percentage: Math.round((event.loaded / event.total) * 100)
+        };
+        onProgress(progress);
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          resolve(result);
+        } catch (error) {
+          reject(new Error('Invalid response format'));
+        }
+      } else {
+        let errorMessage = 'Failed to upload media';
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = xhr.statusText || errorMessage;
+        }
+        reject(new Error(errorMessage));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Network error during upload'));
+    });
+
+    xhr.open('POST', `${API_BASE}/vibes/${vibeId}/media`);
+    xhr.withCredentials = true;
+    xhr.send(formData);
+  });
 }

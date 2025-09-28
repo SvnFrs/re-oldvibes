@@ -48,6 +48,12 @@ export default function Header() {
               About
             </Link>
             <Link
+              href="/upload"
+              className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
+            >
+              Upload Vibe
+            </Link>
+            <Link
               href="/settings"
               className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
             >
