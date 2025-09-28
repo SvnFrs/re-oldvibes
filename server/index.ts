@@ -18,6 +18,8 @@ import userRoutes from "./routes/user.routes";
 import commentRoutes from "./routes/comment.routes";
 import chatRoutes from "./routes/chat.routes";
 import adminRoutes from "./routes/admin.routes";
+import wishlistRoutes from "./routes/wishlist.routes";
+
 import { setupCronJobs } from "./job/cleanup.job";
 
 import "./schema/user.schema";
@@ -25,6 +27,7 @@ import "./schema/vibe.schema";
 import "./schema/comment.schema";
 import "./schema/message.schema";
 import "./schema/conversation.schema";
+import "./schema/wishlist.schema";
 
 // Load environment variables
 dotenv.config();
@@ -44,28 +47,25 @@ const socketService = initializeSocket(server);
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false, // Allow Socket.io connections
-  }),
+  })
 );
 
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
-  }),
+  })
 );
 
 // CORS - Allow Socket.io
 if (process.env.NODE_ENV === "development") {
   app.use(
     cors({
-      origin: [
-        "http://localhost:3000",
-        "http://localhost:5173",
-      ],
+      origin: ["http://localhost:3000", "http://localhost:5173"],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-    }),
+    })
   );
 } else {
   app.use(
@@ -74,7 +74,7 @@ if (process.env.NODE_ENV === "development") {
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-    }),
+    })
   );
 }
 
@@ -134,6 +134,7 @@ app.use("/api/users", userRoutes);
 app.use("/api", commentRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);
@@ -153,14 +154,14 @@ app.use(
     err: any,
     req: express.Request,
     res: express.Response,
-    next: express.NextFunction,
+    next: express.NextFunction
   ) => {
     console.error("Error:", err);
     res.status(500).json({
       message: "Internal server error",
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
-  },
+  }
 );
 
 // Start server
@@ -177,7 +178,7 @@ const startServer = async () => {
       console.log(`🌊 Vibe Routes: http://localhost:${PORT}/api/vibes/*`);
       console.log(`👥 User Routes: http://localhost:${PORT}/api/users/*`);
       console.log(
-        `💬 Comment Routes: http://localhost:${PORT}/api/vibes/*/comments`,
+        `💬 Comment Routes: http://localhost:${PORT}/api/vibes/*/comments`
       );
       console.log(`💭 Chat Routes: http://localhost:${PORT}/api/chat/*`);
       console.log(`🔌 Socket.io ready at http://localhost:${PORT}/socket.io/`);
