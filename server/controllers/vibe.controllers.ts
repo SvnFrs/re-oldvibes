@@ -155,14 +155,16 @@ export const getVibes = async (
       maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
       location: req.query.location as string,
       tags: req.query.tags ? (req.query.tags as string).split(",") : undefined,
+      page: req.query.page ? Number(req.query.page) : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : undefined,
     };
 
     // 👇 Pass userId if present (from JWT)
     const userId = req.user?.userId;
 
-    const vibes = await vibeModel.getVibes(filters, userId);
+    const result = await vibeModel.getVibes(filters, userId);
 
-    res.json({ vibes, count: vibes.length });
+    res.json(result);
   } catch (error) {
     console.error("Get vibes error:", error);
     res.status(500).json({ message: "Error fetching vibes", error });

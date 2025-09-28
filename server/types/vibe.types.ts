@@ -29,6 +29,8 @@ export interface VibeFilters {
   tags?: string[];
   status?: "pending" | "approved" | "rejected" | "sold" | "archived";
   userId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface VibeResponse {
@@ -66,4 +68,16 @@ export interface ModerationAction {
   vibeId: string;
   action: "approve" | "reject";
   notes?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }

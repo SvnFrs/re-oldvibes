@@ -4,6 +4,7 @@ import type {
   UpdateVibeInput,
   VibeFilters,
   VibeResponse,
+  PaginatedResponse,
 } from "../types/vibe.types";
 import mongoose from "mongoose";
 
@@ -77,7 +78,7 @@ export class VibeModel {
   async getVibes(
     filters: VibeFilters = {},
     userId?: string,
-  ): Promise<VibeResponse[]> {
+  ): Promise<PaginatedResponse<VibeResponse>> {
     const query: any = {};
 
     // Build query based on filters
@@ -103,14 +104,36 @@ export class VibeModel {
       query.expiresAt = { $gt: new Date() }; // Not expired
     }
 
+    // Pagination parameters
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const total = await Vibe.countDocuments(query);
+
+    // Get paginated results
     const vibes = await Vibe.find(query)
       .populate("userId", "username name profilePicture isVerified")
       .sort({ createdAt: -1 })
-      .limit(50)
+      .skip(skip)
+      .limit(limit)
       .lean();
 
     // Pass userId to formatter so it can set isLiked
-    return vibes.map((vibe) => this.formatVibeResponse(vibe, userId));
+    const formattedVibes = vibes.map((vibe) => this.formatVibeResponse(vibe, userId));
+
+    return {
+      data: formattedVibes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    };
   }
 
   async getPendingVibes(): Promise<VibeResponse[]> {

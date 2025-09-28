@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "start": "bun index.ts",
-    "dev": "bun --watch index.ts"
+    "dev": "bun --watch index.ts",
+    "seed": "bun scripts/seed-data.ts",
+    "seed:quick": "bun scripts/quick-seed.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",

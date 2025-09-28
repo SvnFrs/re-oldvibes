@@ -106,7 +106,7 @@ router.get(
  *       201: { description: Vibe created, pending review }
  *       400: { description: Invalid input }
  *   get:
- *     summary: Get approved vibes with filters
+ *     summary: Get approved vibes with filters and pagination
  *     tags: [Vibes]
  *     parameters:
  *       - { in: query, name: category, schema: { type: string } }
@@ -115,8 +115,10 @@ router.get(
  *       - { in: query, name: maxPrice, schema: { type: number } }
  *       - { in: query, name: location, schema: { type: string } }
  *       - { in: query, name: tags, schema: { type: string }, description: Comma-separated tags }
+ *       - { in: query, name: page, schema: { type: number, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: number, default: 20 } }
  *     responses:
- *       200: { description: Vibes list retrieved }
+ *       200: { description: Paginated vibes list retrieved }
  */
 router.post(
   "/",
