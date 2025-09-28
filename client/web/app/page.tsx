@@ -253,11 +253,11 @@ export default function HomePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for items, categories, or users..."
-                className="w-full px-6 py-4 pr-12 rounded-xl text-lg bg-white/95 backdrop-blur-sm text-gruvbox-dark-fg0 placeholder-gruvbox-gray border-2 border-white/20 focus:ring-4 focus:ring-white/40 focus:border-white/40 focus:bg-white shadow-lg"
+                className="w-full px-6 py-4 pr-12 rounded-xl text-lg bg-white/95 backdrop-blur-sm text-gruvbox-dark-bg0 placeholder-gruvbox-gray border-2 border-white/20 focus:ring-4 focus:ring-white/40 focus:border-white/40 focus:bg-white shadow-lg"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-2 bottom-2 px-4 bg-gruvbox-blue text-white rounded-lg hover:bg-blue-600 transition shadow-md"
+                className="absolute right-2 top-2 bottom-2 px-4 bg-gruvbox-orange text-gruvbox-light-bg0 dark:text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow transition shadow-md"
               >
                 <IconSearch size={20} />
               </button>

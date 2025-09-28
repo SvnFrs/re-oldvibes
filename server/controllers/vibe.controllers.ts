@@ -192,7 +192,18 @@ export const searchVibes = async (
 
     const vibes = await vibeModel.searchVibes(query, filters);
 
-    res.json({ vibes, count: vibes.length, query });
+    // Return in the same format as getVibes for consistency
+    res.json({
+      data: vibes,
+      pagination: {
+        page: 1,
+        limit: 50,
+        total: vibes.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false
+      }
+    });
   } catch (error) {
     console.error("Search vibes error:", error);
     res.status(500).json({ message: "Error searching vibes", error });

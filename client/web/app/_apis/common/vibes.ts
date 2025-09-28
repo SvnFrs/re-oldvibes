@@ -177,10 +177,14 @@ export async function getVibeById(vibeId: string): Promise<{ vibe: VibeResponse 
 
 // Search vibes
 export async function searchVibes(params: SearchVibesParams): Promise<VibesListResponse> {
+  console.log('=== SEARCH API DEBUG ===');
+  console.log('Input params:', params);
+  
   const searchParams = new URLSearchParams();
   
   // If there's a text search query, use search endpoint
   if (params.q && params.q.trim()) {
+    console.log('Using text search endpoint');
     searchParams.append('q', params.q.trim());
     
     // Add other filters to search endpoint
@@ -212,15 +216,12 @@ export async function searchVibes(params: SearchVibesParams): Promise<VibesListR
       throw new Error(`Failed to search vibes: ${response.status} ${errorText}`);
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.error('Non-JSON response:', responseText);
-      throw new Error('Server returned non-JSON response');
-    }
-
-    return response.json();
+    const result = await response.json();
+    console.log('Search result:', result);
+    console.log('=== SEARCH API DEBUG END ===');
+    return result;
   } else {
+    console.log('Using filter-only search (no text query)');
     // No text search, use regular vibes endpoint with filters only
     Object.entries(params).forEach(([key, value]) => {
       if (key !== 'q' && value !== undefined && value !== null && value !== '') {
@@ -250,14 +251,10 @@ export async function searchVibes(params: SearchVibesParams): Promise<VibesListR
       throw new Error(`Failed to fetch vibes: ${response.status} ${errorText}`);
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.error('Non-JSON response:', responseText);
-      throw new Error('Server returned non-JSON response');
-    }
-
-    return response.json();
+    const result = await response.json();
+    console.log('Filter result:', result);
+    console.log('=== SEARCH API DEBUG END ===');
+    return result;
   }
 }
 

@@ -163,8 +163,15 @@ export default function SearchPage() {
         maxPrice: filters.maxPrice ? parseInt(filters.maxPrice) : undefined,
       };
 
+      console.log('=== SEARCH DEBUG ===');
+      console.log('Search params:', searchParams);
+      
       const response = await searchVibes(searchParams);
+      console.log('Search response:', response);
+      
       setVibes(response.data || []);
+      console.log('Set vibes:', response.data || []);
+      console.log('=== SEARCH DEBUG END ===');
     } catch (error) {
       console.error("Error searching vibes:", error);
       setVibes([]);
