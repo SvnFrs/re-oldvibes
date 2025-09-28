@@ -8,7 +8,10 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and tagline */}
-          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition">
+          <Link
+            href="/"
+            className="flex items-center space-x-3 hover:opacity-80 transition"
+          >
             <div className="bg-gruvbox-yellow-light dark:bg-gruvbox-yellow-dark w-12 h-12 rounded-xl flex items-center justify-center shadow-md">
               <Image
                 src="/oldvibes-small.png"
@@ -54,7 +57,7 @@ export default function Header() {
               Settings
             </Link>
 
-            <div className="ml-4">
+            <div className="ml-4 ">
               <UserMenu />
             </div>
           </nav>

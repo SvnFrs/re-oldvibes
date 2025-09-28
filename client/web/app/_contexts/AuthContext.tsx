@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface User {
   id: string;
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
 
       if (response.ok) {
+        Cookies.set("userId", data.user.id, { expires: 1 });
         setUser(data.user);
         return { success: true };
       } else {
@@ -105,6 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
+      Cookies.remove("userId");
       await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         credentials: "include",

@@ -22,6 +22,10 @@ import Image from "next/image";
 import Link from "next/link";
 import Wrapper from "./_sections/wrapper";
 import { getVibes } from "./_apis/common/vibes";
+import { getVibesWithWishlist } from "./_apis/common/wishlist";
+import { useAuth } from "./_contexts/AuthContext";
+import { log } from "console";
+import Cookies from "js-cookie";
 
 // Vibe Card Component
 function VibeCard({ vibe }: { vibe: any }) {
@@ -158,7 +162,10 @@ function CategoriesSection() {
               className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg1 rounded-xl p-3 md:p-4 text-center hover:shadow-md transition-shadow border border-gruvbox-light-bg1 dark:border-gruvbox-dark-bg2 hover:border-gruvbox-orange"
             >
               <div className="mb-2 flex justify-center">
-                <IconComponent size={24} className="text-gruvbox-orange md:w-8 md:h-8" />
+                <IconComponent
+                  size={24}
+                  className="text-gruvbox-orange md:w-8 md:h-8"
+                />
               </div>
               <h3 className="font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 text-sm">
                 {category.name}
@@ -189,6 +196,8 @@ export default function HomePage() {
     hasPrev: false,
   });
 
+  const userId = Cookies.get("userId");
+
   // Fetch vibes on component mount
   useEffect(() => {
     const fetchVibes = async () => {
@@ -206,14 +215,14 @@ export default function HomePage() {
 
     const loadMoreVibes = async () => {
       if (!pagination.hasNext || loadingMore) return;
-      
+
       setLoadingMore(true);
       try {
-        const response = await getVibes({ 
-          page: pagination.page + 1, 
-          limit: 12 
+        const response = await getVibes({
+          page: pagination.page + 1,
+          limit: 12,
         });
-        setVibes(prev => [...prev, ...response.data]);
+        setVibes((prev) => [...prev, ...response.data]);
         setPagination(response.pagination);
       } catch (error) {
         console.error("Error loading more vibes:", error);
@@ -306,21 +315,21 @@ export default function HomePage() {
                     </Link>
                   ))}
                 </div>
-                
-                {pagination.hasNext && (
+
+                {pagination?.hasNext && (
                   <div className="text-center mt-8">
                     <button
                       onClick={() => {
                         const loadMoreVibes = async () => {
                           if (!pagination.hasNext || loadingMore) return;
-                          
+
                           setLoadingMore(true);
                           try {
-                            const response = await getVibes({ 
-                              page: pagination.page + 1, 
-                              limit: 12 
+                            const response = await getVibes({
+                              page: pagination.page + 1,
+                              limit: 12,
                             });
-                            setVibes(prev => [...prev, ...response.data]);
+                            setVibes((prev) => [...prev, ...response.data]);
                             setPagination(response.pagination);
                           } catch (error) {
                             console.error("Error loading more vibes:", error);
