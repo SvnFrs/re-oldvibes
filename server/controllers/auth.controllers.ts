@@ -230,7 +230,31 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 export const me = async (req: Request, res: Response): Promise<void> => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.json({ user: (req as any).user });
+    const jwtUser = (req as any).user;
+    
+    // Fetch full user data from database
+    const user = await userModel.getById(jwtUser.userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Return full user data
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        isVerified: user.isVerified,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
   } catch (error) {
     console.error("Me endpoint error:", error);
     res.status(500).json({ message: "Error getting user info", error });

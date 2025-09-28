@@ -63,7 +63,7 @@ export interface SearchVibesParams {
   limit?: number;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:4000/api';
 
 // Get all approved vibes with pagination
 export async function getVibes(filters?: SearchVibesParams): Promise<VibesListResponse> {

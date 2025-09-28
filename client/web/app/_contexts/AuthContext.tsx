@@ -43,6 +43,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (!hasCheckedAuth.current) {
       hasCheckedAuth.current = true;
+      
+      // Try to load user from localStorage first for instant UI update
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Failed to parse saved user:', error);
+          localStorage.removeItem('user');
+        }
+      }
+      
       checkAuthStatus();
     }
   }, []);
@@ -55,13 +68,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        const userData = data.user || data; // Handle different response formats
+        
+        setUser(userData);
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('user', JSON.stringify(userData));
       } else {
         setUser(null);
+        localStorage.removeItem('user');
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
+      localStorage.removeItem('user');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +100,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
 
       if (response.ok) {
-        setUser(data.user);
+        const userData = data.user;
+        setUser(userData);
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('user', JSON.stringify(userData));
+        
         return { success: true };
       } else {
         return { success: false, error: data.message || "Đăng nhập thất bại" };
@@ -102,6 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("Logout failed:", error);
     } finally {
       setUser(null);
+      localStorage.removeItem('user');
       router.push("/auth/login");
     }
   };
