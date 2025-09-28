@@ -41,17 +41,17 @@ export default function ChangePasswordForm() {
 
   const validateForm = () => {
     if (formData.newPassword !== formData.confirmPassword) {
-      setError("Mật khẩu mới và xác nhận không khớp");
+      setError("New password and confirmation do not match");
       return false;
     }
     if (formData.newPassword.length < 6) {
-      setError("Mật khẩu mới phải có ít nhất 6 ký tự");
+      setError("New password must be at least 6 characters");
       return false;
     }
     
     // Only check if current password is different for existing password users
     if (passwordStatus?.canChangePassword && formData.currentPassword === formData.newPassword) {
-      setError("Mật khẩu mới phải khác mật khẩu hiện tại");
+      setError("New password must be different from current password");
       return false;
     }
     
@@ -81,7 +81,7 @@ export default function ChangePasswordForm() {
         confirmPassword: "",
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Lỗi kết nối. Vui lòng thử lại.");
+      setError(error instanceof Error ? error.message : "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -96,19 +96,19 @@ export default function ChangePasswordForm() {
               <IconCheck className="w-8 h-8 text-gruvbox-green" />
             </div>
             <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              {passwordStatus?.canCreatePassword ? "Tạo mật khẩu thành công! 🎉" : "Đổi mật khẩu thành công! 🎉"}
+              {passwordStatus?.canCreatePassword ? "Password created successfully! 🎉" : "Password changed successfully! 🎉"}
             </h2>
             <p className="text-gruvbox-gray mb-6">
               {passwordStatus?.canCreatePassword 
-                ? "Mật khẩu của bạn đã được tạo thành công. Bây giờ bạn có thể đăng nhập bằng email và mật khẩu."
-                : "Mật khẩu của bạn đã được thay đổi thành công."
+                ? "Your password has been created successfully. You can now login with email and password."
+                : "Your password has been changed successfully."
               }
             </p>
             <button
               onClick={() => setSuccess(false)}
               className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
             >
-              Đóng
+              Close
             </button>
           </div>
         </div>
@@ -139,13 +139,13 @@ export default function ChangePasswordForm() {
               <IconLock className="text-white w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
-              {passwordStatus.canCreatePassword ? "Tạo mật khẩu" : "Đổi mật khẩu"}
+              {passwordStatus.canCreatePassword ? "Create Password" : "Change Password"}
             </h1>
           </div>
           <p className="text-gruvbox-gray">
             {passwordStatus.canCreatePassword 
-              ? "Tạo mật khẩu mới cho tài khoản của bạn"
-              : "Nhập mật khẩu hiện tại và mật khẩu mới"
+              ? "Create a new password for your account"
+              : "Enter your current password and new password"
             }
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function ChangePasswordForm() {
           {passwordStatus.canChangePassword && (
             <div>
               <label htmlFor="currentPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-                Mật khẩu hiện tại
+                Current Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -186,7 +186,7 @@ export default function ChangePasswordForm() {
                   value={formData.currentPassword}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                  placeholder="Nhập mật khẩu hiện tại"
+                  placeholder="Enter your current password"
                   disabled={isLoading}
                 />
                 <button
@@ -208,7 +208,7 @@ export default function ChangePasswordForm() {
           {/* New Password Field */}
           <div>
             <label htmlFor="newPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Mật khẩu mới
+              New Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -222,7 +222,7 @@ export default function ChangePasswordForm() {
                 value={formData.newPassword}
                 onChange={handleInputChange}
                 className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập mật khẩu mới"
+                placeholder="Enter your new password"
                 disabled={isLoading}
               />
               <button
@@ -239,14 +239,14 @@ export default function ChangePasswordForm() {
               </button>
             </div>
             <p className="mt-1 text-xs text-gruvbox-gray">
-              Tối thiểu 6 ký tự
+              Minimum 6 characters
             </p>
           </div>
 
           {/* Confirm Password Field */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Xác nhận mật khẩu mới
+              Confirm New Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -260,7 +260,7 @@ export default function ChangePasswordForm() {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder="Confirm your new password"
                 disabled={isLoading}
               />
               <button
@@ -287,10 +287,10 @@ export default function ChangePasswordForm() {
             {isLoading ? (
               <>
                 <IconLoader2 className="animate-spin h-5 w-5 mr-2" />
-                {passwordStatus.canCreatePassword ? "Đang tạo..." : "Đang thay đổi..."}
+                {passwordStatus.canCreatePassword ? "Creating..." : "Changing..."}
               </>
             ) : (
-              passwordStatus.canCreatePassword ? "Tạo mật khẩu" : "Thay đổi mật khẩu"
+              passwordStatus.canCreatePassword ? "Create Password" : "Change Password"
             )}
           </button>
         </form>
@@ -299,8 +299,8 @@ export default function ChangePasswordForm() {
         {passwordStatus.canCreatePassword && (
           <div className="mt-6 p-4 bg-gruvbox-blue-light dark:bg-gruvbox-blue-dark border border-gruvbox-blue rounded-lg">
             <p className="text-gruvbox-blue text-sm">
-              💡 <strong>Lưu ý:</strong> Bạn đang tạo mật khẩu cho tài khoản Google của mình. 
-              Sau khi tạo, bạn có thể đăng nhập bằng cả Google và email/mật khẩu.
+              💡 <strong>Note:</strong> You are creating a password for your Google account. 
+              After creation, you can login with both Google and email/password.
             </p>
           </div>
         )}

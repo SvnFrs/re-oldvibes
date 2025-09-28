@@ -20,7 +20,7 @@ export default function ResetPasswordForm() {
   useEffect(() => {
     const tokenParam = searchParams.get("token");
     if (!tokenParam) {
-      setError("Token không hợp lệ hoặc đã hết hạn");
+      setError("Invalid or expired token");
     } else {
       setToken(tokenParam);
     }
@@ -28,7 +28,7 @@ export default function ResetPasswordForm() {
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
-      return "Mật khẩu phải có ít nhất 6 ký tự";
+      return "Password must be at least 6 characters";
     }
     return null;
   };
@@ -45,12 +45,12 @@ export default function ResetPasswordForm() {
     }
 
     if (password !== confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp");
+      setError("Password confirmation does not match");
       return;
     }
 
     if (!token) {
-      setError("Token không hợp lệ");
+      setError("Invalid token");
       return;
     }
 
@@ -60,7 +60,7 @@ export default function ResetPasswordForm() {
       await authAPI.resetPassword({ token, password });
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Lỗi kết nối. Vui lòng thử lại.");
+      setError(error instanceof Error ? error.message : "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -75,17 +75,17 @@ export default function ResetPasswordForm() {
               <IconCheck className="w-8 h-8 text-gruvbox-green" />
             </div>
             <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Mật khẩu đã được đặt lại! 🎉
+              Password reset successfully! 🎉
             </h2>
             <p className="text-gruvbox-gray mb-6">
-              Mật khẩu của bạn đã được thay đổi thành công. 
-              Bây giờ bạn có thể đăng nhập với mật khẩu mới.
+              Your password has been changed successfully. 
+              You can now login with your new password.
             </p>
             <button
               onClick={() => router.push("/auth/login")}
               className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
             >
-              Đăng nhập ngay
+              Login now
             </button>
           </div>
         </div>
@@ -104,17 +104,17 @@ export default function ResetPasswordForm() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Token không hợp lệ
+              Invalid Token
             </h2>
             <p className="text-gruvbox-gray mb-6">
-              Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. 
-              Vui lòng yêu cầu đặt lại mật khẩu mới.
+              The password reset link is invalid or has expired. 
+              Please request a new password reset.
             </p>
             <button
               onClick={() => router.push("/auth/forgot-password")}
               className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
             >
-              Yêu cầu đặt lại mật khẩu
+              Request password reset
             </button>
           </div>
         </div>
@@ -136,10 +136,10 @@ export default function ResetPasswordForm() {
             </h1>
           </div>
           <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-            Đặt lại mật khẩu
+            Reset Password
           </h2>
           <p className="text-gruvbox-gray">
-            Nhập mật khẩu mới của bạn
+            Enter your new password
           </p>
         </div>
 
@@ -155,7 +155,7 @@ export default function ResetPasswordForm() {
           {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Mật khẩu mới
+              New Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -168,7 +168,7 @@ export default function ResetPasswordForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập mật khẩu mới"
+                placeholder="Enter your new password"
                 disabled={isLoading}
               />
               <button
@@ -185,14 +185,14 @@ export default function ResetPasswordForm() {
               </button>
             </div>
             <p className="mt-1 text-xs text-gruvbox-gray">
-              Tối thiểu 6 ký tự
+              Minimum 6 characters
             </p>
           </div>
 
           {/* Confirm Password Field */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Xác nhận mật khẩu mới
+              Confirm New Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -205,7 +205,7 @@ export default function ResetPasswordForm() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder="Confirm your new password"
                 disabled={isLoading}
               />
               <button
@@ -232,10 +232,10 @@ export default function ResetPasswordForm() {
             {isLoading ? (
               <>
                 <IconLoader2 className="animate-spin h-5 w-5 mr-2" />
-                Đang đặt lại mật khẩu...
+                Resetting password...
               </>
             ) : (
-              "Đặt lại mật khẩu"
+              "Reset Password"
             )}
           </button>
         </form>

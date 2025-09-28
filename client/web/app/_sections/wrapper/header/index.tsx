@@ -53,12 +53,11 @@ export default function Header() {
               Contact
             </a>
             
-            {/* Authentication Section */}
+
             <div className="ml-4">
               <UserMenu />
             </div>
           </nav>
-          {/* Mobile menu */}
           <div className="md:hidden">
             <UserMenu />
           </div>

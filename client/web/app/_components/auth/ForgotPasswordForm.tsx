@@ -22,7 +22,7 @@ export default function ForgotPasswordForm() {
       await authAPI.forgotPassword({ email });
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Lỗi kết nối. Vui lòng thử lại.");
+      setError(error instanceof Error ? error.message : "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -37,18 +37,18 @@ export default function ForgotPasswordForm() {
               <IconCheck className="w-8 h-8 text-gruvbox-green" />
             </div>
             <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Email đã được gửi! 📧
+              Email sent! 📧
             </h2>
             <p className="text-gruvbox-gray mb-6">
-              Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến <strong>{email}</strong>. 
-              Vui lòng kiểm tra hộp thư và làm theo hướng dẫn trong email.
+              We have sent password reset instructions to <strong>{email}</strong>. 
+              Please check your inbox and follow the instructions in the email.
             </p>
             <div className="space-y-3">
               <button
                 onClick={() => router.push("/auth/login")}
                 className="w-full bg-gruvbox-orange text-gruvbox-light-bg0 py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
               >
-                Quay lại đăng nhập
+                Back to login
               </button>
               <button
                 onClick={() => {
@@ -57,7 +57,7 @@ export default function ForgotPasswordForm() {
                 }}
                 className="w-full border-2 border-gruvbox-orange text-gruvbox-orange py-3 px-4 rounded-lg font-semibold hover:bg-gruvbox-orange-light hover:text-gruvbox-light-bg0 transition-colors"
               >
-                Gửi lại email
+                Send email again
               </button>
             </div>
           </div>
@@ -80,10 +80,10 @@ export default function ForgotPasswordForm() {
             </h1>
           </div>
           <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-            Quên mật khẩu
+            Forgot Password
           </h2>
           <p className="text-gruvbox-gray">
-            Nhập email của bạn để nhận liên kết đặt lại mật khẩu
+            Enter your email to receive a password reset link
           </p>
         </div>
 
@@ -112,7 +112,7 @@ export default function ForgotPasswordForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập email của bạn"
+                placeholder="Enter your email"
                 disabled={isLoading}
               />
             </div>
@@ -127,10 +127,10 @@ export default function ForgotPasswordForm() {
             {isLoading ? (
               <>
                 <IconLoader2 className="animate-spin h-5 w-5 mr-2" />
-                Đang gửi email...
+                Sending email...
               </>
             ) : (
-              "Gửi email đặt lại mật khẩu"
+              "Send password reset email"
             )}
           </button>
         </form>
@@ -142,7 +142,7 @@ export default function ForgotPasswordForm() {
             className="inline-flex items-center text-sm text-gruvbox-orange hover:text-gruvbox-orange-dark font-medium transition-colors"
           >
             <IconArrowLeft className="h-4 w-4 mr-1" />
-            Quay lại đăng nhập
+            Back to login
           </Link>
         </div>
       </div>

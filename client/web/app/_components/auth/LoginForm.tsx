@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconEye, IconEyeOff, IconMail, IconLock, IconLoader2, IconBrandGoogle } from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconMail, IconLock, IconLoader2, IconBrandGoogle, IconHome } from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
 
 interface LoginFormProps {
@@ -33,13 +33,24 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
         router.push(redirectTo);
       }
     } else {
-      setError(result.error || "Đăng nhập thất bại");
+      setError(result.error || "Login failed");
     }
   };
 
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
+        {/* Back to Homepage - Top Left */}
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-gruvbox-gray hover:text-gruvbox-orange font-medium transition-colors"
+          >
+            <IconHome className="h-4 w-4 mr-1" />
+            Back to homepage
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
@@ -51,10 +62,10 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
             </h1>
           </div>
           <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-            Đăng nhập
+            Login
           </h2>
           <p className="text-gruvbox-gray">
-            Chào mừng bạn quay trở lại!
+            Welcome back!
           </p>
         </div>
 
@@ -83,7 +94,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập email của bạn"
+                placeholder="Enter your email"
                 disabled={isLoading}
               />
             </div>
@@ -92,7 +103,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
           {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              Mật khẩu
+              Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -105,7 +116,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="block w-full pl-10 pr-12 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 transition-colors"
-                placeholder="Nhập mật khẩu"
+                placeholder="Enter your password"
                 disabled={isLoading}
               />
               <button
@@ -129,7 +140,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
               href="/auth/forgot-password"
               className="text-sm text-gruvbox-orange hover:text-gruvbox-orange-dark font-medium transition-colors"
             >
-              Quên mật khẩu?
+              Forgot password?
             </Link>
           </div>
 
@@ -142,10 +153,10 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
             {isLoading ? (
               <>
                 <IconLoader2 className="animate-spin h-5 w-5 mr-2" />
-                Đang đăng nhập...
+                Logging in...
               </>
             ) : (
-              "Đăng nhập"
+              "Login"
             )}
           </button>
         </form>
@@ -157,7 +168,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
               <div className="w-full border-t border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 text-gruvbox-gray">Hoặc</span>
+              <span className="px-2 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 text-gruvbox-gray">Or</span>
             </div>
           </div>
 
@@ -168,7 +179,7 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
               disabled={isLoading}
             >
               <IconBrandGoogle className="w-5 h-5 mr-3" />
-              Đăng nhập bằng Google
+              Login with Google
             </button>
           </div>
         </div>
@@ -176,15 +187,16 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
         {/* Sign Up Link */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gruvbox-gray">
-            Chưa có tài khoản?{" "}
+            Don't have an account?{" "}
             <Link
               href="/auth/signup"
               className="font-medium text-gruvbox-orange hover:text-gruvbox-orange-dark transition-colors"
             >
-              Đăng ký ngay
+              Sign up now
             </Link>
           </p>
         </div>
+
       </div>
     </div>
   );

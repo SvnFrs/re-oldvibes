@@ -42,7 +42,7 @@ export default function HomePage() {
             give your old treasures a new home.
           </p>
           
-          {/* Authentication CTA */}
+
           {!isAuthenticated ? (
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link

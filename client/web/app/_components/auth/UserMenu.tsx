@@ -18,13 +18,13 @@ export default function UserMenu() {
           href="/auth/login"
           className="text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:text-gruvbox-orange font-medium transition-colors"
         >
-          Đăng nhập
+            Sign In
         </Link>
         <Link
           href="/auth/signup"
           className="bg-gruvbox-orange text-gruvbox-light-bg0 px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200"
         >
-          Đăng ký
+          Sign Up
         </Link>
       </div>
     );
@@ -61,7 +61,6 @@ export default function UserMenu() {
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
@@ -85,7 +84,7 @@ export default function UserMenu() {
                 onClick={() => setIsOpen(false)}
               >
                 <IconUser className="w-4 h-4 mr-3" />
-                Hồ sơ
+                Profile
               </Link>
               
               <Link
@@ -94,7 +93,7 @@ export default function UserMenu() {
                 onClick={() => setIsOpen(false)}
               >
                 <IconSettings className="w-4 h-4 mr-3" />
-                Cài đặt
+                Settings
               </Link>
               
               <button
@@ -103,7 +102,7 @@ export default function UserMenu() {
                 className="w-full flex items-center px-4 py-2 text-sm text-gruvbox-red hover:bg-gruvbox-red-light dark:hover:bg-gruvbox-red-dark transition-colors"
               >
                 <IconLogout className="w-4 h-4 mr-3" />
-                {isLoading ? "Đang đăng xuất..." : "Đăng xuất"}
+                {isLoading ? "Logging out..." : "Logout"}
               </button>
             </div>
           </div>
