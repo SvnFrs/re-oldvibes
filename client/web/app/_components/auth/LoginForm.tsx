@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconEye, IconEyeOff, IconMail, IconLock, IconLoader2, IconBrandGoogle, IconHome } from "@tabler/icons-react";
+import {
+  IconEye,
+  IconEyeOff,
+  IconMail,
+  IconLock,
+  IconLoader2,
+  IconBrandGoogle,
+  IconHome,
+} from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
 
 interface LoginFormProps {
@@ -11,7 +19,10 @@ interface LoginFormProps {
   onSuccess?: () => void;
 }
 
-export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProps) {
+export default function LoginForm({
+  redirectTo = "/",
+  onSuccess,
+}: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +37,6 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
     const result = await login(email, password);
 
     if (result.success) {
-
       if (onSuccess) {
         onSuccess();
       } else {
@@ -55,7 +65,11 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gruvbox-orange-light dark:bg-gruvbox-orange-dark rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">🌊</span>
+              <img
+                src="/oldvibes-small.png"
+                alt="Old Vibes Logo"
+                className="w-8 h-8 object-contain rounded"
+              />
             </div>
             <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
               Old Vibes
@@ -64,14 +78,12 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
           <h2 className="text-xl font-semibold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
             Login
           </h2>
-          <p className="text-gruvbox-gray">
-            Welcome back!
-          </p>
+          <p className="text-gruvbox-gray">Welcome back!</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-gruvbox-red-light dark:bg-gruvbox-red-dark border border-gruvbox-red rounded-lg">
+          <div className="mb-6 p-4 bg-gruvbox-red-light/10 dark:bg-gruvbox-red-dark/20 border border-gruvbox-red/30 rounded-lg">
             <p className="text-gruvbox-red text-sm">{error}</p>
           </div>
         )}
@@ -80,7 +92,10 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2"
+            >
               Email
             </label>
             <div className="relative">
@@ -102,7 +117,10 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2"
+            >
               Password
             </label>
             <div className="relative">
@@ -168,13 +186,17 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
               <div className="w-full border-t border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 text-gruvbox-gray">Or</span>
+              <span className="px-2 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 text-gruvbox-gray">
+                Or
+              </span>
             </div>
           </div>
 
           <div className="mt-6">
             <button
-              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_ENDPOINT}/auth/google`}
+              onClick={() =>
+                (window.location.href = `${process.env.NEXT_PUBLIC_API_ENDPOINT}/auth/google`)
+              }
               className="w-full flex items-center justify-center px-4 py-3 border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 rounded-lg bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg3 dark:hover:bg-gruvbox-dark-bg3 transition-colors"
               disabled={isLoading}
             >
@@ -196,7 +218,6 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
             </Link>
           </p>
         </div>
-
       </div>
     </div>
   );
