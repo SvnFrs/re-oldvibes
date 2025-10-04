@@ -59,6 +59,7 @@ export interface VibeResponse {
   commentsCount: number;
   views: number;
   isLiked?: boolean; // For authenticated users
+  isWishlist?: boolean; // For authenticated users
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;

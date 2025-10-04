@@ -29,9 +29,22 @@ import {
   getCommentsByVibeId,
   createComment,
 } from "../../_apis/common/comments";
+import { Star } from "lucide-react";
+import Cookies from "js-cookie";
+import {
+  addVibeToWishlist,
+  getVibeByIdWithWishlist,
+  removeVibeFromWishlist,
+} from "../../_apis/common/wishlist";
 
 // Media Carousel Component
-function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: string }) {
+function MediaCarousel({
+  mediaFiles,
+  itemName,
+}: {
+  mediaFiles: any[];
+  itemName: string;
+}) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!mediaFiles || mediaFiles.length === 0) {
@@ -59,7 +72,7 @@ function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: 
     <div className="space-y-4">
       {/* Main Media Display */}
       <div className="relative h-96 w-full rounded-xl overflow-hidden bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg2">
-        {currentMedia.type === 'video' ? (
+        {currentMedia.type === "video" ? (
           <video
             src={currentMedia.url}
             controls
@@ -76,7 +89,7 @@ function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: 
             className="object-cover"
           />
         )}
-        
+
         {/* Navigation Arrows */}
         {mediaFiles.length > 1 && (
           <>
@@ -96,7 +109,7 @@ function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: 
         )}
 
         {/* Media Type Indicator */}
-        {currentMedia.type === 'video' && (
+        {currentMedia.type === "video" && (
           <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 rounded-full flex items-center gap-1">
             <IconPlayerPlay size={16} />
             <span className="text-xs">Video</span>
@@ -119,12 +132,12 @@ function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: 
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`relative h-20 w-full rounded-lg overflow-hidden transition ${
-                index === currentIndex 
-                  ? 'ring-2 ring-gruvbox-orange' 
-                  : 'hover:opacity-80'
+                index === currentIndex
+                  ? "ring-2 ring-gruvbox-orange"
+                  : "hover:opacity-80"
               }`}
             >
-              {media.type === 'video' ? (
+              {media.type === "video" ? (
                 <div className="relative w-full h-full">
                   {media.thumbnail ? (
                     <Image
@@ -197,19 +210,29 @@ export default function VibeDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [isWishlist, setIsWishlist] = useState(false); // Thêm state cho wishlist
 
   const vibeId = params.id as string;
+  const userId = Cookies.get("userId");
 
   useEffect(() => {
     const fetchVibeDetails = async () => {
       try {
-        const response = await getVibeById(vibeId);
-        setVibe(response.vibe);
-        setIsLiked(response.vibe.isLiked || false);
-        setLikesCount(response.vibe.likesCount || 0);
+        if (userId) {
+          const response = await getVibeByIdWithWishlist(vibeId, userId);
+          setIsLiked(response.vibe.isLiked || false);
+          setLikesCount(response.vibe.likesCount || 0);
+          setIsWishlist(response.vibe.isWishlist || false); // Set wishlist state
+          setVibe(response.vibe);
+        } else {
+          const response = await getVibeById(vibeId);
+          setIsLiked(response.vibe.isLiked || false);
+          setLikesCount(response.vibe.likesCount || 0);
+          setIsWishlist(false); // Default to false for non-authenticated users
+          setVibe(response.vibe);
+        }
       } catch (error) {
         console.error("Error fetching vibe:", error);
-        router.push("/404");
       } finally {
         setLoading(false);
       }
@@ -228,7 +251,7 @@ export default function VibeDetailPage() {
       fetchVibeDetails();
       fetchComments();
     }
-  }, [vibeId, router]);
+  }, [vibeId, userId]); // Thêm userId vào dependency
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -291,6 +314,35 @@ export default function VibeDetailPage() {
     }
   };
 
+  const handleWishlist = async () => {
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (!userId) {
+      console.error("User ID not found");
+      return;
+    }
+
+    try {
+      if (isWishlist) {
+        // Nếu đã có trong wishlist, xóa khỏi wishlist
+        await removeVibeFromWishlist(vibeId, userId);
+        setIsWishlist(false);
+        console.log("Removed from wishlist");
+      } else {
+        // Nếu chưa có trong wishlist, thêm vào wishlist
+        await addVibeToWishlist(vibeId, userId);
+        setIsWishlist(true);
+        console.log("Added to wishlist");
+      }
+    } catch (error) {
+      console.error("Error handling wishlist:", error);
+      // Có thể thêm toast notification để thông báo lỗi
+    }
+  };
+
   if (loading) {
     return (
       <Wrapper>
@@ -312,26 +364,26 @@ export default function VibeDetailPage() {
     );
   }
 
-  if (!vibe) {
-    return (
-      <Wrapper>
-        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-4">
-            Vibe Not Found
-          </h1>
-          <p className="text-gruvbox-gray mb-6">
-            The vibe you're looking for doesn't exist or has been removed.
-          </p>
-          <Link
-            href="/"
-            className="inline-block px-6 py-3 bg-gruvbox-orange text-gruvbox-light-bg0 dark:text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow transition"
-          >
-            Back to Marketplace
-          </Link>
-        </div>
-      </Wrapper>
-    );
-  }
+  // if (!vibe) {
+  //   return (
+  //     <Wrapper>
+  //       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+  //         <h1 className="text-2xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-4">
+  //           Vibe Not Found
+  //         </h1>
+  //         <p className="text-gruvbox-gray mb-6">
+  //           The vibe you're looking for doesn't exist or has been removed.
+  //         </p>
+  //         <Link
+  //           href="/"
+  //           className="inline-block px-6 py-3 bg-gruvbox-orange text-gruvbox-light-bg0 dark:text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow transition"
+  //         >
+  //           Back to Marketplace
+  //         </Link>
+  //       </div>
+  //     </Wrapper>
+  //   );
+  // }
 
   return (
     <Wrapper>
@@ -348,26 +400,41 @@ export default function VibeDetailPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Media Gallery */}
-            <MediaCarousel mediaFiles={vibe.mediaFiles || []} itemName={vibe.itemName} />
+            <MediaCarousel
+              mediaFiles={vibe.mediaFiles || []}
+              itemName={vibe.itemName}
+            />
 
             {/* Vibe Details */}
             <div className="space-y-4 md:space-y-6">
-              {/* Header */}
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
-                  {vibe.itemName}
-                </h1>
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-2xl font-bold text-gruvbox-orange">
-                    {formatPrice(vibe.price)}
-                  </span>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${getConditionColor(
-                      vibe.condition
-                    )}`}
-                  >
-                    {vibe.condition}
-                  </span>
+              <div className="flex items-start justify-between">
+                {/* Header */}
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
+                    {vibe.itemName}
+                  </h1>
+                  <div className="flex items-center gap-4 mb-4">
+                    <span className="text-2xl font-bold text-gruvbox-orange">
+                      {formatPrice(vibe.price)}
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${getConditionColor(
+                        vibe.condition
+                      )}`}
+                    >
+                      {vibe.condition}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Wishlist Star Icon */}
+                <div className="cursor-pointer" onClick={handleWishlist}>
+                  <Star
+                    size={32}
+                    fill={isWishlist ? "#ffd700" : "none"}
+                    stroke={isWishlist ? "#ffd700" : "#6b7280"}
+                    className="hover:scale-110 transition-transform"
+                  />
                 </div>
               </div>
 

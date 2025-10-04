@@ -12,7 +12,7 @@ const vibeModel = new VibeModel();
 
 export const createVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -36,7 +36,7 @@ export const createVibe = async (
 
 export const getAllVibes = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const vibes = await vibeModel.getAllVibes();
@@ -49,7 +49,7 @@ export const getAllVibes = async (
 
 export const getVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -79,7 +79,7 @@ export const getVibe = async (
 
 export const updateVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -115,7 +115,7 @@ export const updateVibe = async (
 
 export const deleteVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -145,7 +145,7 @@ export const deleteVibe = async (
 
 export const getVibes = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const filters: VibeFilters = {
@@ -173,7 +173,7 @@ export const getVibes = async (
 
 export const searchVibes = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { q: query } = req.query;
@@ -201,7 +201,7 @@ export const searchVibes = async (
 
 export const getTrendingVibes = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const vibes = await vibeModel.getTrendingVibes();
@@ -214,7 +214,7 @@ export const getTrendingVibes = async (
 
 export const getUserVibes = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { userId } = req.params;
@@ -236,7 +236,7 @@ export const getUserVibes = async (
 
 export const likeVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -258,7 +258,7 @@ export const likeVibe = async (
 
 export const unlikeVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -280,7 +280,7 @@ export const unlikeVibe = async (
 
 export const markAsSold = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -308,7 +308,7 @@ export const markAsSold = async (
 // Moderation endpoints (Staff/Admin only)
 export const getPendingVibes = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const vibes = await vibeModel.getPendingVibes();
@@ -321,7 +321,7 @@ export const getPendingVibes = async (
 
 export const moderateVibe = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -344,7 +344,7 @@ export const moderateVibe = async (
       vibeId,
       staffId,
       action,
-      notes,
+      notes
     );
 
     if (!moderatedVibe) {
@@ -368,7 +368,7 @@ export const moderateVibe = async (
 
 export const uploadVibeMedia = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;

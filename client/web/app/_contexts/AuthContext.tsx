@@ -1,7 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface User {
   id: string;
@@ -19,7 +27,10 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -30,7 +41,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -43,19 +55,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (!hasCheckedAuth.current) {
       hasCheckedAuth.current = true;
-      
+
       // Try to load user from localStorage first for instant UI update
-      const savedUser = localStorage.getItem('user');
+      const savedUser = localStorage.getItem("user");
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser);
           setUser(parsedUser);
         } catch (error) {
-          console.error('Failed to parse saved user:', error);
-          localStorage.removeItem('user');
+          console.error("Failed to parse saved user:", error);
+          localStorage.removeItem("user");
         }
       }
-      
+
       checkAuthStatus();
     }
   }, []);
@@ -69,19 +81,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (response.ok) {
         const data = await response.json();
         const userData = data.user || data; // Handle different response formats
-        
+
         setUser(userData);
-        
+
         // Save to localStorage for persistence
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
       } else {
         setUser(null);
-        localStorage.removeItem('user');
+        localStorage.removeItem("user");
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
     } finally {
       setIsLoading(false);
     }
@@ -101,11 +113,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const userData = data.user;
-        setUser(userData);
-        
+
         // Save to localStorage for persistence
-        localStorage.setItem('user', JSON.stringify(userData));
-        
+        localStorage.setItem("user", JSON.stringify(userData));
+        Cookies.set("userId", data.user.id, { expires: 1 });
+        setUser(userData);
         return { success: true };
       } else {
         return { success: false, error: data.message || "Đăng nhập thất bại" };
@@ -119,6 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
+      Cookies.remove("userId");
       await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -127,7 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("Logout failed:", error);
     } finally {
       setUser(null);
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
       router.push("/auth/login");
     }
   };
@@ -158,4 +171,3 @@ export function useAuth() {
   }
   return context;
 }
-
