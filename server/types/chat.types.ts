@@ -85,8 +85,9 @@ export interface SocketUser {
 export interface ServerToClientEvents {
   newMessage: (message: MessageResponse) => void;
   messageRead: (data: { messageId: string; conversationId: string }) => void;
-  messageEdited: (message: MessageResponse) => void;
+  messageUpdated: (message: MessageResponse) => void;
   messageDeleted: (data: { messageId: string; conversationId: string }) => void;
+  conversationDeleted: (data: { conversationId: string; deletedBy: string }) => void;
   userOnline: (data: { userId: string; username: string }) => void;
   userOffline: (data: { userId: string }) => void;
   typingStart: (data: { userId: string; conversationId: string }) => void;
@@ -104,8 +105,9 @@ export interface ClientToServerEvents {
   leaveConversation: (conversationId: string) => void;
   sendMessage: (data: CreateMessageInput & { conversationId: string }) => void;
   markAsRead: (data: { messageId: string; conversationId: string }) => void;
-  editMessage: (data: { messageId: string; content: string }) => void;
-  deleteMessage: (data: { messageId: string }) => void;
+  updateMessage: (data: { messageId: string; content: string }) => void;
+  deleteMessage: (data: { messageId: string; conversationId: string }) => void;
+  deleteConversation: (conversationId: string) => void;
   startTyping: (conversationId: string) => void;
   stopTyping: (conversationId: string) => void;
   updateOfferStatus: (data: {

@@ -1,66 +1,90 @@
-// Vibes API functions for web client
+import { apiClient } from "../../_libs/api";
 
-export interface VibeResponse {
-  id: string;
-  userId: string;
-  user: {
-    username: string;
-    name: string;
-    profilePicture?: string;
-    isVerified: boolean;
-  };
+// Types
+export interface CreateVibeInput {
   itemName: string;
   description: string;
   price: number;
+  category: string;
+  condition: string;
+  tags?: string[];
+  location?: string;
+}
+
+export interface Vibe {
+  id: string;
+  itemName: string;
+  description: string;
+  price: number;
+  category: string;
+  condition: string;
   tags: string[];
+  location?: string;
+  status: 'pending' | 'approved' | 'rejected';
   mediaFiles: {
-    type: "image" | "video";
+    type: 'image' | 'video';
+    url: string;
+    thumbnail?: string;
+    _id?: string;
+  }[];
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    profilePicture?: string;
+    isVerified?: boolean;
+  };
+  likesCount: number;
+  views: number;
+  isLiked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+}
+
+export interface CreateVibeResponse {
+  message: string;
+  vibe: {
+    id: string;
+    status: string;
+    expiresAt?: string;
+  };
+}
+
+export interface UploadMediaResponse {
+  message: string;
+  mediaFiles: {
+    type: 'image' | 'video';
     url: string;
     thumbnail?: string;
   }[];
-  status: "pending" | "approved" | "rejected" | "sold" | "archived";
-  category: string;
-  condition: string;
-  location?: string;
-  likesCount: number;
-  commentsCount: number;
-  views: number;
-  isLiked?: boolean;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+// API Functions
+export async function createVibe(vibeData: CreateVibeInput): Promise<CreateVibeResponse> {
+  const response = await apiClient.post('/vibes', vibeData);
+  return response as unknown as CreateVibeResponse;
 }
 
-export interface VibesListResponse {
-  data: VibeResponse[];
-  pagination: PaginationInfo;
-}
-
-// Legacy interface for backward compatibility
-export interface LegacyVibesListResponse {
-  vibes: VibeResponse[];
-  count: number;
-}
-
+// Types for search and response
 export interface SearchVibesParams {
   q?: string;
   category?: string;
   condition?: string;
   minPrice?: number;
   maxPrice?: number;
-  location?: string;
   tags?: string[];
-  page?: number;
+  location?: string;
   limit?: number;
+  offset?: number;
+}
+
+export interface VibesListResponse {
+  data: Vibe[];
+  pagination?: any;
+  vibes?: Vibe[];
+  count?: number;
+  query?: string;
 }
 
 const API_BASE =
@@ -99,24 +123,21 @@ export async function getVibes(
 }
 
 // Get single vibe by ID
-export async function getVibeById(
-  vibeId: string
-): Promise<{ vibe: VibeResponse }> {
-  const response = await fetch(`${API_BASE}/vibes/${vibeId}`, {
-    credentials: "include",
-  });
+// export async function getVibeById(
+//   vibeId: string
+// ): Promise<{ vibe: VibeResponse }> {
+//   const response = await fetch(`${API_BASE}/vibes/${vibeId}`, {
+//     credentials: "include",
+//   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch vibe");
-  }
+//   if (!response.ok) {
+//     throw new Error("Failed to fetch vibe");
+//   }
 
-  return response.json();
-}
+//   return response.json();
+// }
 
-// Search vibes
-export async function searchVibes(
-  params: SearchVibesParams
-): Promise<VibesListResponse> {
+export async function searchVibes(params: SearchVibesParams): Promise<VibesListResponse> {
   const searchParams = new URLSearchParams();
 
   // If there's a text search query, use search endpoint
@@ -166,7 +187,14 @@ export async function searchVibes(
       throw new Error("Server returned non-JSON response");
     }
 
-    return response.json();
+    const result = await response.json();
+    // Normalize response format - convert vibes to data if needed
+    return {
+      data: result.vibes || result.data || [],
+      pagination: result.pagination,
+      count: result.count,
+      query: result.query
+    };
   } else {
     // No text search, use regular vibes endpoint with filters only
     Object.entries(params).forEach(([key, value]) => {
@@ -209,11 +237,49 @@ export async function searchVibes(
       throw new Error("Server returned non-JSON response");
     }
 
-    return response.json();
+    const result = await response.json();
+    // Normalize response format
+    return {
+      data: result.data || result.vibes || [],
+      pagination: result.pagination,
+      count: result.count
+    };
   }
 }
 
-// Get trending vibes
+export async function getVibeById(vibeId: string): Promise<{ vibe: Vibe }> {
+  const response = await apiClient.get(`/vibes/${vibeId}`);
+  return response as unknown as { vibe: Vibe };
+}
+
+export async function uploadVibeMedia(
+  vibeId: string,
+  files: File[]
+): Promise<UploadMediaResponse> {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('media', file);
+  });
+
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:4000/api'}/vibes/${vibeId}/media`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload media');
+  }
+
+  return await response.json();
+}
+
+
+export async function deleteVibe(vibeId: string): Promise<any> {
+  const response = await apiClient.delete(`/vibes/${vibeId}`);
+  return response;
+}
+
 export async function getTrendingVibes(): Promise<VibesListResponse> {
   const response = await fetch(`${API_BASE}/vibes/trending`, {
     credentials: "include",
@@ -223,7 +289,12 @@ export async function getTrendingVibes(): Promise<VibesListResponse> {
     throw new Error("Failed to fetch trending vibes");
   }
 
-  return response.json();
+  const result = await response.json();
+  return {
+    data: result.data || result.vibes || [],
+    pagination: result.pagination,
+    count: result.count
+  };
 }
 
 // Like a vibe
@@ -260,7 +331,12 @@ export async function getUserVibes(userId: string): Promise<VibesListResponse> {
     throw new Error("Failed to fetch user vibes");
   }
 
-  return response.json();
+  const result = await response.json();
+  return {
+    data: result.data || result.vibes || [],
+    pagination: result.pagination,
+    count: result.count
+  };
 }
 
 // Mark vibe as sold

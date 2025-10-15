@@ -163,7 +163,9 @@ export default function SearchPage() {
         maxPrice: filters.maxPrice ? parseInt(filters.maxPrice) : undefined,
       };
 
+      console.log('Search params:', searchParams);
       const response = await searchVibes(searchParams);
+      console.log('Search response:', response);
       setVibes(response.data || []);
     } catch (error) {
       console.error("Error searching vibes:", error);

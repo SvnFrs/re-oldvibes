@@ -185,3 +185,101 @@ export const markMessageAsRead = async (
     }
   }
 };
+
+export const updateMessage = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user!.userId;
+    const { content } = req.body;
+
+    if (!messageId) {
+      res.status(400).json({ message: "Message ID is required" });
+      return;
+    }
+
+    if (!content || content.trim().length === 0) {
+      res.status(400).json({ message: "Content is required" });
+      return;
+    }
+
+    if (content.length > 1000) {
+      res.status(400).json({ message: "Content too long (max 1000 characters)" });
+      return;
+    }
+
+    const updatedMessage = await chatService.updateMessage(messageId, userId, content);
+
+    res.json({
+      message: "Message updated successfully",
+      data: updatedMessage,
+    });
+  } catch (error) {
+    console.error("Update message error:", error);
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      res.status(403).json({ message: error.message });
+    } else if (error instanceof Error && error.message.includes("not found")) {
+      res.status(404).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: "Error updating message", error });
+    }
+  }
+};
+
+export const deleteMessage = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user!.userId;
+
+    if (!messageId) {
+      res.status(400).json({ message: "Message ID is required" });
+      return;
+    }
+
+    await chatService.deleteMessage(messageId, userId);
+
+    res.json({ message: "Message deleted successfully" });
+  } catch (error) {
+    console.error("Delete message error:", error);
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      res.status(403).json({ message: error.message });
+    } else if (error instanceof Error && error.message.includes("not found")) {
+      res.status(404).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: "Error deleting message", error });
+    }
+  }
+};
+
+export const deleteConversation = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user!.userId;
+
+    if (!conversationId) {
+      res.status(400).json({ message: "Conversation ID is required" });
+      return;
+    }
+
+    await chatService.deleteConversation(conversationId, userId);
+
+    res.json({ message: "Conversation deleted successfully" });
+  } catch (error) {
+    console.error("Delete conversation error:", error);
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      res.status(403).json({ message: error.message });
+    } else if (error instanceof Error && error.message.includes("not found")) {
+      res.status(404).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: "Error deleting conversation", error });
+    }
+  }
+};
