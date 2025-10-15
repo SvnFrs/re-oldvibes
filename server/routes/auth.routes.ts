@@ -14,6 +14,7 @@ import {
   googleAuth,
   googleCallback,
   checkPasswordStatus,
+  getToken,
 } from "../controllers/auth.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 
@@ -339,5 +340,27 @@ router.get("/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth/error" }),
   googleCallback
 );
+
+/**
+ * @swagger
+ * /auth/token:
+ *   get:
+ *     summary: Get JWT token for socket connection
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Token retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token: { type: string, description: "JWT token for socket connection" }
+ *                 user: { $ref: '#/components/schemas/AuthResponse/properties/user' }
+ *       401: { description: Authentication required }
+ */
+router.get("/token", authenticateToken as any, getToken);
 
 export default router;

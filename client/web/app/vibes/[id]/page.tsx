@@ -29,6 +29,7 @@ import {
   getCommentsByVibeId,
   createComment,
 } from "../../_apis/common/comments";
+import ContactSellerButton from "../../_components/chat/ContactSellerButton";
 
 // Media Carousel Component
 function MediaCarousel({ mediaFiles, itemName }: { mediaFiles: any[], itemName: string }) {
@@ -454,6 +455,15 @@ export default function VibeDetailPage() {
                   <IconMessageCircle size={16} />
                   <span className="text-sm">{comments.length} comments</span>
                 </div>
+              </div>
+
+              {/* Contact Seller Button */}
+              <div className="flex justify-center">
+                <ContactSellerButton 
+                  vibeId={vibe.id} 
+                  sellerId={vibe.user?.id}
+                  className="w-full sm:w-auto"
+                />
               </div>
 
               {/* Action Buttons */}

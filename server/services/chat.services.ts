@@ -278,6 +278,113 @@ export class ChatService {
     return this.formatMessageResponse(updatedMessage);
   }
 
+  async updateMessage(
+    messageId: string,
+    userId: string,
+    content: string,
+  ): Promise<MessageResponse> {
+    const message = await Message.findById(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.isDeleted) {
+      throw new Error("Cannot update deleted message");
+    }
+
+    // Only sender can update their own message
+    if (!message.senderId.equals(new mongoose.Types.ObjectId(userId))) {
+      throw new Error("Unauthorized to update this message");
+    }
+
+    // Check if message is too old to edit (e.g., 5 minutes)
+    const editTimeLimit = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const messageAge = Date.now() - message.createdAt.getTime();
+    if (messageAge > editTimeLimit) {
+      throw new Error("Message is too old to edit (5 minutes limit)");
+    }
+
+    const updatedMessage = await Message.findByIdAndUpdate(
+      messageId,
+      {
+        content: content.trim(),
+        isEdited: true,
+        editedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { new: true },
+    ).populate(
+      "senderId receiverId",
+      "username name profilePicture isVerified",
+    );
+
+    return this.formatMessageResponse(updatedMessage);
+  }
+
+  async deleteMessage(messageId: string, userId: string): Promise<void> {
+    const message = await Message.findById(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.isDeleted) {
+      throw new Error("Message already deleted");
+    }
+
+    // Only sender can delete their own message
+    if (!message.senderId.equals(new mongoose.Types.ObjectId(userId))) {
+      throw new Error("Unauthorized to delete this message");
+    }
+
+    // Check if message is too old to delete (e.g., 1 hour)
+    const deleteTimeLimit = 60 * 60 * 1000; // 1 hour in milliseconds
+    const messageAge = Date.now() - message.createdAt.getTime();
+    if (messageAge > deleteTimeLimit) {
+      throw new Error("Message is too old to delete");
+    }
+
+    await Message.findByIdAndUpdate(messageId, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  async deleteConversation(conversationId: string, userId: string): Promise<void> {
+    const conversation = await Conversation.findOne({ conversationId });
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    // Verify user is part of conversation
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    if (
+      !conversation.sellerId.equals(userObjectId) &&
+      !conversation.buyerId.equals(userObjectId)
+    ) {
+      throw new Error("Unauthorized to delete this conversation");
+    }
+
+    // Soft delete conversation by setting isActive to false
+    await Conversation.findOneAndUpdate(
+      { conversationId },
+      {
+        isActive: false,
+        updatedAt: new Date(),
+      },
+    );
+
+    // Optionally, also soft delete all messages in the conversation
+    await Message.updateMany(
+      { conversationId },
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    );
+  }
+
   async validateConversationAccess(
     conversationId: string,
     userId: string,

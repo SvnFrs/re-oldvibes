@@ -504,3 +504,37 @@ export const googleCallback = async (
     res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }
 };
+
+// Get JWT token for socket connection
+export const getToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // User should be authenticated via middleware
+    const user = (req as any).user;
+    
+    if (!user) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    // Generate a fresh token for socket connection
+    const token = generateToken({
+      userId: user.userId,
+      email: user.email,
+      username: user.username,
+      role: user.role || 'user',
+    });
+
+    res.json({ 
+      token,
+      user: {
+        id: user.userId,
+        email: user.email,
+        username: user.username,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error("Get token error:", error);
+    res.status(500).json({ message: "Error generating token", error });
+  }
+};

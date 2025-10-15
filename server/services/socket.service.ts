@@ -209,6 +209,73 @@ export class SocketService {
         },
       );
 
+      // Update message
+      socket.on(
+        "updateMessage",
+        async (data: { messageId: string; content: string }) => {
+          try {
+            const updatedMessage = await this.chatService.updateMessage(
+              data.messageId,
+              user.userId,
+              data.content,
+            );
+
+            // Notify conversation participants
+            this.io
+              .to(`conversation:${updatedMessage.conversationId}`)
+              .emit("messageUpdated", updatedMessage);
+          } catch (error) {
+            socket.emit("error", {
+              message: "Error updating message",
+              code: "UPDATE_MESSAGE_ERROR",
+            });
+          }
+        },
+      );
+
+      // Delete message
+      socket.on(
+        "deleteMessage",
+        async (data: { messageId: string; conversationId: string }) => {
+          try {
+            await this.chatService.deleteMessage(data.messageId, user.userId);
+
+            // Notify conversation participants
+            this.io
+              .to(`conversation:${data.conversationId}`)
+              .emit("messageDeleted", {
+                messageId: data.messageId,
+                conversationId: data.conversationId,
+              });
+          } catch (error) {
+            socket.emit("error", {
+              message: "Error deleting message",
+              code: "DELETE_MESSAGE_ERROR",
+            });
+          }
+        },
+      );
+
+      // Delete conversation
+      socket.on("deleteConversation", async (conversationId: string) => {
+        try {
+          await this.chatService.deleteConversation(conversationId, user.userId);
+
+          // Notify conversation participants
+          this.io
+            .to(`conversation:${conversationId}`)
+            .emit("conversationDeleted", {
+              conversationId,
+              deletedBy: user.userId,
+            });
+        } catch (error) {
+          socket.emit("error", {
+            message: "Error deleting conversation",
+            code: "DELETE_CONVERSATION_ERROR",
+          });
+        }
+      });
+
       // Typing indicators
       socket.on("startTyping", (conversationId: string) => {
         socket.to(`conversation:${conversationId}`).emit("typingStart", {

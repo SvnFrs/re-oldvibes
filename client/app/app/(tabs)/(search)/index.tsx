@@ -32,13 +32,15 @@ export default function SearchScreen() {
     setLoading(true);
     try {
       const res = await searchVibes({
-        q: query,
+        q: query || undefined,
         category: category !== 'All' ? category : undefined,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
       });
-      setResults(res.vibes || []);
+      // Handle both response formats
+      setResults(res.data || res.vibes || []);
     } catch (e) {
+      console.error('Search error:', e);
       setResults([]);
     }
     setLoading(false);
