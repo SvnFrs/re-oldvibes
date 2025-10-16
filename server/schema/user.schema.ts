@@ -15,6 +15,17 @@ export interface IUser extends Document {
   isActive: boolean;
   // OAuth fields
   googleId?: string; // Only Google users have this
+  // Recommendation fields
+  location?: {
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  locationEnabled: boolean;
+  preferences?: {
+    tags: string[];
+    categories: string[];
+    conditions: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,11 +104,33 @@ const userSchema = new Schema<IUser>(
       unique: true,
       sparse: true, // Allows null values but ensures uniqueness when present
     },
+    // Recommendation fields
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+      },
+    },
+    locationEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    preferences: {
+      tags: [String],
+      categories: [String],
+      conditions: [String],
+    },
   },
   {
     timestamps: true,
   },
 );
+
+// Geospatial index for location-based queries
+userSchema.index({ location: "2dsphere" });
 
 // Indexes for better performance
 // userSchema.index({ email: 1 });

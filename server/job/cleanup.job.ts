@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { VibeModel } from "../models/vibe.models";
+import { setupRecommendationJobs } from "./recommendation.job";
 
 const vibeModel = new VibeModel();
 
@@ -14,5 +15,8 @@ export const setupCronJobs = () => {
     }
   });
 
-  console.log("⏰ Cleanup cron jobs scheduled");
+  // Setup recommendation system jobs
+  setupRecommendationJobs();
+
+  console.log("⏰ Cleanup and recommendation cron jobs scheduled");
 };

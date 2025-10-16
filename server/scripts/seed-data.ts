@@ -2,9 +2,13 @@
 
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 import { User } from '../schema/user.schema';
 import { Vibe } from '../schema/vibe.schema';
 import { Comment } from '../schema/comment.schema';
+
+// Load environment variables
+dotenv.config();
 
 // Sample data arrays
 const sampleNames = [
@@ -129,7 +133,7 @@ const sampleImageUrls = [
 // Connect to MongoDB
 async function connectDB() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/oldvibes';
+    const mongoUri = process.env.MONGO_URI || 'mongodb://admin:password@localhost:27017/oldvibes?authSource=admin';
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
   } catch (error) {

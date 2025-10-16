@@ -17,10 +17,15 @@ export interface IVibe extends Document {
   category: string;
   condition: "new" | "like-new" | "good" | "fair" | "poor";
   location?: string;
+  locationData?: {
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   likes: mongoose.Types.ObjectId[];
   comments: mongoose.Types.ObjectId[];
   commentsCount: number;
   views: number;
+  engagementScore: number; // Cached score for performance
   expiresAt: Date; // 24-hour expiry
   createdAt: Date;
   updatedAt: Date;
@@ -54,10 +59,20 @@ const vibeSchema = new Schema<IVibe>(
       required: true,
     },
     location: String,
+    locationData: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+      },
+    },
     likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
     comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
     commentsCount: { type: Number, default: 0 },
     views: { type: Number, default: 0 },
+    engagementScore: { type: Number, default: 0 },
     expiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
@@ -68,5 +83,13 @@ const vibeSchema = new Schema<IVibe>(
 
 // Index for expiry and automatic cleanup
 vibeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+// Geospatial index for location-based queries
+vibeSchema.index({ locationData: "2dsphere" });
+
+// Performance indexes
+vibeSchema.index({ status: 1, engagementScore: -1 });
+vibeSchema.index({ category: 1, status: 1 });
+vibeSchema.index({ tags: 1, status: 1 });
 
 export const Vibe = mongoose.model<IVibe>("Vibe", vibeSchema);
