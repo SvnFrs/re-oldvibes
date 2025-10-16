@@ -52,10 +52,22 @@ app.use(
   })
 );
 
+// Rate limiting - more generous for development
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: process.env.NODE_ENV === "development" ? 1000 : 100, // 1000 for dev, 100 for prod
+    skip: (req) => {
+      // Skip rate limiting for specific endpoints in development
+      if (process.env.NODE_ENV === "development") {
+        const skipPaths = ["/api/auth/me", "/api-docs", "/api/swagger"];
+        return skipPaths.some((path) => req.path.startsWith(path));
+      }
+      return false;
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: "Too many requests from this IP, please try again later.",
   })
 );
 

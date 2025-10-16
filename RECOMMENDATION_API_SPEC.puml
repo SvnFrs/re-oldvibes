@@ -1,0 +1,334 @@
+@startuml Recommendation System API Endpoints
+
+!define TABLE(x) class x << (T,#FFAAAA) >>
+!define ENDPOINT(x) class x << (E,#ADD8E6) >>
+skinparam backgroundColor #FFFFFF
+
+title Recommendation System - API Specification
+
+package "Recommendation APIs" {
+    
+    ENDPOINT(GetRecommendations) {
+        **GET /api/recommendations**
+        --
+        **Auth:** Required (JWT)
+        **Query Params:**
+        • category?: string
+        • minPrice?: number
+        • maxPrice?: number
+        • minScore?: number (0-1)
+        • limit?: number (default: 20)
+        • offset?: number (default: 0)
+        --
+        **Response: 200 OK**
+        {
+          vibes: [{
+            _id: string
+            itemName: string
+            price: number
+            category: string
+            tags: string[]
+            score: number
+            reasons: string[]
+          }]
+          metadata: {
+            totalResults: number
+            hasMore: boolean
+            cacheHit: boolean
+            computedAt: Date
+          }
+        }
+        --
+        **Errors:**
+        • 401: Unauthorized
+        • 500: Server error
+        --
+        **Performance:**
+        • <100ms (cached)
+        • <500ms (cold)
+        • Cache TTL: 15 minutes
+    }
+    
+    ENDPOINT(TrackInteraction) {
+        **POST /api/recommendations/interactions/track**
+        --
+        **Auth:** Required (JWT)
+        **Request Body:**
+        {
+          vibeId: string (required)
+          interactionType: enum (required)
+            • "view"
+            • "like"
+            • "comment"
+            • "share"
+            • "wishlist"
+            • "chat"
+            • "offer"
+          duration?: number (seconds)
+          metadata?: object
+        }
+        --
+        **Response: 202 Accepted**
+        {
+          message: "Interaction tracking initiated"
+        }
+        --
+        **Side Effects:**
+        • Creates interaction record
+        • Updates vibe engagement score
+        • Invalidates user cache
+        • Fire-and-forget processing
+        --
+        **Errors:**
+        • 400: Invalid request
+        • 401: Unauthorized
+        • 500: Server error
+    }
+    
+    ENDPOINT(GetTrending) {
+        **GET /api/recommendations/trending**
+        --
+        **Auth:** Public (No auth required)
+        **Query Params:**
+        • limit?: number (default: 10)
+        --
+        **Response: 200 OK**
+        {
+          vibes: [{
+            _id: string
+            itemName: string
+            price: number
+            category: string
+            mediaFiles: string[]
+            location: string
+            engagementScore: number
+            trendingScore: number
+            trendingUsers: number
+          }]
+        }
+        --
+        **Algorithm:**
+        • Window: Last 24 hours
+        • Weighted by interaction type
+        • Sorted by total score DESC
+        --
+        **Errors:**
+        • 500: Server error
+    }
+    
+    ENDPOINT(GetInteractionHistory) {
+        **GET /api/recommendations/interactions/history**
+        --
+        **Auth:** Required (JWT)
+        **Query Params:**
+        • type?: string (filter by type)
+        • limit?: number (default: 50)
+        • offset?: number (default: 0)
+        --
+        **Response: 200 OK**
+        {
+          interactions: [{
+            _id: string
+            userId: string
+            vibeId: {
+              _id: string
+              itemName: string
+              price: number
+              mediaFiles: string[]
+              category: string
+            }
+            interactionType: string
+            duration?: number
+            metadata: object
+            timestamp: Date
+          }]
+        }
+        --
+        **Errors:**
+        • 401: Unauthorized
+        • 500: Server error
+    }
+    
+    ENDPOINT(GetVibeStats) {
+        **GET /api/recommendations/vibes/:vibeId/stats**
+        --
+        **Auth:** Public (No auth required)
+        **Path Params:**
+        • vibeId: string (required)
+        --
+        **Response: 200 OK**
+        {
+          stats: {
+            views: number
+            likes: number
+            comments: number
+            shares: number
+            wishlists: number
+            offers: number
+            uniqueUsers: number
+          }
+        }
+        --
+        **Errors:**
+        • 400: Invalid vibeId
+        • 404: Vibe not found
+        • 500: Server error
+    }
+}
+
+package "Scoring Algorithm Details" {
+    
+    TABLE(LocationScoring) {
+        **Location Score (30%)**
+        --
+        **Formula:**
+        score = e^(-distance / 10km)
+        --
+        **Examples:**
+        • 1km away = 0.90 score
+        • 5km away = 0.61 score
+        • 10km away = 0.37 score
+        • 20km away = 0.14 score
+        --
+        **Requirements:**
+        • User location enabled
+        • Vibe has locationData
+        • Uses Haversine formula
+        --
+        **Reasons Generated:**
+        • "Very close to you" (<5km)
+        • "Nearby" (5-15km)
+    }
+    
+    TABLE(ContentScoring) {
+        **Content Score (25%)**
+        --
+        **Components:**
+        • Tag similarity (50%)
+        • Category preference (30%)
+        • Condition preference (20%)
+        --
+        **Tag Similarity:**
+        Jaccard = |A ∩ B| / |A ∪ B|
+        --
+        **Reasons Generated:**
+        • "Tags: vintage, retro"
+        • "Category: Electronics"
+    }
+    
+    TABLE(CollaborativeScoring) {
+        **Collaborative Score (20%)**
+        --
+        **Algorithm:**
+        1. Find users who liked this vibe
+        2. Find overlap with current user
+        3. Normalize by similar users (max 5)
+        --
+        **Reasons Generated:**
+        • "Popular with users like you"
+    }
+    
+    TABLE(BehavioralScoring) {
+        **Behavioral Score (15%)**
+        --
+        **Components:**
+        • Engagement (60%)
+        • Recency (40%)
+        --
+        **Recency Formula:**
+        score = e^(-age_hours / 12)
+        --
+        **Reasons Generated:**
+        • "Trending" (high engagement)
+        • "Just posted" (<2 hours)
+    }
+    
+    TABLE(SocialScoring) {
+        **Social Score (10%)**
+        --
+        **Algorithm:**
+        Count interactions from
+        followed users
+        Normalize by count (max 3)
+        --
+        **Reasons Generated:**
+        • "Liked by people you follow"
+    }
+}
+
+package "Background Jobs" {
+    
+    TABLE(EngagementJob) {
+        **Engagement Score Update**
+        --
+        **Schedule:** Every 15 minutes
+        **Batch Size:** 100 vibes
+        --
+        **Weights:**
+        • view: +1 point
+        • like: +5 points
+        • comment: +8 points
+        • share: +10 points
+        • wishlist: +12 points
+        • chat: +7 points
+        • offer: +15 points
+        --
+        **Process:**
+        1. Find active vibes
+        2. Aggregate interactions
+        3. Calculate weighted score
+        4. Bulk update MongoDB
+    }
+    
+    TABLE(PreferenceJob) {
+        **User Preference Update**
+        --
+        **Schedule:** Every hour
+        **Batch Size:** 50 users
+        --
+        **Process:**
+        1. Find active users (7 days)
+        2. Aggregate interactions
+        3. Extract top 20 tags
+        4. Extract top 10 categories
+        5. Update user.preferences
+        --
+        **Interaction Weights:**
+        • view: 1x
+        • like: 5x
+        • comment: 3x
+        • share: 4x
+        • wishlist: 6x
+        • chat: 4x
+        • offer: 7x
+    }
+}
+
+GetRecommendations --> LocationScoring : Uses
+GetRecommendations --> ContentScoring : Uses
+GetRecommendations --> CollaborativeScoring : Uses
+GetRecommendations --> BehavioralScoring : Uses
+GetRecommendations --> SocialScoring : Uses
+
+TrackInteraction --> EngagementJob : Triggers async update
+EngagementJob --> PreferenceJob : Feeds data
+
+note bottom of GetRecommendations
+  **Key Features:**
+  • Multi-component hybrid scoring
+  • Redis caching (15min TTL)
+  • Explainable results (reasons)
+  • Pagination support
+  • Filter by category/price
+end note
+
+note bottom of TrackInteraction
+  **Key Features:**
+  • Fire-and-forget processing
+  • Async engagement updates
+  • Cache invalidation
+  • Metadata enrichment
+  • TTL: 90 days auto-cleanup
+end note
+
+@enduml

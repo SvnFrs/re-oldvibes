@@ -1,0 +1,199 @@
+@startuml Web Frontend Integration Architecture
+!theme gruvbox-dark
+
+title Old Vibes - Web Frontend Integration Architecture
+
+' Define components
+package "Web Frontend (Next.js)" {
+  [Navigation] as Nav
+  [Feed Page] as Feed
+  [Recommendations Page] as RecPage
+  [Vibe Detail Page] as VibePage
+  [Admin Panel] as Admin
+  
+  package "Components" {
+    [RecommendationFeed] as RecFeed
+    [TrendingVibes] as Trending
+    [PendingVibesPanel] as Pending
+    [LikeButton] as Like
+    [CommentForm] as Comment
+    [ShareButton] as Share
+  }
+  
+  package "Hooks" {
+    [useTrackInteraction] as TrackBase
+    [useTrackView] as TrackView
+    [useTrackLike] as TrackLike
+    [useTrackComment] as TrackComment
+    [useTrackShare] as TrackShare
+    [useTrackWishlist] as TrackWish
+    [useTrackChat] as TrackChat
+    [useTrackOffer] as TrackOffer
+  }
+  
+  package "API Layer" {
+    [recommendations.ts] as RecAPI
+    [admin.ts] as AdminAPI
+  }
+  
+  package "Context" {
+    [AuthContext] as Auth
+  }
+}
+
+package "Backend Server (Express + Bun)" {
+  package "Routes" {
+    [/api/recommendations] as RecRoute
+    [/api/vibes] as VibeRoute
+    [/api/admin] as AdminRoute
+  }
+  
+  package "Controllers" {
+    [recommendation.controllers] as RecCtrl
+    [vibe.controllers] as VibeCtrl
+    [admin.controllers] as AdminCtrl
+  }
+  
+  package "Services" {
+    [recommendation.services] as RecService
+    [interaction.services] as IntService
+  }
+  
+  package "Background Jobs" {
+    [Engagement Score Update] as EngJob
+    [Preference Learning] as PrefJob
+  }
+}
+
+package "Data Layer" {
+  database "MongoDB" {
+    [users] as Users
+    [vibes] as Vibes
+    [interactions] as Interactions
+  }
+  
+  database "Redis" {
+    [Recommendation Cache] as Cache
+  }
+}
+
+' User flows
+actor User
+actor Admin as AdminUser
+
+' User interaction flow
+User --> Nav : Browse
+User --> Feed : View Feed
+User --> RecPage : View Recommendations
+User --> VibePage : View Vibe
+
+Feed --> Trending : Shows
+Feed --> RecFeed : Optional
+
+RecPage --> RecFeed : Main Content
+RecFeed --> RecAPI : Fetch Data
+RecAPI --> RecRoute : GET /recommendations
+RecRoute --> RecCtrl
+RecCtrl --> RecService : Get Recommendations
+RecService --> Cache : Check Cache
+Cache --> RecService : Return or Compute
+RecService --> Interactions : Analyze History
+RecService --> Vibes : Score & Filter
+RecCtrl --> RecAPI : Return Results
+RecAPI --> RecFeed : Display
+
+VibePage --> TrackView : Track View Time
+VibePage --> Like : Show Button
+VibePage --> Comment : Show Form
+VibePage --> Share : Show Button
+
+Like --> TrackLike : On Click
+Comment --> TrackComment : On Submit
+Share --> TrackShare : On Share
+
+TrackLike --> RecAPI : Track Interaction
+TrackComment --> RecAPI : Track Interaction
+TrackShare --> RecAPI : Track Interaction
+RecAPI --> RecRoute : POST /recommendations/track
+RecRoute --> RecCtrl
+RecCtrl --> IntService : Save Interaction
+IntService --> Interactions : Store
+
+' Admin flow
+AdminUser --> Admin : Access Panel
+Admin --> Pending : Moderation Tab
+Pending --> AdminAPI : Get Pending Vibes
+AdminAPI --> VibeRoute : GET /vibes/pending
+VibeRoute --> VibeCtrl
+VibeCtrl --> Vibes : Query Pending
+Vibes --> VibeCtrl
+VibeCtrl --> AdminAPI : Return
+AdminAPI --> Pending : Display
+
+Pending --> AdminAPI : Moderate Action
+AdminAPI --> VibeRoute : PATCH /vibes/:id/moderate
+VibeRoute --> VibeCtrl
+VibeCtrl --> Vibes : Update Status
+
+' Background processes
+EngJob --> Vibes : Update Engagement Scores
+PrefJob --> Users : Learn Preferences
+PrefJob --> Interactions : Analyze Patterns
+
+' Auth flow
+Auth --> RecAPI : Provide Auth
+Auth --> AdminAPI : Provide Auth
+Auth --> VibeRoute : Cookie Auth
+
+' Styling
+skinparam component {
+  BackgroundColor<<recommendation>> #b8bb26
+  BackgroundColor<<admin>> #fb4934
+  BackgroundColor<<tracking>> #fabd2f
+  BackgroundColor<<api>> #83a598
+}
+
+RecFeed <<recommendation>>
+Trending <<recommendation>>
+RecAPI <<api>>
+TrackBase <<tracking>>
+TrackView <<tracking>>
+TrackLike <<tracking>>
+TrackComment <<tracking>>
+TrackShare <<tracking>>
+Pending <<admin>>
+AdminAPI <<api>>
+
+note right of RecService
+  **Scoring Algorithm**
+  - Location: 30%
+  - Content: 25%
+  - Collaborative: 20%
+  - Behavioral: 15%
+  - Social: 10%
+end note
+
+note right of IntService
+  **Tracked Interactions**
+  - View (with duration)
+  - Like/Unlike
+  - Comment
+  - Share
+  - Wishlist
+  - Chat
+  - Offer
+end note
+
+note right of Cache
+  **Cache Strategy**
+  - TTL: 15 minutes
+  - Invalidate on new vibe
+  - Per-user caching
+end note
+
+note bottom of Interactions
+  **TTL: 90 days**
+  Auto-cleanup
+end note
+
+@enduml

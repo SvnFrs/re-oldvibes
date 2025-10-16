@@ -37,6 +37,12 @@ export default function Header() {
               Marketplace
             </Link>
             <Link
+              href="/recommendations"
+              className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
+            >
+              Recommendations
+            </Link>
+            <Link
               href="/feed"
               className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
             >

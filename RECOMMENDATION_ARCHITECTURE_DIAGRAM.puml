@@ -1,0 +1,170 @@
+@startuml Recommendation System Architecture
+
+!theme plain
+skinparam linetype ortho
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+' Title
+title Recommendation System - High Level Architecture
+
+' Components
+package "Client Layer" {
+    [Mobile App\n(React Native)] as MobileApp
+    [Web App\n(Next.js)] as WebApp
+}
+
+package "API Layer" {
+    [API Gateway\n:4000/api] as Gateway
+    
+    package "Routes" {
+        [/recommendations] as RecRoutes
+        [/recommendations/trending] as TrendingRoute
+        [/recommendations/interactions/*] as IntRoutes
+    }
+    
+    package "Middleware" {
+        [JWT Auth\nMiddleware] as AuthMW
+        [Rate Limiter] as RateLimiter
+    }
+    
+    package "Controllers" {
+        [Recommendation\nController] as RecController
+    }
+}
+
+package "Service Layer" {
+    package "Recommendation Service" {
+        [Get Recommendations\nAPI] as GetRec
+        [Track Interaction\nAPI] as TrackInt
+        
+        package "Scoring Algorithms" {
+            [Location Score\n30% weight] as LocScore
+            [Content Score\n25% weight] as ContentScore
+            [Collaborative\n20% weight] as CollabScore
+            [Behavioral\n15% weight] as BehaviorScore
+            [Social Score\n10% weight] as SocialScore
+        }
+    }
+    
+    package "Interaction Service" {
+        [Track Interactions] as TrackSvc
+        [Get Trending] as TrendingSvc
+        [Get History] as HistorySvc
+        [Get Stats] as StatsSvc
+    }
+}
+
+package "Data Layer" {
+    database "MongoDB" {
+        collections "Collections" {
+            [users] as UsersColl
+            [vibes] as VibesColl
+            [interactions] as IntColl
+        }
+    }
+    
+    database "Redis Cache" {
+        [Recommendation\nCache\n15min TTL] as RecCache
+        [User Preference\nCache\n1hr TTL] as UserCache
+    }
+}
+
+package "Background Jobs" {
+    [Engagement Score\nUpdate Job\n(every 15min)] as EngagementJob
+    [User Preference\nUpdate Job\n(every 1hr)] as PrefJob
+}
+
+' Relationships - Client to API
+MobileApp --> Gateway : HTTP/REST
+WebApp --> Gateway : HTTP/REST
+
+' API Gateway to Routes
+Gateway --> RecRoutes
+Gateway --> TrendingRoute
+Gateway --> IntRoutes
+
+' Middleware
+RecRoutes --> AuthMW : Protected
+IntRoutes --> AuthMW : Protected
+AuthMW --> RateLimiter
+
+' Routes to Controllers
+RateLimiter --> RecController
+
+' Controllers to Services
+RecController --> GetRec : GET /recommendations
+RecController --> TrackInt : POST /interactions/track
+RecController --> TrendingSvc : GET /trending
+RecController --> HistorySvc : GET /interactions/history
+RecController --> StatsSvc : GET /vibes/:id/stats
+
+' Recommendation Service Internals
+GetRec --> LocScore
+GetRec --> ContentScore
+GetRec --> CollabScore
+GetRec --> BehaviorScore
+GetRec --> SocialScore
+
+' Services to Cache
+GetRec ..> RecCache : Read/Write
+TrackInt ..> RecCache : Invalidate
+
+' Services to Database
+GetRec --> UsersColl : Fetch user data
+GetRec --> VibesColl : Fetch vibes
+GetRec --> IntColl : Fetch interactions
+TrackSvc --> IntColl : Insert interaction
+TrackSvc --> VibesColl : Update engagement
+TrendingSvc --> IntColl : Aggregate
+HistorySvc --> IntColl : Query
+StatsSvc --> IntColl : Aggregate
+
+' Background Jobs
+EngagementJob --> VibesColl : Update scores
+PrefJob --> UsersColl : Update preferences
+EngagementJob ..> IntColl : Read
+PrefJob ..> IntColl : Read
+
+' Notes
+note right of LocScore
+  Haversine distance
+  Exponential decay
+  e^(-distance/10km)
+end note
+
+note right of ContentScore
+  Jaccard similarity
+  Tag matching
+  Category preference
+end note
+
+note right of CollabScore
+  Similar user patterns
+  "Users like you also liked"
+end note
+
+note right of BehaviorScore
+  Engagement metrics
+  Time decay
+  Trending boost
+end note
+
+note right of SocialScore
+  Following network
+  Friend influence
+end note
+
+note bottom of RecCache
+  Key: recommendations:userId:filters
+  TTL: 15 minutes
+  Invalidated on interaction
+end note
+
+note bottom of IntColl
+  TTL Index: 90 days
+  Geospatial indexes
+  Compound indexes
+end note
+
+@enduml

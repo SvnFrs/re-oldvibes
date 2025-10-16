@@ -1,0 +1,162 @@
+@startuml Recommendation System API Flow
+
+!define PRIMARY #3B82F6
+!define SUCCESS #10B981
+!define WARNING #F59E0B
+!define DANGER #EF4444
+!define NEUTRAL #6B7280
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+
+' Define actors
+actor "Mobile/Web Client" as Client #FFEBB3
+participant "API Gateway\n/api/recommendations" as Gateway PRIMARY
+participant "Auth Middleware" as Auth #A78BFA
+participant "Recommendation\nController" as Controller SUCCESS
+participant "Recommendation\nService" as RecService #60A5FA
+participant "Interaction\nService" as IntService #34D399
+database "Redis Cache\n(15min TTL)" as Cache WARNING
+database "MongoDB" as DB DANGER
+participant "Background Jobs\n(Cron)" as Jobs #FB923C
+
+== API 1: Get Personalized Recommendations ==
+Client -> Gateway: GET /api/recommendations\n?limit=20&category=Electronics
+Gateway -> Auth: Verify JWT Token
+Auth --> Gateway: userId extracted
+Gateway -> Controller: getRecommendations(userId, filters)
+Controller -> RecService: getRecommendations(userId, filters)
+
+RecService -> Cache: Check cache\nKey: recommendations:userId:filters
+alt Cache Hit
+    Cache --> RecService: Return cached result
+    RecService --> Controller: { vibes, metadata: {cacheHit: true} }
+else Cache Miss
+    RecService -> DB: Find user location & preferences
+    DB --> RecService: User data
+    RecService -> DB: Find user interactions (last 90 days)
+    DB --> RecService: Interaction history
+    RecService -> RecService: Build user preferences\n(top 20 tags, top 10 categories)
+    RecService -> DB: Find candidate vibes\n(approved, not expired, top 200 by engagement)
+    DB --> RecService: Candidate vibes
+    
+    loop For each vibe
+        RecService -> RecService: Calculate Location Score (30%)\nHaversine distance + exp decay
+        RecService -> RecService: Calculate Content Score (25%)\nJaccard similarity on tags
+        RecService -> DB: Get similar user patterns
+        DB --> RecService: Collaborative data
+        RecService -> RecService: Calculate Collaborative Score (20%)
+        RecService -> RecService: Calculate Behavioral Score (15%)\nEngagement + time decay
+        RecService -> DB: Check following network
+        DB --> RecService: Social connections
+        RecService -> RecService: Calculate Social Score (10%)
+        RecService -> RecService: Total = Σ(component × weight)
+    end
+    
+    RecService -> RecService: Sort by totalScore DESC\nApply limit & offset
+    RecService -> Cache: Store result (15min TTL)
+    RecService --> Controller: { vibes, metadata: {cacheHit: false} }
+end
+
+Controller --> Gateway: 200 OK\n{ vibes: [{score, reasons}], metadata }
+Gateway --> Client: JSON Response
+
+== API 2: Track User Interaction ==
+Client -> Gateway: POST /api/recommendations/interactions/track\n{vibeId, interactionType: "like"}
+Gateway -> Auth: Verify JWT Token
+Auth --> Gateway: userId extracted
+Gateway -> Controller: trackInteraction(userId, vibeId, type)
+
+Controller -> IntService: trackInteraction(data) [async]
+activate IntService
+IntService -> DB: Fetch vibe metadata\n(tags, category, price)
+DB --> IntService: Vibe data
+IntService -> DB: Create interaction record\n{userId, vibeId, type, metadata, timestamp}
+DB --> IntService: Inserted
+IntService -> IntService: updateVibeEngagement(vibeId, type) [fire & forget]
+IntService -> DB: Increment engagementScore\nview:+1, like:+5, offer:+15
+DB --> IntService: Updated
+deactivate IntService
+
+Controller -> RecService: trackInteraction(data) [async]
+activate RecService
+RecService -> Cache: Invalidate user cache\nDEL recommendations:userId:*
+Cache --> RecService: Deleted
+deactivate RecService
+
+Controller --> Gateway: 202 Accepted\n{message: "Tracking initiated"}
+Gateway --> Client: Fire-and-forget response
+
+== API 3: Get Trending Vibes ==
+Client -> Gateway: GET /api/recommendations/trending\n?limit=10
+Gateway -> Controller: getTrendingVibes(limit)
+Controller -> IntService: getTrendingVibes(limit)
+
+IntService -> DB: Aggregate interactions\nWHERE timestamp > now - 24h\nGROUP BY vibeId\nORDER BY count DESC
+DB --> IntService: Top vibeIds with scores
+IntService -> DB: Populate vibe details
+DB --> IntService: Full vibe data
+
+IntService --> Controller: [{ vibe, trendingScore, trendingUsers }]
+Controller --> Gateway: 200 OK
+Gateway --> Client: JSON Response
+
+== API 4: Get Interaction History ==
+Client -> Gateway: GET /api/recommendations/interactions/history\n?type=like&limit=50
+Gateway -> Auth: Verify JWT Token
+Auth --> Gateway: userId extracted
+Gateway -> Controller: getInteractionHistory(userId, options)
+
+Controller -> IntService: getUserInteractions(userId, options)
+IntService -> DB: Find interactions\nWHERE userId = X\nAND type = Y (optional)\nORDER BY timestamp DESC\nLIMIT 50
+DB --> IntService: Interaction records
+IntService -> DB: Populate vibeId details
+DB --> IntService: Full interaction data
+
+IntService --> Controller: [{interaction, vibe}]
+Controller --> Gateway: 200 OK\n{interactions: [...]}
+Gateway --> Client: JSON Response
+
+== API 5: Get Vibe Statistics ==
+Client -> Gateway: GET /api/recommendations/vibes/{vibeId}/stats
+Gateway -> Controller: getVibeStats(vibeId)
+Controller -> IntService: getVibeStats(vibeId)
+
+IntService -> DB: Aggregate interactions\nGROUP BY interactionType\nCOUNT uniqueUsers
+DB --> IntService: Statistics by type
+
+IntService --> Controller: {views, likes, comments, shares,\nwishlists, offers, uniqueUsers}
+Controller --> Gateway: 200 OK\n{stats: {...}}
+Gateway --> Client: JSON Response
+
+== Background Job: Update Engagement Scores ==
+Jobs -> Jobs: Cron trigger\n(every 15 minutes)
+Jobs -> DB: Find active vibes\n(approved, not expired)
+DB --> Jobs: Vibe list
+
+loop Batch of 100 vibes
+    Jobs -> DB: Aggregate interactions\nwith weighted scores
+    DB --> Jobs: Score calculations
+    Jobs -> DB: Bulk update\nengagementScore field
+    DB --> Jobs: Updated
+end
+
+Jobs -> Jobs: Log: "✅ Updated X vibes"
+
+== Background Job: Update User Preferences ==
+Jobs -> Jobs: Cron trigger\n(every hour)
+Jobs -> DB: Find active users\n(interactions in last 7 days)
+DB --> Jobs: User list
+
+loop Batch of 50 users
+    Jobs -> DB: Aggregate user interactions\nwith weighted tags/categories
+    DB --> Jobs: Preference data
+    Jobs -> Jobs: Calculate top 20 tags,\ntop 10 categories
+    Jobs -> DB: Update user.preferences
+    DB --> Jobs: Updated
+end
+
+Jobs -> Jobs: Log: "✅ Updated X users"
+
+@enduml
