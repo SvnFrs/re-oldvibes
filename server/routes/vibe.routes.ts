@@ -87,7 +87,7 @@ router.get(
   "/all",
   authenticateToken,
   requireAdmin as RequestHandler,
-  getAllVibes,
+  getAllVibes
 );
 
 /**
@@ -126,7 +126,7 @@ router.post(
   requireUser as RequestHandler,
   requireEmailVerification,
   validateVibeCreation as RequestHandler,
-  createVibe as RequestHandler,
+  createVibe as RequestHandler
 );
 router.get("/", getVibes);
 
@@ -173,7 +173,7 @@ router.get(
   "/pending",
   authenticateToken,
   requireStaff as RequestHandler,
-  getPendingVibes,
+  getPendingVibes
 );
 
 /**
@@ -222,16 +222,16 @@ router.get("/user/:userId", authenticateToken, getUserVibes);
  */
 router.get("/:vibeId", getVibe);
 router.put(
-  "/:vibeId",
+  "/:vibeId/:userId",
   authenticateToken,
   requireUser as RequestHandler,
-  updateVibe,
+  updateVibe
 );
 router.delete(
   "/:vibeId",
   authenticateToken,
   requireUser as RequestHandler,
-  deleteVibe,
+  deleteVibe
 );
 
 /**
@@ -262,7 +262,7 @@ router.post(
   authenticateToken,
   requireUser as RequestHandler,
   uploadToS3.array("media", 5),
-  uploadVibeMedia,
+  uploadVibeMedia
 );
 
 /**
@@ -288,13 +288,13 @@ router.post(
   authenticateToken,
   requireUser as RequestHandler,
   requireEmailVerification,
-  likeVibe,
+  likeVibe
 );
 router.delete(
   "/:vibeId/like",
   authenticateToken,
   requireUser as RequestHandler,
-  unlikeVibe,
+  unlikeVibe
 );
 
 /**
@@ -313,7 +313,7 @@ router.patch(
   "/:vibeId/sold",
   authenticateToken,
   requireUser as RequestHandler,
-  markAsSold,
+  markAsSold
 );
 
 /**
@@ -338,7 +338,7 @@ router.patch(
   "/:vibeId/moderate",
   authenticateToken,
   requireStaff as RequestHandler,
-  moderateVibe,
+  moderateVibe
 );
 
 export default router;

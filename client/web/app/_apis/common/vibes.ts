@@ -122,6 +122,44 @@ export async function getVibes(
   return response.json();
 }
 
+//Update vibe
+export async function updateVibe(
+  vibeId: string,
+  userId: string,
+  data: any
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/vibes/${vibeId}/${userId}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ data }),
+  });
+
+  console.log("Update vibe response:", data);
+
+  if (!response.ok) {
+    throw new Error("Failed to update vibe");
+  }
+
+  return response.json();
+}
+
+//Delete vibe
+export async function deleteVibe(vibeId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/vibes/${vibeId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete vibe");
+  }
+
+  return response.json();
+}
+
 // Get single vibe by ID
 // export async function getVibeById(
 //   vibeId: string

@@ -77,6 +77,11 @@ const router = Router();
  *       name: commentId
  *       required: true
  *       schema: { type: string }
+ *     userId:
+ *       in: path
+ *       name: userId
+ *       required: true
+ *       schema: { type: string }
  */
 
 /**
@@ -113,7 +118,7 @@ router.post(
   requireUser as RequestHandler,
   requireEmailVerification,
   validateCommentCreation,
-  createComment,
+  createComment
 );
 router.get("/vibes/:vibeId/comments", optionalAuth, getVibeComments);
 
@@ -162,17 +167,17 @@ router.get("/comments/:commentId/replies", optionalAuth, getCommentReplies);
  *       404: { description: Comment not found or unauthorized }
  */
 router.put(
-  "/comments/:commentId",
+  "/comments/:commentId/:userId",
   authenticateToken,
   requireUser as RequestHandler,
   validateCommentUpdate,
-  updateComment,
+  updateComment
 );
 router.delete(
-  "/comments/:commentId",
+  "/comments/:commentId/:userId",
   authenticateToken,
   requireUser as RequestHandler,
-  deleteComment,
+  deleteComment
 );
 
 /**
@@ -182,29 +187,29 @@ router.delete(
  *     summary: Like comment
  *     tags: [Comments]
  *     security: [{ bearerAuth: [] }, { cookieAuth: [] }]
- *     parameters: [{ $ref: '#/components/parameters/commentId' }]
+ *     parameters: [{ $ref: '#/components/parameters/commentId' }, { $ref: '#/components/parameters/userId' }]
  *     responses:
  *       200: { description: Comment liked successfully }
  *   delete:
  *     summary: Unlike comment
  *     tags: [Comments]
  *     security: [{ bearerAuth: [] }, { cookieAuth: [] }]
- *     parameters: [{ $ref: '#/components/parameters/commentId' }]
+ *     parameters: [{ $ref: '#/components/parameters/commentId' }, { $ref: '#/components/parameters/userId' }]
  *     responses:
  *       200: { description: Comment unliked successfully }
  */
 router.post(
-  "/comments/:commentId/like",
+  "/comments/:commentId/:userId/like",
   authenticateToken,
   requireUser as RequestHandler,
   requireEmailVerification,
-  likeComment,
+  likeComment
 );
 router.delete(
-  "/comments/:commentId/like",
+  "/comments/:commentId/:userId/unlike",
   authenticateToken,
   requireUser as RequestHandler,
-  unlikeComment,
+  unlikeComment
 );
 
 /**

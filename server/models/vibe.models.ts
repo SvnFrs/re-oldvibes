@@ -33,9 +33,32 @@ export class VibeModel {
   async updateVibe(
     vibeId: string,
     userId: string,
-    updateData: UpdateVibeInput,
+    updateData: UpdateVibeInput
   ): Promise<IVibe | null> {
-    // Only allow updates if vibe is pending or user is owner
+    // First, find the vibe to check its current status
+    const existingVibe = await Vibe.findOne({
+      _id: vibeId,
+      userId,
+    });
+
+    if (!existingVibe) {
+      return null;
+    }
+
+    // Only allow updates if vibe is pending or approved (not sold, rejected, or archived)
+    if (!["pending", "approved"].includes(existingVibe.status)) {
+      return null;
+    }
+
+    // Determine the new status based on current status
+    let newStatus = existingVibe.status;
+
+    // If the vibe was approved and is being edited, reset to pending for re-moderation
+    if (existingVibe.status === "approved") {
+      newStatus = "approved";
+    }
+    // If it was already pending, keep it as pending
+
     const vibe = await Vibe.findOneAndUpdate(
       {
         _id: vibeId,
@@ -44,10 +67,10 @@ export class VibeModel {
       },
       {
         ...updateData,
-        status: "pending", // Reset to pending if edited
+        status: newStatus,
         updatedAt: new Date(),
       },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     return vibe;
@@ -56,7 +79,7 @@ export class VibeModel {
   async deleteVibe(
     vibeId: string,
     userId: string,
-    isAdminOrStaff = false,
+    isAdminOrStaff = false
   ): Promise<boolean> {
     const query: any = { _id: vibeId };
     if (!isAdminOrStaff) {
@@ -77,7 +100,7 @@ export class VibeModel {
 
   async getVibes(
     filters: VibeFilters = {},
-    userId?: string,
+    userId?: string
   ): Promise<PaginatedResponse<VibeResponse>> {
     const query: any = {};
 
@@ -121,7 +144,9 @@ export class VibeModel {
       .lean();
 
     // Pass userId to formatter so it can set isLiked
-    const formattedVibes = vibes.map((vibe) => this.formatVibeResponse(vibe, userId));
+    const formattedVibes = vibes.map((vibe) =>
+      this.formatVibeResponse(vibe, userId)
+    );
 
     return {
       data: formattedVibes,
@@ -149,7 +174,7 @@ export class VibeModel {
     vibeId: string,
     staffId: string,
     action: "approve" | "reject",
-    notes?: string,
+    notes?: string
   ): Promise<IVibe | null> {
     const updateData: any = {
       status: action === "approve" ? "approved" : "rejected",
@@ -175,7 +200,7 @@ export class VibeModel {
         userId: new mongoose.Types.ObjectId(userId),
         status: "approved",
       },
-      { status: "sold", updatedAt: new Date() },
+      { status: "sold", updatedAt: new Date() }
     );
     return !!result;
   }
@@ -206,12 +231,12 @@ export class VibeModel {
       type: "image" | "video";
       url: string;
       thumbnail?: string;
-    }>,
+    }>
   ): Promise<IVibe | null> {
     const vibe = await Vibe.findByIdAndUpdate(
       vibeId,
       { $push: { mediaFiles: { $each: mediaFiles } } },
-      { new: true },
+      { new: true }
     );
 
     return vibe;
@@ -226,7 +251,7 @@ export class VibeModel {
       {
         status: "archived",
         updatedAt: new Date(),
-      },
+      }
     );
 
     return result.modifiedCount;
@@ -234,7 +259,7 @@ export class VibeModel {
 
   async searchVibes(
     query: string,
-    filters: VibeFilters = {},
+    filters: VibeFilters = {}
   ): Promise<VibeResponse[]> {
     const searchQuery: any = {
       $and: [
@@ -288,7 +313,7 @@ export class VibeModel {
 
   async getUserVibes(
     userId: string,
-    requestingUserId?: string,
+    requestingUserId?: string
   ): Promise<VibeResponse[]> {
     const query: any = { userId };
 

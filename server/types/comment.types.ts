@@ -24,6 +24,7 @@ export interface CommentResponse {
   repliesCount: number;
   isLiked?: boolean;
   replies?: CommentResponse[];
+  likes: string[];
   createdAt: Date;
   updatedAt: Date;
 }
