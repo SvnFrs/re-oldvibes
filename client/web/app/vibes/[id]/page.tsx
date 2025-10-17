@@ -34,7 +34,6 @@ import {
   unlikeComment,
   deleteComment,
   updateComment,
-  getCommentReplies,
 } from "../../_apis/common/comments";
 import { Star } from "lucide-react";
 import Cookies from "js-cookie";
