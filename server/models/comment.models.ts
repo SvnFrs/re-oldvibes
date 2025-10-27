@@ -12,7 +12,7 @@ export class CommentModel {
   async create(
     userId: string,
     vibeId: string,
-    commentData: CreateCommentInput,
+    commentData: CreateCommentInput
   ): Promise<IComment> {
     try {
       // Create the comment first
@@ -29,7 +29,7 @@ export class CommentModel {
 
       // Update vibe comments count (fire and forget - eventual consistency)
       Vibe.findByIdAndUpdate(vibeId, { $inc: { commentsCount: 1 } }).catch(
-        (err) => console.error("Error updating vibe comment count:", err),
+        (err) => console.error("Error updating vibe comment count:", err)
       );
 
       // If this is a reply, update parent comment's replies count
@@ -37,7 +37,7 @@ export class CommentModel {
         Comment.findByIdAndUpdate(commentData.parentCommentId, {
           $inc: { repliesCount: 1 },
         }).catch((err) =>
-          console.error("Error updating parent comment replies count:", err),
+          console.error("Error updating parent comment replies count:", err)
         );
       }
 
@@ -87,7 +87,7 @@ export class CommentModel {
       .lean();
 
     const formattedComments = comments.map((comment: any) =>
-      this.formatCommentResponse(comment),
+      this.formatCommentResponse(comment)
     );
 
     return {
@@ -100,7 +100,7 @@ export class CommentModel {
   async getReplies(
     parentCommentId: string,
     limit: number = 10,
-    offset: number = 0,
+    offset: number = 0
   ): Promise<{
     replies: CommentResponse[];
     total: number;
@@ -123,7 +123,7 @@ export class CommentModel {
       .lean();
 
     const formattedReplies = replies.map((reply: any) =>
-      this.formatCommentResponse(reply),
+      this.formatCommentResponse(reply)
     );
 
     return {
@@ -147,7 +147,7 @@ export class CommentModel {
   async updateComment(
     commentId: string,
     userId: string,
-    updateData: UpdateCommentInput,
+    updateData: UpdateCommentInput
   ): Promise<IComment | null> {
     const comment = await Comment.findOneAndUpdate(
       {
@@ -161,7 +161,7 @@ export class CommentModel {
         editedAt: new Date(),
         updatedAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     return comment;
@@ -189,7 +189,7 @@ export class CommentModel {
       Vibe.findByIdAndUpdate(comment.vibeId, {
         $inc: { commentsCount: -1 },
       }).catch((err) =>
-        console.error("Error updating vibe comment count:", err),
+        console.error("Error updating vibe comment count:", err)
       );
 
       // If this is a reply, update parent comment's replies count
@@ -197,7 +197,7 @@ export class CommentModel {
         Comment.findByIdAndUpdate(comment.parentComment, {
           $inc: { repliesCount: -1 },
         }).catch((err) =>
-          console.error("Error updating parent comment replies count:", err),
+          console.error("Error updating parent comment replies count:", err)
         );
       }
 
@@ -208,7 +208,7 @@ export class CommentModel {
           {
             isActive: false,
             deletedAt: new Date(),
-          },
+          }
         )
           .then((result) => {
             // Update vibe comments count for deleted replies
@@ -218,8 +218,8 @@ export class CommentModel {
               }).catch((err) =>
                 console.error(
                   "Error updating vibe comment count for replies:",
-                  err,
-                ),
+                  err
+                )
               );
             }
           })
@@ -240,7 +240,7 @@ export class CommentModel {
       if (!comment) return false;
 
       const isAlreadyLiked = comment.likes.includes(
-        new mongoose.Types.ObjectId(userId),
+        new mongoose.Types.ObjectId(userId)
       );
 
       if (isAlreadyLiked) {
@@ -281,7 +281,7 @@ export class CommentModel {
   async getUserComments(
     userId: string,
     limit: number = 20,
-    offset: number = 0,
+    offset: number = 0
   ): Promise<CommentResponse[]> {
     const comments = await Comment.find({
       userId: new mongoose.Types.ObjectId(userId),
@@ -299,7 +299,7 @@ export class CommentModel {
 
   private formatCommentResponse(
     comment: any,
-    userId?: string,
+    userId?: string
   ): CommentResponse {
     return {
       id: comment._id.toString(),
@@ -317,6 +317,7 @@ export class CommentModel {
       parentCommentId: comment.parentComment?.toString(),
       isActive: comment.isActive,
       likesCount: comment.likesCount || 0,
+      likes: comment.likes || [],
       repliesCount: comment.repliesCount || 0,
       isLiked: userId ? comment.likes?.includes(userId) : undefined,
       createdAt: comment.createdAt,

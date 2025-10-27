@@ -13,7 +13,7 @@ const vibeModel = new VibeModel();
 
 export const createComment = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -37,7 +37,7 @@ export const createComment = async (
     // If this is a reply, check if parent comment exists
     if (commentData.parentCommentId) {
       const parentComment = await commentModel.getById(
-        commentData.parentCommentId,
+        commentData.parentCommentId
       );
       if (!parentComment || parentComment.vibeId !== vibeId) {
         res.status(404).json({ message: "Parent comment not found" });
@@ -63,7 +63,7 @@ export const createComment = async (
 
 export const getVibeComments = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { vibeId } = req.params;
@@ -100,7 +100,7 @@ export const getVibeComments = async (
 
 export const getCommentReplies = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { commentId } = req.params;
@@ -114,7 +114,7 @@ export const getCommentReplies = async (
     const result = await commentModel.getReplies(
       commentId,
       parseInt(limit as string),
-      parseInt(offset as string),
+      parseInt(offset as string)
     );
 
     res.json({
@@ -134,11 +134,11 @@ export const getCommentReplies = async (
 
 export const updateComment = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
-    const { commentId } = req.params;
-    const userId = req.user!.userId;
+    const { commentId, userId } = req.params;
+    // const userId = req.user!.userId;
     const updateData: UpdateCommentInput = req.body;
 
     if (!commentId) {
@@ -146,10 +146,15 @@ export const updateComment = async (
       return;
     }
 
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+
     const updatedComment = await commentModel.updateComment(
       commentId,
       userId,
-      updateData,
+      updateData
     );
 
     if (!updatedComment) {
@@ -175,14 +180,19 @@ export const updateComment = async (
 
 export const deleteComment = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
-    const { commentId } = req.params;
-    const userId = req.user!.userId;
+    const { commentId, userId } = req.params;
+    // const userId = req.user!.userId;
 
     if (!commentId) {
       res.status(400).json({ message: "Comment ID is required" });
+      return;
+    }
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
       return;
     }
 
@@ -204,14 +214,18 @@ export const deleteComment = async (
 
 export const likeComment = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
-    const { commentId } = req.params;
-    const userId = req.user!.userId;
+    const { commentId, userId } = req.params;
 
     if (!commentId) {
       res.status(400).json({ message: "Comment ID is required" });
+      return;
+    }
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
       return;
     }
 
@@ -225,14 +239,19 @@ export const likeComment = async (
 
 export const unlikeComment = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
-    const { commentId } = req.params;
-    const userId = req.user!.userId;
+    const { commentId, userId } = req.params;
+    // const userId = req.user!.userId;
 
     if (!commentId) {
       res.status(400).json({ message: "Comment ID is required" });
+      return;
+    }
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
       return;
     }
 
@@ -246,7 +265,7 @@ export const unlikeComment = async (
 
 export const getUserComments = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { userId } = req.params;
@@ -260,7 +279,7 @@ export const getUserComments = async (
     const comments = await commentModel.getUserComments(
       userId,
       parseInt(limit as string),
-      parseInt(offset as string),
+      parseInt(offset as string)
     );
 
     res.json({ comments, count: comments.length });

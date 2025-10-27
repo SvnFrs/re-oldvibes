@@ -2,14 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 import UserMenu from "../../../_components/auth/UserMenu";
 import ChatIcon from "../../../_components/chat/ChatIcon";
+import { useAuth } from "@/app/_contexts/AuthContext";
 
 export default function Header() {
+  const { user, logout, isLoading } = useAuth();
   return (
     <header className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 border-b border-gruvbox-gray sticky top-0 z-50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-
-          <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition">
+          <Link
+            href="/"
+            className="flex items-center space-x-3 hover:opacity-80 transition"
+          >
             <div className="bg-gruvbox-yellow-light dark:bg-gruvbox-yellow-dark w-12 h-12 rounded-xl flex items-center justify-center shadow-md">
               <Image
                 src="/oldvibes-small.png"
@@ -62,15 +66,27 @@ export default function Header() {
             </Link>
 
             <div className="ml-4 flex items-center space-x-2">
-              <Link
-                href="/upload"
-                className="flex items-center justify-center px-3 py-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Upload
-              </Link>
+              {user && (
+                <Link
+                  href="/upload"
+                  className="flex items-center justify-center px-3 py-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Upload
+                </Link>
+              )}
               <ChatIcon />
               <UserMenu />
             </div>
@@ -81,8 +97,18 @@ export default function Header() {
               className="flex items-center justify-center p-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
               title="Upload Vibe"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
             </Link>
             <ChatIcon />
