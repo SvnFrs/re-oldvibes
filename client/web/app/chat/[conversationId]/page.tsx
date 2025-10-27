@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -5,15 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "../../_contexts/AuthContext";
-import { 
-  getConversationMessages, 
+import {
+  getConversationMessages,
   getConversations,
-  sendMessage, 
+  sendMessage,
   markMessageAsRead,
   updateOfferStatus,
   type Message,
-  type Conversation,
-  type SendMessageResponse
 } from "../../_apis/chat/chat";
 import MessageActions from "../../_components/chat/MessageActions";
 import ConversationActions from "../../_components/chat/ConversationActions";
@@ -23,25 +22,39 @@ import MessageStatus from "../../_components/chat/MessageStatus";
 import OfferMessage from "../../_components/chat/OfferMessage";
 import { getSocket } from "../../_libs/socket";
 
-function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, onMessageUpdate, onMessageDelete }: { 
-  message: Message; 
-  isMe: boolean; 
+function MessageBubble({
+  message,
+  isMe,
+  showAvatar,
+  participant,
+  onOfferUpdate,
+  onMessageUpdate,
+  onMessageDelete,
+}: {
+  message: Message;
+  isMe: boolean;
   showAvatar: boolean;
   participant: any;
-  onOfferUpdate?: (messageId: string, status: 'accepted' | 'rejected') => void;
+  onOfferUpdate?: (messageId: string, status: "accepted" | "rejected") => void;
   onMessageUpdate?: (messageId: string, content: string) => void;
   onMessageDelete?: (messageId: string) => void;
 }) {
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 group`}>
-      <div className={`flex max-w-xs lg:max-w-md ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end`}>
+    <div
+      className={`flex ${isMe ? "justify-end" : "justify-start"} mb-4 group`}
+    >
+      <div
+        className={`flex max-w-xs lg:max-w-md ${
+          isMe ? "flex-row-reverse" : "flex-row"
+        } items-end`}
+      >
         {/* Avatar */}
         {showAvatar && !isMe && (
           <div className="flex-shrink-0 mr-3 mb-1">
@@ -49,7 +62,7 @@ function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, 
               {participant?.profilePicture ? (
                 <Image
                   src={participant.profilePicture}
-                  alt={participant?.name || 'User'}
+                  alt={participant?.name || "User"}
                   width={32}
                   height={32}
                   className="w-full h-full object-cover"
@@ -57,7 +70,7 @@ function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, 
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gruvbox-gray/30">
                   <span className="text-xs font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
-                    {participant?.name?.[0] || 'U'}
+                    {participant?.name?.[0] || "U"}
                   </span>
                 </div>
               )}
@@ -66,16 +79,16 @@ function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, 
         )}
 
         {/* Message Content */}
-        <div className={`relative ${isMe ? 'ml-3' : 'mr-3'}`}>
+        <div className={`relative ${isMe ? "ml-3" : "mr-3"}`}>
           <div
             className={`px-4 py-3 rounded-2xl ${
               isMe
-                ? 'bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-br-md'
-                : 'bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-bl-md'
+                ? "bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-br-md"
+                : "bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-bl-md"
             }`}
           >
             {/* Message Content */}
-            {message.messageType === 'offer' && message.offerData ? (
+            {message.messageType === "offer" && message.offerData ? (
               <OfferMessage
                 offerData={message.offerData}
                 messageId={message.id}
@@ -98,13 +111,15 @@ function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, 
               <span className="text-xs text-gruvbox-light-fg4 dark:text-gruvbox-dark-fg4">
                 {formatTime(message.createdAt)}
                 {message.isEdited && message.editedAt && (
-                  <span className="ml-1">• edited {formatTime(message.editedAt)}</span>
+                  <span className="ml-1">
+                    • edited {formatTime(message.editedAt)}
+                  </span>
                 )}
               </span>
               <MessageStatus isRead={message.isRead} isFromMe={isMe} />
             </div>
           </div>
-          
+
           {/* Message Actions */}
           {isMe && (
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -122,9 +137,12 @@ function MessageBubble({ message, isMe, showAvatar, participant, onOfferUpdate, 
   );
 }
 
-function MessageInput({ onSendMessage, disabled }: { 
-  onSendMessage: (message: string) => void; 
-  disabled: boolean; 
+function MessageInput({
+  onSendMessage,
+  disabled,
+}: {
+  onSendMessage: (message: string) => void;
+  disabled: boolean;
 }) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -133,15 +151,15 @@ function MessageInput({ onSendMessage, disabled }: {
     e.preventDefault();
     if (input.trim() && !disabled) {
       onSendMessage(input.trim());
-      setInput('');
+      setInput("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = "auto";
       }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -149,8 +167,11 @@ function MessageInput({ onSendMessage, disabled }: {
 
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(
+        textareaRef.current.scrollHeight,
+        120
+      )}px`;
     }
   };
 
@@ -159,7 +180,10 @@ function MessageInput({ onSendMessage, disabled }: {
   }, [input]);
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gruvbox-gray/20 p-3 sm:p-4 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1">
+    <form
+      onSubmit={handleSubmit}
+      className="border-t border-gruvbox-gray/20 p-3 sm:p-4 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1"
+    >
       <div className="flex items-end space-x-2 sm:space-x-3">
         <div className="flex-1">
           <textarea
@@ -171,7 +195,7 @@ function MessageInput({ onSendMessage, disabled }: {
             disabled={disabled}
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 border border-gruvbox-gray/20 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 placeholder-gruvbox-light-fg3 dark:placeholder-gruvbox-dark-fg3 text-sm sm:text-base"
             rows={1}
-            style={{ minHeight: '40px', maxHeight: '120px' }}
+            style={{ minHeight: "40px", maxHeight: "120px" }}
           />
         </div>
         <button
@@ -179,8 +203,18 @@ function MessageInput({ onSendMessage, disabled }: {
           disabled={!input.trim() || disabled}
           className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-xl hover:bg-gruvbox-yellow/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
         >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          <svg
+            className="w-4 h-4 sm:w-5 sm:h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
           </svg>
         </button>
       </div>
@@ -205,21 +239,23 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      console.log('Fetching messages for conversation:', conversationId);
+      console.log("Fetching messages for conversation:", conversationId);
       const response = await getConversationMessages(conversationId, 50, 0);
-      
-      console.log('Messages response:', response);
+
+      console.log("Messages response:", response);
       setMessages(response.messages);
-      
+
       // Extract participant from messages (the other user in the conversation)
       if (response.messages.length > 0) {
-        const otherUser = response.messages.find(msg => msg.sender.id !== user?.id)?.sender;
+        const otherUser = response.messages.find(
+          (msg) => msg.sender.id !== user?.id
+        )?.sender;
         if (otherUser) {
           setParticipant(otherUser);
         }
@@ -227,30 +263,32 @@ export default function ChatPage() {
         // If no messages, try to get participant from conversation list
         try {
           const conversationsResponse = await getConversations(100, 0);
-          const conversation = conversationsResponse.conversations.find(conv => conv.conversationId === conversationId);
+          const conversation = conversationsResponse.conversations.find(
+            (conv) => conv.conversationId === conversationId
+          );
           if (conversation) {
             setParticipant(conversation.participant);
           }
         } catch (error) {
-          console.error('Error fetching conversation info:', error);
+          console.error("Error fetching conversation info:", error);
         }
       }
-      
+
       // Extract vibeId from first message if available
       if (response.messages.length > 0 && response.messages[0].vibeId) {
         setVibeId(response.messages[0].vibeId);
       }
-      
+
       // Mark messages as read
       response.messages.forEach((message) => {
         if (!message.isRead && message.sender.id !== user?.id) {
           markMessageAsRead(message.id).catch(console.error);
         }
       });
-      
+
       setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error("Error fetching messages:", error);
     } finally {
       setLoading(false);
     }
@@ -264,24 +302,24 @@ export default function ChatPage() {
       try {
         const socketInstance = await getSocket();
         if (!isMounted || !socketInstance) {
-          console.log('Socket not available or component unmounted');
+          console.log("Socket not available or component unmounted");
           return;
         }
 
-        console.log('Setting up socket for conversation:', conversationId);
+        console.log("Setting up socket for conversation:", conversationId);
         setSocket(socketInstance);
 
         // Join conversation
-        socketInstance.emit('joinConversation', conversationId);
+        socketInstance.emit("joinConversation", conversationId);
 
         // Listen for new messages
         const handleNewMessage = (message: Message) => {
           if (!isMounted) return;
-          
-          console.log('New message received:', message);
-          setMessages(prev => [...prev, message]);
+
+          console.log("New message received:", message);
+          setMessages((prev) => [...prev, message]);
           setTimeout(scrollToBottom, 100);
-          
+
           // Mark as read if not from me
           if (message.sender.id !== user?.id) {
             markMessageAsRead(message.id).catch(console.error);
@@ -291,47 +329,60 @@ export default function ChatPage() {
         // Listen for message updates
         const handleMessageUpdated = (updatedMessage: Message) => {
           if (!isMounted) return;
-          
-          console.log('Message updated:', updatedMessage);
-          setMessages(prev => prev.map(msg => 
-            msg.id === updatedMessage.id ? updatedMessage : msg
-          ));
+
+          console.log("Message updated:", updatedMessage);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === updatedMessage.id ? updatedMessage : msg
+            )
+          );
         };
 
         // Listen for message deletions
-        const handleMessageDeleted = (data: { messageId: string; conversationId: string }) => {
+        const handleMessageDeleted = (data: {
+          messageId: string;
+          conversationId: string;
+        }) => {
           if (!isMounted) return;
-          
-          console.log('Message deleted:', data);
-          setMessages(prev => prev.filter(msg => msg.id !== data.messageId));
+
+          console.log("Message deleted:", data);
+          setMessages((prev) =>
+            prev.filter((msg) => msg.id !== data.messageId)
+          );
         };
 
         // Listen for conversation deletions
-        const handleConversationDeleted = (data: { conversationId: string; deletedBy: string }) => {
+        const handleConversationDeleted = (data: {
+          conversationId: string;
+          deletedBy: string;
+        }) => {
           if (!isMounted) return;
-          
-          console.log('Conversation deleted:', data);
+
+          console.log("Conversation deleted:", data);
           if (data.conversationId === conversationId) {
-            router.push('/chat');
+            router.push("/chat");
           }
         };
 
-        socketInstance.on('newMessage', handleNewMessage);
-        socketInstance.on('messageUpdated', handleMessageUpdated);
-        socketInstance.on('messageDeleted', handleMessageDeleted);
-        socketInstance.on('conversationDeleted', handleConversationDeleted);
+        socketInstance.on("newMessage", handleNewMessage);
+        socketInstance.on("messageUpdated", handleMessageUpdated);
+        socketInstance.on("messageDeleted", handleMessageDeleted);
+        socketInstance.on("conversationDeleted", handleConversationDeleted);
 
         return () => {
           if (socketInstance) {
-            socketInstance.emit('leaveConversation', conversationId);
-            socketInstance.off('newMessage', handleNewMessage);
-            socketInstance.off('messageUpdated', handleMessageUpdated);
-            socketInstance.off('messageDeleted', handleMessageDeleted);
-            socketInstance.off('conversationDeleted', handleConversationDeleted);
+            socketInstance.emit("leaveConversation", conversationId);
+            socketInstance.off("newMessage", handleNewMessage);
+            socketInstance.off("messageUpdated", handleMessageUpdated);
+            socketInstance.off("messageDeleted", handleMessageDeleted);
+            socketInstance.off(
+              "conversationDeleted",
+              handleConversationDeleted
+            );
           }
         };
       } catch (error) {
-        console.error('Error setting up socket:', error);
+        console.error("Error setting up socket:", error);
       }
     };
 
@@ -355,52 +406,69 @@ export default function ChatPage() {
     try {
       if (socket) {
         // Send via socket for real-time
-        console.log('Sending message via socket:', content);
-        socket.emit('sendMessage', {
+        console.log("Sending message via socket:", content);
+        socket.emit("sendMessage", {
           conversationId,
           content,
-          messageType: 'text'
+          messageType: "text",
         });
       } else {
         // Fallback to REST API if socket not available
-        console.log('Sending message via REST API:', content);
+        console.log("Sending message via REST API:", content);
         const response = await sendMessage(conversationId, {
           content,
-          messageType: 'text'
+          messageType: "text",
         });
-        setMessages(prev => [...prev, response.data as Message]);
+        setMessages((prev) => [...prev, response.data as Message]);
         setTimeout(scrollToBottom, 100);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     } finally {
       setSending(false);
     }
   };
 
-  const handleOfferUpdate = async (messageId: string, status: 'accepted' | 'rejected') => {
+  const handleOfferUpdate = async (
+    messageId: string,
+    status: "accepted" | "rejected"
+  ) => {
     try {
       await updateOfferStatus(messageId, status);
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, offerData: msg.offerData ? { ...msg.offerData, status } : undefined }
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                offerData: msg.offerData
+                  ? { ...msg.offerData, status }
+                  : undefined,
+              }
+            : msg
+        )
+      );
     } catch (error) {
-      console.error('Error updating offer status:', error);
+      console.error("Error updating offer status:", error);
     }
   };
 
   const handleMessageUpdate = (messageId: string, content: string) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === messageId 
-        ? { ...msg, content, isEdited: true, editedAt: new Date().toISOString() }
-        : msg
-    ));
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? {
+              ...msg,
+              content,
+              isEdited: true,
+              editedAt: new Date().toISOString(),
+            }
+          : msg
+      )
+    );
   };
 
   const handleMessageDelete = (messageId: string) => {
-    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
   };
 
   if (loading) {
@@ -409,7 +477,9 @@ export default function ChatPage() {
         <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 flex items-center justify-center">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-gruvbox-yellow border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">Loading conversation...</p>
+            <p className="text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">
+              Loading conversation...
+            </p>
           </div>
         </div>
       </AuthGuard>
@@ -427,8 +497,18 @@ export default function ChatPage() {
                 href="/chat"
                 className="p-2 hover:bg-gruvbox-gray/20 rounded-full transition-colors flex-shrink-0"
               >
-                <svg className="w-5 h-5 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </Link>
               <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
@@ -436,7 +516,7 @@ export default function ChatPage() {
                   {participant?.profilePicture ? (
                     <Image
                       src={participant.profilePicture}
-                      alt={participant?.name || 'User'}
+                      alt={participant?.name || "User"}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
@@ -444,27 +524,27 @@ export default function ChatPage() {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gruvbox-gray/30">
                       <span className="text-xs sm:text-sm font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
-                        {participant?.name?.[0] || 'U'}
+                        {participant?.name?.[0] || "U"}
                       </span>
                     </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1 className="font-semibold text-sm sm:text-base text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 truncate">
-                    {participant?.name || 'Unknown User'}
+                    {participant?.name || "Unknown User"}
                   </h1>
                   <p className="text-xs sm:text-sm text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">
-                    {socket?.connected ? 'Online' : 'Offline'}
+                    {socket?.connected ? "Online" : "Offline"}
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Conversation Actions */}
             <ConversationActions
               conversationId={conversationId}
               onConversationDelete={() => {
-                router.push('/chat');
+                router.push("/chat");
               }}
             />
           </div>
@@ -480,12 +560,12 @@ export default function ChatPage() {
         )}
 
         {/* Messages Container - Scrollable */}
-        <div 
+        <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto p-3 sm:p-4 max-w-4xl mx-auto w-full"
-          style={{ 
-            height: 'calc(100vh - 120px)', // Adjust based on header and input height
-            scrollBehavior: 'smooth'
+          style={{
+            height: "calc(100vh - 120px)", // Adjust based on header and input height
+            scrollBehavior: "smooth",
           }}
         >
           {messages.length === 0 ? (
@@ -495,13 +575,13 @@ export default function ChatPage() {
                   No messages yet. Start the conversation!
                 </p>
                 <div className="text-xs text-gruvbox-light-fg3 dark:text-gruvbox-dark-fg3 space-y-1">
-                  <p>Participant: {participant?.name || 'Unknown'}</p>
-                  <p>Socket: {socket?.connected ? 'Connected' : 'Disconnected'}</p>
+                  <p>Participant: {participant?.name || "Unknown"}</p>
+                  <p>
+                    Socket: {socket?.connected ? "Connected" : "Disconnected"}
+                  </p>
                   <p>Conversation ID: {conversationId}</p>
                   <p>User ID: {user?.id}</p>
-                  {participant && (
-                    <p>Participant ID: {participant.id}</p>
-                  )}
+                  {participant && <p>Participant ID: {participant.id}</p>}
                 </div>
               </div>
             </div>
@@ -509,9 +589,10 @@ export default function ChatPage() {
             <div className="space-y-1">
               {messages.map((message, index) => {
                 const isMe = message.sender.id === user?.id;
-                const showAvatar = index === 0 || 
+                const showAvatar =
+                  index === 0 ||
                   messages[index - 1].sender.id !== message.sender.id;
-                
+
                 return (
                   <MessageBubble
                     key={message.id}
