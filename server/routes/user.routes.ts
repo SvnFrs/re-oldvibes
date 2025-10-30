@@ -9,6 +9,8 @@ import {
   searchUsers,
   getFollowers,
   getFollowing,
+  getProfileById,
+  updateProfileById,
 } from "../controllers/user.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireUser } from "../middleware/role.middleware";
@@ -82,7 +84,92 @@ router.patch(
   "/me",
   authenticateToken,
   requireUser as RequestHandler,
-  updateProfile,
+  updateProfile
+);
+
+/**
+ * @swagger
+ * /user/role/{userId}:
+ *   patch:
+ *     summary: Update user profile by ID
+ *     description: Update profile information for a specific user by their ID
+ *     tags: [Users]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the user to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 description: User's role
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Profile updated successfully"
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     profilePicture:
+ *                       type: string
+ *                     bio:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *       400:
+ *         description: Bad request - Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Bio must be 150 characters or less"
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Internal server error
+ */
+router.patch(
+  "/role/:userId",
+  authenticateToken,
+  requireUser as RequestHandler,
+  updateProfileById
 );
 
 /**
@@ -108,7 +195,7 @@ router.post(
   authenticateToken,
   requireUser as RequestHandler,
   uploadMiddleware.single("avatar"),
-  uploadProfilePicture,
+  uploadProfilePicture
 );
 
 /**
@@ -124,6 +211,19 @@ router.post(
  *       400: { description: Missing search query }
  */
 router.get("/search", searchUsers);
+
+/**
+ * @swagger
+ * /users/{userId}:
+ *   get:
+ *     summary: Get user profile by Id
+ *     tags: [Users]
+ *     parameters: [{ $ref: '#/components/parameters/userId' }]
+ *     responses:
+ *       200: { description: User profile }
+ *       404: { description: User not found }
+ */
+router.get("/:userId", getProfileById);
 
 /**
  * @swagger
@@ -187,13 +287,13 @@ router.post(
   "/:targetUserId/follow",
   authenticateToken,
   requireUser as RequestHandler,
-  followUser,
+  followUser
 );
 router.delete(
   "/:targetUserId/follow",
   authenticateToken,
   requireUser as RequestHandler,
-  unfollowUser,
+  unfollowUser
 );
 
 export default router;

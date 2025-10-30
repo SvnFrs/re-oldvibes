@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../_contexts/AuthContext";
+import Cookies from "js-cookie";
 
 export default function AdminSignin() {
   const [email, setEmail] = useState("");
@@ -13,15 +14,31 @@ export default function AdminSignin() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    
-    const result = await login(email, password);
-    
-    if (result.success) {
-      // AuthContext will handle the redirect based on user role
-      // If user is not admin/staff, they will be redirected to /feed
-      // If they are admin/staff, they will be redirected to /admin/panel
-    } else {
-      setError(result.error || "Login failed");
+    try {
+      const res = await fetch(
+        process.env.NEXT_PUBLIC_API_ENDPOINT + "/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        }
+      );
+      const data = await res.json();
+      Cookies.set("tokenAuth", data.token, { expires: 1 });
+
+      if (!res.ok) {
+        setError(data.message || "Login failed");
+        return;
+      }
+      // Check role
+      if (!["admin", "staff"].includes(data.user?.role)) {
+        setError("You do not have admin/staff access.");
+        return;
+      }
+      router.push("/admin/panel");
+    } catch {
+      setError("Network error");
     }
   }
 

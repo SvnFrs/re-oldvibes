@@ -15,6 +15,8 @@ import {
   IconX,
   IconRefresh,
 } from "@tabler/icons-react";
+import Link from "next/link";
+import { CircleEllipsis } from "lucide-react";
 
 // API endpoint
 const API = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
@@ -137,9 +139,12 @@ export default function AdminPanel() {
           <span className="text-2xl font-bold text-gruvbox-orange font-mono">
             Old Vibes Admin Panel
           </span>
-          <span className="ml-4 text-sm text-gray-500 font-mono">
+          <Link
+            href="/admin/profile"
+            className="ml-4 text-sm text-gray-500 font-mono"
+          >
             {user.email} ({user.role})
-          </span>
+          </Link>
         </div>
         <button
           className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-4 py-2 rounded transition"
@@ -373,10 +378,27 @@ function StaffSection({ isAdmin }: { isAdmin: boolean }) {
 // --- USER MANAGEMENT ---
 function UserSection() {
   const [users, setUsers] = useState<User[]>([]);
+  const [admin, setAdmin] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Auth check
+  useEffect(() => {
+    fetch(API + "/auth/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.user || !["admin", "staff"].includes(data.user.role)) {
+          window.location.href = "/admin/signin";
+        } else {
+          setAdmin(data.user);
+          console.log("admin", data.user);
+        }
+      })
+      .catch(() => (window.location.href = "/admin/signin"))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Fetch users
   const fetchUsers = () => {
@@ -395,7 +417,7 @@ function UserSection() {
       !window.confirm(
         banned
           ? "Unban this user?"
-          : "Ban this user? They will not be able to login.",
+          : "Ban this user? They will not be able to login."
       )
     )
       return;
@@ -411,9 +433,10 @@ function UserSection() {
   // Filtered users
   const filtered = users.filter(
     (u) =>
-      u.email.includes(search) ||
-      u.username.includes(search) ||
-      u.name?.toLowerCase().includes(search.toLowerCase()),
+      u.email !== admin?.email &&
+      (u.email.includes(search) ||
+        u.username.includes(search) ||
+        u.name?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -435,61 +458,69 @@ function UserSection() {
         <table className="w-full border text-sm">
           <thead>
             <tr className="bg-gruvbox-light-bg1">
-              <th className="p-2">Name</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Email Verified</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th className="py-2 w-56">Name</th>
+              <th className="py-2 w-48">Username</th>
+              <th className="py-2 w-56">Email</th>
+              <th className="py-2 w-12">Role</th>
+              <th className="py-2 w-14">Status</th>
+              <th className="py-2 w-14">Email Verified</th>
+              <th className="py-2 w-32">Created</th>
+              <th className="py-2 w-44">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="border-t">
-                <td className="p-2">{u.name}</td>
-                <td>{u.username}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>
+                <td className="py-2 w-56 text-center">{u.name}</td>
+                <td className="py-2 w-48 text-center">{u.username}</td>
+                <td className="py-2 w-56 text-center">{u.email}</td>
+                <td className="py-2 w-12 text-center">{u.role}</td>
+                <td className="py-2 w-14 text-center">
                   {u.isActive ? (
                     <span className="text-green-600">Active</span>
                   ) : (
                     <span className="text-red-600">Banned</span>
                   )}
                 </td>
-                <td>
+                <td className="py-2 w-14 text-center">
                   {u.isEmailVerified ? (
                     <IconCheck size={16} className="text-green-600 inline" />
                   ) : (
                     <IconX size={16} className="text-red-600 inline" />
                   )}
                 </td>
-                <td>
+                <td className="py-2 w-32 text-center">
                   {u.createdAt
                     ? new Date(u.createdAt).toLocaleDateString()
                     : ""}
                 </td>
-                <td>
-                  <button
-                    className={`px-2 py-1 rounded text-xs font-bold ${
-                      u.isActive
-                        ? "bg-red-100 text-red-600 hover:bg-red-200"
-                        : "bg-green-100 text-green-600 hover:bg-green-200"
-                    }`}
-                    onClick={() => handleBan(u.id, !u.isActive)}
-                  >
-                    {u.isActive ? (
-                      <>
-                        <IconBan size={14} className="inline" /> Ban
-                      </>
-                    ) : (
-                      <>
-                        <IconRefresh size={14} className="inline" /> Unban
-                      </>
-                    )}
-                  </button>
+                <td className="py-2 w-44 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        u.isActive
+                          ? "bg-red-100 text-red-600 hover:bg-red-200"
+                          : "bg-green-100 text-green-600 hover:bg-green-200"
+                      }`}
+                      onClick={() => handleBan(u.id, !u.isActive)}
+                    >
+                      {u.isActive ? (
+                        <>
+                          <IconBan size={14} className="inline" /> Ban
+                        </>
+                      ) : (
+                        <>
+                          <IconRefresh size={14} className="inline" /> Unban
+                        </>
+                      )}
+                    </button>
+                    <Link
+                      href={`/admin/panel/user/${u.id}`}
+                      className="text-gruvbox-orange hover:underline text-sm"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -570,7 +601,7 @@ function VibeModerationSection() {
   const moderate = async (
     id: string,
     action: "approve" | "reject",
-    notes = "",
+    notes = ""
   ) => {
     try {
     await fetch(API + `/vibes/${id}/moderate`, {
@@ -782,7 +813,7 @@ function VibeModerationSection() {
                     controls
                     className="w-20 h-20 object-cover rounded border"
                   />
-                ),
+                )
               )}
             </div>
             <div className="flex gap-2 mt-4">
