@@ -7,7 +7,7 @@ const userModel = new UserModel();
 
 export const getProfile = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { username } = req.params;
@@ -38,9 +38,42 @@ export const getProfile = async (
   }
 };
 
+export const getProfileById = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const requestingUserId = req.user?.userId;
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+    const profile = await userModel.getUserProfileById(userId);
+    if (!profile) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Check if requesting user follows this profile
+    const isFollowing = requestingUserId
+      ? await userModel.isFollowing(requestingUserId, profile.id)
+      : false;
+
+    res.json({
+      profile: { ...profile, isFollowing },
+      isOwnProfile: requestingUserId === profile.id,
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({ message: "Error fetching profile", error });
+  }
+};
+
 export const getMyProfile = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -75,7 +108,7 @@ export const getMyProfile = async (
 
 export const updateProfile = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -110,9 +143,46 @@ export const updateProfile = async (
   }
 };
 
+export const updateProfileById = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const updateData: UpdateUserInput = req.body;
+
+    // Validate bio length
+    if (updateData.bio && updateData.bio.length > 150) {
+      res.status(400).json({ message: "Bio must be 150 characters or less" });
+      return;
+    }
+
+    const updatedUser = await userModel.updateUser(String(userId), updateData);
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      profile: {
+        id: updatedUser._id!.toString(),
+        email: updatedUser.email,
+        name: updatedUser.name,
+        username: updatedUser.username,
+        profilePicture: updatedUser.profilePicture,
+        bio: updatedUser.bio,
+        role: updatedUser.role,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Error updating profile", error });
+  }
+};
 export const uploadProfilePicture = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -144,7 +214,7 @@ export const uploadProfilePicture = async (
 
 export const followUser = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -175,7 +245,7 @@ export const followUser = async (
 
 export const unfollowUser = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
@@ -201,7 +271,7 @@ export const unfollowUser = async (
 
 export const searchUsers = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { q: query } = req.query;
@@ -221,7 +291,7 @@ export const searchUsers = async (
 
 export const getFollowers = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { userId } = req.params;
@@ -241,7 +311,7 @@ export const getFollowers = async (
 
 export const getFollowing = async (
   req: AuthenticatedRequest,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { userId } = req.params;
