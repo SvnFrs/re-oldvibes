@@ -33,9 +33,32 @@ export class VibeModel {
   async updateVibe(
     vibeId: string,
     userId: string,
-    updateData: UpdateVibeInput,
+    updateData: UpdateVibeInput
   ): Promise<IVibe | null> {
-    // Only allow updates if vibe is pending or user is owner
+    // First, find the vibe to check its current status
+    const existingVibe = await Vibe.findOne({
+      _id: vibeId,
+      userId,
+    });
+
+    if (!existingVibe) {
+      return null;
+    }
+
+    // Only allow updates if vibe is pending or approved (not sold, rejected, or archived)
+    if (!["pending", "approved"].includes(existingVibe.status)) {
+      return null;
+    }
+
+    // Determine the new status based on current status
+    let newStatus = existingVibe.status;
+
+    // If the vibe was approved and is being edited, reset to pending for re-moderation
+    if (existingVibe.status === "approved") {
+      newStatus = "approved";
+    }
+    // If it was already pending, keep it as pending
+
     const vibe = await Vibe.findOneAndUpdate(
       {
         _id: vibeId,
@@ -44,10 +67,10 @@ export class VibeModel {
       },
       {
         ...updateData,
-        status: "pending", // Reset to pending if edited
+        status: newStatus,
         updatedAt: new Date(),
       },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     return vibe;
@@ -56,7 +79,7 @@ export class VibeModel {
   async deleteVibe(
     vibeId: string,
     userId: string,
-    isAdminOrStaff = false,
+    isAdminOrStaff = false
   ): Promise<boolean> {
     const query: any = { _id: vibeId };
     if (!isAdminOrStaff) {
@@ -77,7 +100,7 @@ export class VibeModel {
 
   async getVibes(
     filters: VibeFilters = {},
-    userId?: string,
+    userId?: string
   ): Promise<PaginatedResponse<VibeResponse>> {
     const query: any = {};
 
@@ -121,7 +144,9 @@ export class VibeModel {
       .lean();
 
     // Pass userId to formatter so it can set isLiked
-    const formattedVibes = vibes.map((vibe) => this.formatVibeResponse(vibe, userId));
+    const formattedVibes = vibes.map((vibe) =>
+      this.formatVibeResponse(vibe, userId)
+    );
 
     return {
       data: formattedVibes,
@@ -149,7 +174,7 @@ export class VibeModel {
     vibeId: string,
     staffId: string,
     action: "approve" | "reject",
-    notes?: string,
+    notes?: string
   ): Promise<IVibe | null> {
     const updateData: any = {
       status: action === "approve" ? "approved" : "rejected",
@@ -175,7 +200,7 @@ export class VibeModel {
         userId: new mongoose.Types.ObjectId(userId),
         status: "approved",
       },
-      { status: "sold", updatedAt: new Date() },
+      { status: "sold", updatedAt: new Date() }
     );
     return !!result;
   }
@@ -206,12 +231,12 @@ export class VibeModel {
       type: "image" | "video";
       url: string;
       thumbnail?: string;
-    }>,
+    }>
   ): Promise<IVibe | null> {
     const vibe = await Vibe.findByIdAndUpdate(
       vibeId,
       { $push: { mediaFiles: { $each: mediaFiles } } },
-      { new: true },
+      { new: true }
     );
 
     return vibe;
@@ -226,7 +251,7 @@ export class VibeModel {
       {
         status: "archived",
         updatedAt: new Date(),
-      },
+      }
     );
 
     return result.modifiedCount;
@@ -234,7 +259,7 @@ export class VibeModel {
 
   async searchVibes(
     query: string,
-    filters: VibeFilters = {},
+    filters: VibeFilters = {}
   ): Promise<VibeResponse[]> {
     const searchQuery: any = {
       $and: [
@@ -288,7 +313,7 @@ export class VibeModel {
 
   async getUserVibes(
     userId: string,
-    requestingUserId?: string,
+    requestingUserId?: string
   ): Promise<VibeResponse[]> {
     const query: any = { userId };
 
@@ -325,6 +350,125 @@ export class VibeModel {
     }
 
     return vibes.map((vibe) => this.formatVibeResponse(vibe, requestingUserId));
+  }
+
+  async getVibesWithFilters(filters: {
+    name?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    condition?: string;
+    status?: string;
+    limit: number;
+    offset: number;
+  }): Promise<PaginatedResponse<VibeResponse>> {
+    const query: any = {};
+
+    // Build query based on filters
+    if (filters.name) {
+      query.itemName = { $regex: filters.name, $options: "i" };
+    }
+    if (filters.category) query.category = filters.category;
+    if (filters.condition) query.condition = filters.condition;
+    if (filters.status && filters.status !== "all") {
+      query.status = filters.status;
+    } else if (!filters.status || filters.status === "all") {
+      // Show all statuses for admin
+    }
+    if (filters.minPrice || filters.maxPrice) {
+      query.price = {};
+      if (filters.minPrice) query.price.$gte = filters.minPrice;
+      if (filters.maxPrice) query.price.$lte = filters.maxPrice;
+    }
+
+    // Get total count for pagination
+    const total = await Vibe.countDocuments(query);
+
+    // Get paginated results
+    const vibes = await Vibe.find(query)
+      .populate("userId", "username name profilePicture isVerified")
+      .sort({ createdAt: -1 })
+      .skip(filters.offset)
+      .limit(filters.limit)
+      .lean();
+
+    const formattedVibes = vibes.map((vibe) => this.formatVibeResponse(vibe));
+
+    return {
+      data: formattedVibes,
+      pagination: {
+        page: Math.floor(filters.offset / filters.limit) + 1,
+        limit: filters.limit,
+        total,
+        totalPages: Math.ceil(total / filters.limit),
+        hasNext: filters.offset + vibes.length < total,
+        hasPrev: filters.offset > 0,
+      },
+    };
+  }
+
+  async getAllVibesAdmin(filters: {
+    status?: string;
+    limit: number;
+    offset: number;
+    sortBy?: string;
+  }): Promise<{
+    data: VibeResponse[];
+    pagination: any;
+    totalCount: number;
+  }> {
+    const query: any = {};
+
+    // Build query based on filters
+    if (filters.status && filters.status !== "all") {
+      query.status = filters.status;
+    }
+
+    // Build sort criteria
+    let sortCriteria: any = { createdAt: -1 };
+    switch (filters.sortBy) {
+      case "oldest":
+        sortCriteria = { createdAt: 1 };
+        break;
+      case "price_asc":
+        sortCriteria = { price: 1, createdAt: -1 };
+        break;
+      case "price_desc":
+        sortCriteria = { price: -1, createdAt: -1 };
+        break;
+      case "likes":
+        sortCriteria = { likesCount: -1, createdAt: -1 };
+        break;
+      case "views":
+        sortCriteria = { views: -1, createdAt: -1 };
+        break;
+    }
+
+    // Get total count
+    const totalCount = await Vibe.countDocuments(query);
+
+    // Get paginated results
+    const vibes = await Vibe.find(query)
+      .populate("userId", "username name profilePicture isVerified")
+      .sort(sortCriteria)
+      .skip(filters.offset)
+      .limit(filters.limit)
+      .lean();
+
+    const formattedVibes = vibes.map((vibe) => this.formatVibeResponse(vibe));
+
+    return {
+      data: formattedVibes,
+      pagination: {
+        page: Math.floor(filters.offset / filters.limit) + 1,
+        limit: filters.limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / filters.limit),
+        hasNext: filters.offset + vibes.length < totalCount,
+        hasPrev: filters.offset > 0,
+      },
+      totalCount,
+    };
   }
 
   private formatVibeResponse(vibe: any, userId?: string): VibeResponse {

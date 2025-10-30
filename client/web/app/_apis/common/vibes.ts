@@ -20,9 +20,9 @@ export interface Vibe {
   condition: string;
   tags: string[];
   location?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   mediaFiles: {
-    type: 'image' | 'video';
+    type: "image" | "video";
     url: string;
     thumbnail?: string;
     _id?: string;
@@ -54,15 +54,17 @@ export interface CreateVibeResponse {
 export interface UploadMediaResponse {
   message: string;
   mediaFiles: {
-    type: 'image' | 'video';
+    type: "image" | "video";
     url: string;
     thumbnail?: string;
   }[];
 }
 
 // API Functions
-export async function createVibe(vibeData: CreateVibeInput): Promise<CreateVibeResponse> {
-  const response = await apiClient.post('/vibes', vibeData);
+export async function createVibe(
+  vibeData: CreateVibeInput
+): Promise<CreateVibeResponse> {
+  const response = await apiClient.post("/vibes", vibeData);
   return response as unknown as CreateVibeResponse;
 }
 
@@ -122,6 +124,44 @@ export async function getVibes(
   return response.json();
 }
 
+//Update vibe
+export async function updateVibe(
+  vibeId: string,
+  userId: string,
+  data: any
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/vibes/${vibeId}/${userId}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ data }),
+  });
+
+  console.log("Update vibe response:", data);
+
+  if (!response.ok) {
+    throw new Error("Failed to update vibe");
+  }
+
+  return response.json();
+}
+
+//Delete vibe
+export async function deleteVibe(vibeId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/vibes/${vibeId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete vibe");
+  }
+
+  return response.json();
+}
+
 // Get single vibe by ID
 // export async function getVibeById(
 //   vibeId: string
@@ -137,7 +177,9 @@ export async function getVibes(
 //   return response.json();
 // }
 
-export async function searchVibes(params: SearchVibesParams): Promise<VibesListResponse> {
+export async function searchVibes(
+  params: SearchVibesParams
+): Promise<VibesListResponse> {
   const searchParams = new URLSearchParams();
 
   // If there's a text search query, use search endpoint
@@ -193,7 +235,7 @@ export async function searchVibes(params: SearchVibesParams): Promise<VibesListR
       data: result.vibes || result.data || [],
       pagination: result.pagination,
       count: result.count,
-      query: result.query
+      query: result.query,
     };
   } else {
     // No text search, use regular vibes endpoint with filters only
@@ -242,7 +284,7 @@ export async function searchVibes(params: SearchVibesParams): Promise<VibesListR
     return {
       data: result.data || result.vibes || [],
       pagination: result.pagination,
-      count: result.count
+      count: result.count,
     };
   }
 }
@@ -258,27 +300,31 @@ export async function uploadVibeMedia(
 ): Promise<UploadMediaResponse> {
   const formData = new FormData();
   files.forEach((file) => {
-    formData.append('media', file);
+    formData.append("media", file);
   });
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:4000/api'}/vibes/${vibeId}/media`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
+  const response = await fetch(
+    `${
+      process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api"
+    }/vibes/${vibeId}/media`,
+    {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    }
+  );
 
   if (!response.ok) {
-    throw new Error('Failed to upload media');
+    throw new Error("Failed to upload media");
   }
 
   return await response.json();
 }
 
-
-export async function deleteVibe(vibeId: string): Promise<any> {
-  const response = await apiClient.delete(`/vibes/${vibeId}`);
-  return response;
-}
+// export async function deleteVibe(vibeId: string): Promise<any> {
+//   const response = await apiClient.delete(`/vibes/${vibeId}`);
+//   return response;
+// }
 
 export async function getTrendingVibes(): Promise<VibesListResponse> {
   const response = await fetch(`${API_BASE}/vibes/trending`, {
@@ -293,7 +339,7 @@ export async function getTrendingVibes(): Promise<VibesListResponse> {
   return {
     data: result.data || result.vibes || [],
     pagination: result.pagination,
-    count: result.count
+    count: result.count,
   };
 }
 
@@ -335,7 +381,7 @@ export async function getUserVibes(userId: string): Promise<VibesListResponse> {
   return {
     data: result.data || result.vibes || [],
     pagination: result.pagination,
-    count: result.count
+    count: result.count,
   };
 }
 

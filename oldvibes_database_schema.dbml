@@ -1,0 +1,216 @@
+// Old Vibes Database Schema for dbdiagram.io
+// Copy this code to https://dbdiagram.io to visualize the database schema
+
+Table users {
+  _id ObjectId [pk]
+  email varchar [unique, not null]
+  password varchar [note: "Optional for Google users"]
+  name varchar [not null]
+  username varchar [unique, not null]
+  role varchar [default: "user", note: "admin|staff|user|guest"]
+  profilePicture varchar
+  bio varchar [note: "max 150 chars"]
+  followers ObjectId[] [ref: > users._id]
+  following ObjectId[] [ref: > users._id]
+  isVerified boolean [default: false]
+  isEmailVerified boolean [default: false]
+  isActive boolean [default: true]
+  googleId varchar [unique, note: "Only for Google users, sparse index"]
+  location Point [note: "Geospatial: longitude, latitude"]
+  locationEnabled boolean [default: false]
+  preferences_tags varchar[]
+  preferences_categories varchar[]
+  preferences_conditions varchar[]
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    email [unique]
+    username [unique]
+    role
+    location [type: 2dsphere]
+    googleId [unique]
+  }
+}
+
+Table vibes {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > users._id, not null]
+  itemName varchar [not null]
+  description varchar [note: "max 500 chars", not null]
+  price decimal [note: "min 0", not null]
+  tags varchar[]
+  mediaFiles json [note: "Array of {type, url, thumbnail}"]
+  status varchar [default: "pending", note: "pending|approved|rejected|sold|archived"]
+  moderationNotes varchar
+  moderatedBy ObjectId [ref: > users._id]
+  category varchar [not null]
+  condition varchar [not null, note: "new|like-new|good|fair|poor"]
+  location varchar
+  locationData Point [note: "Geospatial: longitude, latitude"]
+  likes ObjectId[] [ref: > users._id]
+  comments ObjectId[] [ref: > comments._id]
+  commentsCount int [default: 0]
+  views int [default: 0]
+  engagementScore int [default: 0, note: "Cached score for performance"]
+  expiresAt timestamp [note: "24-hour expiry, TTL index"]
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    userId
+    status
+    category
+    condition
+    locationData [type: 2dsphere]
+    expiresAt [type: TTL]
+    engagementScore
+    createdAt
+  }
+}
+
+Table interactions {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > users._id, not null]
+  vibeId ObjectId [ref: > vibes._id, not null]
+  interactionType varchar [not null, note: "view|like|comment|share|wishlist|chat|offer"]
+  duration int [note: "Duration in seconds for views"]
+  metadata json [note: "Enriched with vibe tags, category, condition, price"]
+  timestamp timestamp [default: `now()`]
+  createdAt timestamp [default: `now()`]
+  
+  indexes {
+    userId
+    vibeId
+    interactionType
+    timestamp
+    (userId, interactionType, timestamp)
+    (vibeId, interactionType)
+    (userId, timestamp)
+  }
+}
+
+Table conversations {
+  _id ObjectId [pk]
+  conversationId varchar [unique, not null]
+  vibeId ObjectId [ref: > vibes._id, not null]
+  sellerId ObjectId [ref: > users._id, not null]
+  buyerId ObjectId [ref: > users._id, not null]
+  lastMessage json [note: "{content, senderId, timestamp, messageType}"]
+  unreadCount json [note: "{seller: int, buyer: int}"]
+  isActive boolean [default: true]
+  isBlocked boolean [default: false]
+  blockedBy ObjectId [ref: > users._id]
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    conversationId [unique]
+    vibeId
+    sellerId
+    buyerId
+    isActive
+    (sellerId, buyerId, vibeId)
+    (sellerId, isActive, updatedAt)
+    (buyerId, isActive, updatedAt)
+  }
+}
+
+Table messages {
+  _id ObjectId [pk]
+  conversationId varchar [not null]
+  senderId ObjectId [ref: > users._id, not null]
+  receiverId ObjectId [ref: > users._id, not null]
+  vibeId ObjectId [ref: > vibes._id, not null]
+  content varchar [note: "max 1000 chars", not null]
+  messageType varchar [default: "text", note: "text|image|offer|system"]
+  attachments json [note: "Array of {type, url, filename, size}"]
+  offerData json [note: "{amount, message, status, expiresAt}"]
+  isRead boolean [default: false]
+  isEdited boolean [default: false]
+  editedAt timestamp
+  isDeleted boolean [default: false]
+  deletedAt timestamp
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    conversationId
+    senderId
+    receiverId
+    vibeId
+    messageType
+    isRead
+    isDeleted
+    createdAt
+  }
+}
+
+Table comments {
+  _id ObjectId [pk]
+  vibeId ObjectId [ref: > vibes._id, not null]
+  userId ObjectId [ref: > users._id, not null]
+  content varchar [note: "max 500 chars", not null]
+  parentComment ObjectId [ref: > comments._id, note: "For replies"]
+  isActive boolean [default: true]
+  likesCount int [default: 0]
+  repliesCount int [default: 0]
+  likes ObjectId[] [ref: > users._id]
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    vibeId
+    userId
+    parentComment
+    isActive
+    createdAt
+  }
+}
+
+Table wishlists {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > users._id, not null]
+  vibeId ObjectId [ref: > vibes._id, not null]
+  expiresAt timestamp [note: "24-hour expiry, TTL index"]
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  indexes {
+    userId
+    vibeId
+    expiresAt [type: TTL]
+    (userId, vibeId) [unique]
+  }
+}
+
+// Relationships are already defined in table definitions above
+// No additional Ref: statements needed to avoid duplicates
+
+// Business Rules Notes:
+Note: '''
+OLD VIBES DATABASE SCHEMA
+
+Key Features:
+1. User Management with OAuth (Google) support
+2. Vibe listing with moderation workflow
+3. Recommendation system with interaction tracking
+4. Real-time chat with offers
+5. Comment system with replies
+6. Wishlist with expiry
+
+Business Rules:
+- All vibes start as "pending" and require staff approval
+- Vibes have 24-hour expiry (48h for premium users)
+- Interactions are tracked for recommendation algorithm
+- Messages can be edited within 5 minutes
+- Wishlists expire after 24 hours
+- Geospatial indexing for location-based features
+
+Performance Optimizations:
+- TTL indexes for automatic cleanup
+- Geospatial indexes for location queries
+- Compound indexes for efficient queries
+- Cached engagement scores
+- Redis caching for recommendations
+'''

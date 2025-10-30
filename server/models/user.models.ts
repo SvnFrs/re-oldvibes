@@ -278,8 +278,14 @@ export class UserModel {
     );
   }
 
-  // Ban user (soft delete)
+  // Ban user (soft delete) - but don't ban admin/staff
   async banUser(targetUserId: string): Promise<boolean> {
+    // Check if user is admin or staff
+    const user = await User.findById(targetUserId).select("role");
+    if (user && (user.role === "admin" || user.role === "staff")) {
+      return false; // Cannot ban admin/staff
+    }
+    
     const result = await User.findByIdAndUpdate(targetUserId, {
       isActive: false,
       updatedAt: new Date(),

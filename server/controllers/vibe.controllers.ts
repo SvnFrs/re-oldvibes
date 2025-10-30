@@ -82,16 +82,24 @@ export const updateVibe = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { vibeId } = req.params;
-    const userId = req.user!.userId;
-    const updateData: UpdateVibeInput = req.body;
+    const { vibeId, userId } = req.params;
+    // const userId = req.user!.userId;
+    const updateData: any = req.body;
 
     if (!vibeId) {
       res.status(400).json({ message: "Vibe ID is required" });
       return;
     }
 
-    const updatedVibe = await vibeModel.updateVibe(vibeId, userId, updateData);
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+    const updatedVibe = await vibeModel.updateVibe(
+      vibeId,
+      userId,
+      updateData.data
+    );
 
     if (!updatedVibe) {
       res.status(404).json({

@@ -125,6 +125,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.setItem("user", JSON.stringify(userData));
         Cookies.set("userId", data.user.id, { expires: 1 });
         setUser(userData);
+        
+        // Redirect based on user role
+        console.log("User role:", userData.role); // Debug log
+        if (userData.role === "admin" || userData.role === "staff") {
+          console.log("Redirecting to admin panel"); // Debug log
+          window.location.href = "/admin/panel";
+        } else {
+          console.log("Redirecting to feed"); // Debug log
+          window.location.href = "/feed";
+        }
+        
         return { success: true };
       } else {
         return { success: false, error: data.message || "Đăng nhập thất bại" };

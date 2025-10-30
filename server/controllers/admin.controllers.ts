@@ -1,7 +1,11 @@
 import type { Request, Response } from "express";
 import { UserModel } from "../models/user.models";
+import { VibeModel } from "../models/vibe.models";
+import { CommentModel } from "../models/comment.models";
 
 const userModel = new UserModel();
+const vibeModel = new VibeModel();
+const commentModel = new CommentModel();
 
 export const addStaff = async (req: Request, res: Response) => {
   try {
@@ -363,3 +367,213 @@ export const getUserBadBehaviorHistory = async (req: Request, res: Response) => 
     res.status(500).json({ message: "Error fetching bad behavior history", error });
   }
 };
+// ===== NEW ADMIN FEATURES =====
+
+// Filter Comment by Vibe
+export const getCommentsByVibe = async (req: Request, res: Response) => {
+  try {
+    const { vibeId } = req.params;
+    const { 
+      limit = "20", 
+      offset = "0", 
+      sortBy = "newest",
+      search = ""
+    } = req.query;
+
+    if (!vibeId) {
+      return res.status(400).json({ message: "Vibe ID is required" });
+    }
+
+    const filters = {
+      vibeId,
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string),
+      sortBy: sortBy as "newest" | "oldest" | "likes",
+      search: search as string
+    };
+
+    const result = await commentModel.getCommentsByVibe(filters);
+
+    res.json({
+      comments: result.comments,
+      pagination: {
+        total: result.total,
+        limit: filters.limit,
+        offset: filters.offset,
+        hasMore: result.hasMore,
+      },
+    });
+  } catch (error) {
+    console.error("Get comments by vibe error:", error);
+    res.status(500).json({ message: "Error fetching comments", error });
+  }
+};
+
+// Filter Vibe by name, category, price
+export const getVibesWithFilters = async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      category,
+      minPrice,
+      maxPrice,
+      condition,
+      status = "all",
+      limit = "20",
+      offset = "0"
+    } = req.query;
+
+    const filters = {
+      name: name as string,
+      category: category as string,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      condition: condition as string,
+      status: status as string,
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string)
+    };
+
+    const result = await vibeModel.getVibesWithFilters(filters);
+
+    res.json({
+      vibes: result.data,
+      pagination: result.pagination,
+      filters: {
+        name: filters.name,
+        category: filters.category,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        condition: filters.condition,
+        status: filters.status
+      }
+    });
+  } catch (error) {
+    console.error("Get vibes with filters error:", error);
+    res.status(500).json({ message: "Error fetching vibes", error });
+  }
+};
+
+// View all vibes (admin)
+export const getAllVibesAdmin = async (req: Request, res: Response) => {
+  try {
+    const { 
+      status = "all",
+      limit = "50", 
+      offset = "0",
+      sortBy = "newest"
+    } = req.query;
+
+    const filters = {
+      status: status as string,
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string),
+      sortBy: sortBy as string
+    };
+
+    const result = await vibeModel.getAllVibesAdmin(filters);
+
+    res.json({
+      vibes: result.data,
+      pagination: result.pagination,
+      totalCount: result.totalCount
+    });
+  } catch (error) {
+    console.error("Get all vibes admin error:", error);
+    res.status(500).json({ message: "Error fetching all vibes", error });
+  }
+};
+
+// View detail vibe (admin)
+export const getVibeDetailAdmin = async (req: Request, res: Response) => {
+  try {
+    const { vibeId } = req.params;
+
+    if (!vibeId) {
+      return res.status(400).json({ message: "Vibe ID is required" });
+    }
+
+    const vibe = await vibeModel.getById(vibeId);
+    if (!vibe) {
+      return res.status(404).json({ message: "Vibe not found" });
+    }
+
+    // Get comments for this vibe
+    const commentsResult = await commentModel.getCommentsByVibe({
+      vibeId,
+      limit: 10,
+      offset: 0,
+      sortBy: "newest"
+    });
+
+    res.json({
+      vibe,
+      comments: commentsResult.comments,
+      commentsCount: commentsResult.total
+    });
+  } catch (error) {
+    console.error("Get vibe detail admin error:", error);
+    res.status(500).json({ message: "Error fetching vibe detail", error });
+  }
+};
+
+export const banUserForBadComment = async (req: Request, res: Response) => {
+  try {
+    const { userId, commentId, reason } = req.body;
+    const requester = (req as any).user;
+
+    if (!userId || !commentId) {
+      return res.status(400).json({ 
+        message: "User ID and Comment ID are required" 
+      });
+    }
+
+    const comment = await commentModel.getById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.user.id !== userId) {
+      return res.status(400).json({ 
+        message: "User does not own this comment" 
+      });
+    }
+
+    const isBadComment = await detectBadComment(comment.content);
+    
+    if (!isBadComment) {
+      return res.status(400).json({ 
+        message: "Comment does not violate community guidelines" 
+      });
+    }
+
+    const banned = await userModel.banUser(userId);
+    if (!banned) {
+      return res.status(404).json({ 
+        message: "User not found or already banned" 
+      });
+    }
+
+    console.log(`User ${userId} banned for bad comment ${commentId} by ${requester.userId}. Reason: ${reason || 'AI detected inappropriate content'}`);
+
+    res.json({ 
+      message: "User banned successfully for inappropriate comment",
+      userId,
+      commentId,
+      reason: reason || 'AI detected inappropriate content'
+    });
+  } catch (error) {
+    console.error("Ban user for bad comment error:", error);
+    res.status(500).json({ message: "Error banning user", error });
+  }
+};
+
+async function detectBadComment(content: string): Promise<boolean> {
+  const badKeywords = [
+    'spam', 'scam', 'fake', 'hate', 'abuse', 'harassment',
+    'inappropriate', 'offensive', 'vulgar', 'threat'
+  ];
+  
+  const lowerContent = content.toLowerCase();
+  return badKeywords.some(keyword => lowerContent.includes(keyword));
+}

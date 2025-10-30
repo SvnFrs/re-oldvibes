@@ -24,6 +24,7 @@ export interface CommentResponse {
   repliesCount: number;
   isLiked?: boolean;
   replies?: CommentResponse[];
+  likes: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +35,7 @@ export interface CommentFilters {
   limit?: number;
   offset?: number;
   sortBy?: "newest" | "oldest" | "likes";
+  search?: string;
 }
 
 export interface ShareVibeResponse {
