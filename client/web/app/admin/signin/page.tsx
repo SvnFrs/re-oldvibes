@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function AdminSignin() {
   const [email, setEmail] = useState("");
@@ -19,9 +20,11 @@ export default function AdminSignin() {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ email, password }),
-        },
+        }
       );
       const data = await res.json();
+      Cookies.set("tokenAuth", data.token, { expires: 1 });
+
       if (!res.ok) {
         setError(data.message || "Login failed");
         return;

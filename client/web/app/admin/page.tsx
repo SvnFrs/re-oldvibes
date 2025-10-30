@@ -41,10 +41,16 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <span className="font-mono text-sm text-gray-500">
             Signed in as: {user.email} ({user.role})
           </span>
+          <a
+            href="/admin/profile"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            View Profile
+          </a>
         </div>
         {/* Tabs or sections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
