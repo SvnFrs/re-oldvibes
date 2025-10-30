@@ -35,6 +35,7 @@ export interface CommentFilters {
   limit?: number;
   offset?: number;
   sortBy?: "newest" | "oldest" | "likes";
+  search?: string;
 }
 
 export interface ShareVibeResponse {

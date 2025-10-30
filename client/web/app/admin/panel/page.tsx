@@ -68,6 +68,11 @@ const tabs = [
     icon: <IconUsers size={20} />,
   },
   {
+    id: "show-vibes",
+    label: "Show Vibes",
+    icon: <IconPhoto size={20} />,
+  },
+  {
     id: "vibes",
     label: "Vibe Moderation",
     icon: <IconPhoto size={20} />,
@@ -178,6 +183,7 @@ export default function AdminPanel() {
           )}
           {tab === "staff" && <StaffSection isAdmin={user.role === "admin"} />}
           {tab === "users" && <UserSection />}
+          {tab === "show-vibes" && <ShowVibesSection />}
           {tab === "vibes" && <VibeModerationSection />}
           {tab === "comments" && <CommentModerationSection />}
         </main>
@@ -516,30 +522,49 @@ type Vibe = {
   category: string;
   condition: string;
   createdAt?: string;
+  updatedAt?: string;
   description?: string;
   tags?: string[];
   location?: string;
   mediaFiles?: MediaFile[];
+  status: string;
+  views?: number;
+  likesCount?: number;
+  commentsCount?: number;
 };
 
 function VibeModerationSection() {
   const [vibes, setVibes] = useState<Vibe[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error] = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selected, setSelected] = useState<Vibe | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch pending vibes
+  // Fetch vibes with filters
   const fetchVibes = () => {
     setLoading(true);
-    fetch(API + "/vibes/pending", { credentials: "include" })
+    const params = new URLSearchParams({
+      status: statusFilter,
+      sortBy,
+      limit: "50",
+      offset: "0",
+    });
+    
+    fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setVibes(d.vibes || []))
-      .catch(() => setVibes([]))
+      .catch(() => {
+        setVibes([]);
+        setError("Failed to fetch vibes");
+      })
       .finally(() => setLoading(false));
   };
-  useEffect(fetchVibes, []);
+
+  useEffect(fetchVibes, [statusFilter, sortBy]);
 
   // Approve/Reject
   const moderate = async (
@@ -547,6 +572,7 @@ function VibeModerationSection() {
     action: "approve" | "reject",
     notes = "",
   ) => {
+    try {
     await fetch(API + `/vibes/${id}/moderate`, {
       method: "PATCH",
       credentials: "include",
@@ -557,12 +583,22 @@ function VibeModerationSection() {
     setSuccess(`Vibe ${action}d`);
     setModalOpen(false);
     setTimeout(() => setSuccess(""), 2000);
+    } catch (err) {
+      setError("Failed to moderate vibe");
+    }
   };
+
+  // Filter vibes by search term
+  const filteredVibes = vibes.filter((v) =>
+    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Vibe Moderation</h2>
+        <h2 className="text-xl font-bold">Vibe Management</h2>
         <button
           className="flex items-center gap-2 text-gruvbox-orange hover:underline"
           onClick={fetchVibes}
@@ -570,52 +606,131 @@ function VibeModerationSection() {
           <IconRefresh size={16} /> Refresh
         </button>
       </div>
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search vibes by name, category, or user..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="sold">Sold</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="likes">Most Liked</option>
+          <option value="views">Most Viewed</option>
+        </select>
+      </div>
+
       {loading ? (
         <div>Loading...</div>
-      ) : vibes.length === 0 ? (
-        <div className="text-gray-500">No pending vibes.</div>
+      ) : filteredVibes.length === 0 ? (
+        <div className="text-gray-500">No vibes found.</div>
       ) : (
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gruvbox-light-bg1">
-              <th className="p-2">Item</th>
-              <th>User</th>
-              <th>Price</th>
-              <th>Category</th>
-              <th>Condition</th>
-              <th>Posted</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vibes.map((v) => (
-              <tr key={v.id} className="border-t">
-                <td className="p-2 font-bold">{v.itemName}</td>
-                <td>
-                  {v.user?.username} <br />
-                  <span className="text-xs text-gray-500">{v.user?.name}</span>
-                </td>
-                <td>${v.price}</td>
-                <td>{v.category}</td>
-                <td>{v.condition}</td>
-                <td>
-                  {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
-                </td>
-                <td>
+        <div className="space-y-4">
+          {filteredVibes.map((v) => (
+            <div key={v.id} className="border rounded p-4 bg-white">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-bold text-lg">{v.itemName}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      v.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      v.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {v.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                    <div>
+                      <span className="font-bold">User:</span> {v.user?.username}
+                    </div>
+                    <div>
+                      <span className="font-bold">Price:</span> ${v.price}
+                    </div>
+                    <div>
+                      <span className="font-bold">Category:</span> {v.category}
+                    </div>
+                    <div>
+                      <span className="font-bold">Condition:</span> {v.condition}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-xs text-gray-500 mb-2">
+                    <div>👀 {v.views || 0} views</div>
+                    <div>👍 {v.likesCount || 0} likes</div>
+                    <div>💬 {v.commentsCount || 0} comments</div>
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    <span className="font-bold">Description:</span> {v.description}
+                  </div>
+                  {v.tags && v.tags.length > 0 && (
+                    <div className="mt-2">
+                      <span className="font-bold text-sm">Tags:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {v.tags.map((tag, i) => (
+                          <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    Posted: {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
+                  </div>
+                </div>
+                <div className="flex gap-2 ml-4">
                   <button
-                    className="text-gruvbox-blue hover:underline mr-2"
+                    className="text-gruvbox-blue hover:underline text-sm"
                     onClick={() => {
                       setSelected(v);
                       setModalOpen(true);
                     }}
                   >
-                    Review
+                    View Details
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  {v.status === 'pending' && (
+                    <>
+                      <button
+                        className="text-green-600 hover:bg-green-50 px-2 py-1 rounded text-xs"
+                        onClick={() => moderate(v.id, "approve")}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs"
+                        onClick={() => moderate(v.id, "reject")}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Review Modal */}
@@ -699,15 +814,511 @@ function VibeModerationSection() {
   );
 }
 
-// --- COMMENT MODERATION (stub) ---
-function CommentModerationSection() {
+// --- SHOW VIBES ---
+function ShowVibesSection() {
+  const [vibes, setVibes] = useState<Vibe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedVibe, setSelectedVibe] = useState<Vibe | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 20;
+
+  // Fetch vibes with filters
+  const fetchVibes = (page = 1) => {
+    setLoading(true);
+    const offset = (page - 1) * itemsPerPage;
+    const params = new URLSearchParams({
+      status: statusFilter,
+      sortBy,
+      limit: itemsPerPage.toString(),
+      offset: offset.toString(),
+    });
+    
+    fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        setVibes(d.vibes || []);
+        setTotalPages(Math.ceil((d.totalCount || 0) / itemsPerPage));
+        setCurrentPage(page);
+      })
+      .catch(() => {
+        setVibes([]);
+        setError("Failed to fetch vibes");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchVibes(1);
+  }, [statusFilter, sortBy]);
+
+  // Filter vibes by search term
+  const filteredVibes = vibes.filter((v) =>
+    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // View vibe details
+  const viewVibeDetails = async (vibeId: string) => {
+    try {
+      const res = await fetch(API + `/admin/vibes/${vibeId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedVibe(data.vibe);
+        setModalOpen(true);
+      } else {
+        setError("Failed to fetch vibe details");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2">Comment Moderation</h2>
-      <p className="mb-4 text-gray-600">
-        (Coming soon) Moderate user comments. Remove inappropriate or spammy
-        content.
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Show Vibes</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={() => fetchVibes(currentPage)}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search vibes by name, category, or user..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="sold">Sold</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="likes">Most Liked</option>
+          <option value="views">Most Viewed</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : filteredVibes.length === 0 ? (
+        <div className="text-gray-500">No vibes found.</div>
+      ) : (
+        <>
+          {/* Vibe Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {filteredVibes.map((v) => (
+              <div key={v.id} className="border rounded p-4 bg-white hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-bold text-lg truncate">{v.itemName}</h3>
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                    v.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    v.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {v.status.toUpperCase()}
+                  </span>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-2">
+                  <div><span className="font-bold">User:</span> {v.user?.username}</div>
+                  <div><span className="font-bold">Price:</span> ${v.price}</div>
+                  <div><span className="font-bold">Category:</span> {v.category}</div>
+                </div>
+                
+                <div className="text-xs text-gray-500 mb-3">
+                  <div>👀 {v.views || 0} views • 👍 {v.likesCount || 0} likes • 💬 {v.commentsCount || 0} comments</div>
+                </div>
+                
+                <div className="text-sm text-gray-700 mb-3 line-clamp-2">
+                  {v.description}
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 bg-gruvbox-orange text-white px-3 py-2 rounded text-sm font-semibold hover:bg-gruvbox-yellow transition"
+                    onClick={() => viewVibeDetails(v.id)}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2">
+              <button
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                disabled={currentPage === 1}
+                onClick={() => fetchVibes(currentPage - 1)}
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                disabled={currentPage === totalPages}
+                onClick={() => fetchVibes(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Vibe Details Modal */}
+      <Modal
+        open={modalOpen && !!selectedVibe}
+        onClose={() => setModalOpen(false)}
+        title="Vibe Details"
+      >
+        {selectedVibe && (
+          <div className="max-h-96 overflow-y-auto">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold mb-2">{selectedVibe.itemName}</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                  selectedVibe.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  selectedVibe.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  selectedVibe.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  selectedVibe.status === 'sold' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {selectedVibe.status.toUpperCase()}
+                </span>
+                <span className="text-lg font-bold text-gruvbox-orange">${selectedVibe.price}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="font-bold">User:</span> {selectedVibe.user?.username}
+              </div>
+              <div>
+                <span className="font-bold">Category:</span> {selectedVibe.category}
+              </div>
+              <div>
+                <span className="font-bold">Condition:</span> {selectedVibe.condition}
+              </div>
+              <div>
+                <span className="font-bold">Location:</span> {selectedVibe.location}
+              </div>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Description:</span>
+              <p className="mt-1 text-gray-700">{selectedVibe.description}</p>
+            </div>
+
+            {selectedVibe.tags && selectedVibe.tags.length > 0 && (
+              <div className="mb-4">
+                <span className="font-bold text-sm">Tags:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedVibe.tags.map((tag, i) => (
+                    <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-4 text-sm text-gray-500 mb-4">
+              <div>👀 {selectedVibe.views || 0} views</div>
+              <div>👍 {selectedVibe.likesCount || 0} likes</div>
+              <div>💬 {selectedVibe.commentsCount || 0} comments</div>
+            </div>
+
+            <div className="text-xs text-gray-500">
+              <div>Created: {selectedVibe.createdAt ? new Date(selectedVibe.createdAt).toLocaleString() : ""}</div>
+              <div>Updated: {selectedVibe.updatedAt ? new Date(selectedVibe.updatedAt).toLocaleString() : ""}</div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- COMMENT MODERATION ---
+type Comment = {
+  id: string;
+  content: string;
+  user: {
+    id: string;
+    username: string;
+    name: string;
+    profilePicture?: string;
+    isVerified: boolean;
+  };
+  vibeId: string;
+  likesCount: number;
+  createdAt: string;
+  isActive: boolean;
+};
+
+
+function CommentModerationSection() {
+  const [vibes, setVibes] = useState<Vibe[]>([]);
+  const [selectedVibe, setSelectedVibe] = useState<Vibe | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Fetch vibes for selection
+  const fetchVibes = async () => {
+    try {
+      const res = await fetch(API + "/admin/vibes?limit=100", {
+        credentials: "include",
+      });
+      const data = await res.json();
+      setVibes(data.vibes || []);
+    } catch (err) {
+      setError("Failed to fetch vibes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch comments for selected vibe
+  const fetchComments = async (vibeId: string) => {
+    try {
+      const params = new URLSearchParams({
+        limit: "50",
+        offset: "0",
+        sortBy,
+        search: searchTerm,
+      });
+      
+      const res = await fetch(
+        `${API}/admin/vibes/${vibeId}/comments?${params}`,
+        { credentials: "include" }
+      );
+      const data = await res.json();
+      setComments(data.comments || []);
+    } catch (err) {
+      setError("Failed to fetch comments");
+    }
+  };
+
+  // Ban user for bad comment
+  const banUserForComment = async (userId: string, commentId: string) => {
+    if (!window.confirm("Ban this user for inappropriate comment?")) return;
+    
+    try {
+      const res = await fetch(API + "/admin/users/ban-for-comment", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          commentId,
+          reason: "Inappropriate content detected",
+        }),
+      });
+      
+      if (res.ok) {
+        setSuccess("User banned successfully");
+        if (selectedVibe) fetchComments(selectedVibe.id);
+      } else {
+        const data = await res.json();
+        setError(data.message || "Failed to ban user");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
+  useEffect(() => {
+    fetchVibes();
+  }, []);
+
+  useEffect(() => {
+    if (selectedVibe) {
+      fetchComments(selectedVibe.id);
+    }
+  }, [selectedVibe, searchTerm, sortBy]);
+
+  const filteredVibes = vibes.filter((v) =>
+    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Comment Moderation</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={fetchVibes}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Vibe Selection */}
+      <div className="mb-6">
+        <h3 className="font-bold mb-2">Select Vibe to Moderate Comments</h3>
+        <div className="flex gap-4 mb-4">
+          <input
+            className="flex-1 border rounded px-3 py-1 text-sm"
+            placeholder="Search vibes by name or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select
+            className="border rounded px-3 py-1 text-sm"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="likes">Most Liked</option>
+          </select>
+        </div>
+        
+        {loading ? (
+          <div>Loading vibes...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVibes.map((vibe) => (
+              <div
+                key={vibe.id}
+                className={`border rounded p-3 cursor-pointer transition ${
+                  selectedVibe?.id === vibe.id
+                    ? "border-gruvbox-orange bg-gruvbox-orange/10"
+                    : "hover:border-gruvbox-orange/50"
+                }`}
+                onClick={() => setSelectedVibe(vibe)}
+              >
+                <div className="font-bold text-sm">{vibe.itemName}</div>
+                <div className="text-xs text-gray-600">
+                  {vibe.user?.username} • ${vibe.price} • {vibe.category}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Status: {vibe.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Comments for Selected Vibe */}
+      {selectedVibe && (
+        <div>
+          <h3 className="font-bold mb-4">
+            Comments for "{selectedVibe.itemName}" ({comments.length})
+          </h3>
+          
+          {comments.length === 0 ? (
+            <div className="text-gray-500">No comments found.</div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="border rounded p-4 bg-white"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-sm">
+                          {comment.user.username}
+                        </span>
+                        {comment.user.isVerified && (
+                          <IconCheck size={14} className="text-blue-600" />
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-2">{comment.content}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>👍 {comment.likesCount} likes</span>
+                        <span>Vibe: {selectedVibe.itemName}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs"
+                        onClick={() =>
+                          banUserForComment(comment.user.id, comment.id)
+                        }
+                      >
+                        <IconBan size={14} className="inline mr-1" />
+                        Ban User
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
+        </div>
+      )}
     </div>
   );
 }

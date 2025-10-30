@@ -53,7 +53,7 @@ export class CommentModel {
     total: number;
     hasMore: boolean;
   }> {
-    const { vibeId, limit = 20, offset = 0, sortBy = "newest" } = filters;
+    const { vibeId, limit = 20, offset = 0, sortBy = "newest", search } = filters;
 
     // Build sort criteria
     let sortCriteria: any = {};
@@ -69,11 +69,16 @@ export class CommentModel {
     }
 
     // Get top-level comments only (no replies) with simplified query
-    const query = {
+    const query: any = {
       vibeId: new mongoose.Types.ObjectId(vibeId),
       parentComment: null,
       isActive: true,
     };
+
+    // Add search filter if provided
+    if (search) {
+      query.content = { $regex: search, $options: "i" };
+    }
 
     // Get total count
     const total = await Comment.countDocuments(query);

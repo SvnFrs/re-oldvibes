@@ -26,12 +26,11 @@ export default function LoginForm({ redirectTo = "/", onSuccess }: LoginFormProp
     const result = await login(email, password);
 
     if (result.success) {
-
       if (onSuccess) {
         onSuccess();
-      } else {
-        router.push(redirectTo);
       }
+      // Note: AuthContext will handle the redirect based on user role
+      // No need to call router.push here as it will override the admin redirect
     } else {
       setError(result.error || "Login failed");
     }

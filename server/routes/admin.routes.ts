@@ -7,6 +7,11 @@ import {
   banUser,
   unbanUser,
   listAllUsers,
+  getCommentsByVibe,
+  getVibesWithFilters,
+  getAllVibesAdmin,
+  getVibeDetailAdmin,
+  banUserForBadComment,
 } from "../controllers/admin.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireAdmin, requireStaff } from "../middleware/role.middleware";
@@ -174,5 +179,142 @@ router.patch(
  *       200: { description: List of users }
  */
 router.get("/users", authenticateToken, requireStaff, listAllUsers);
+
+// ===== NEW ADMIN FEATURES ROUTES =====
+
+/**
+ * @swagger
+ * /admin/vibes/{vibeId}/comments:
+ *   get:
+ *     summary: Get comments by vibe (admin)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: vibeId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *       - in: query
+ *         name: offset
+ *         schema: { type: integer, default: 0 }
+ *       - in: query
+ *         name: sortBy
+ *         schema: { type: string, enum: [newest, oldest, likes], default: newest }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Comments retrieved successfully }
+ *       404: { description: Vibe not found }
+ */
+router.get("/vibes/:vibeId/comments", authenticateToken, requireStaff, getCommentsByVibe);
+
+/**
+ * @swagger
+ * /admin/vibes/filter:
+ *   get:
+ *     summary: Filter vibes by name, category, price (admin)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema: { type: string }
+ *       - in: query
+ *         name: category
+ *         schema: { type: string }
+ *       - in: query
+ *         name: minPrice
+ *         schema: { type: number }
+ *       - in: query
+ *         name: maxPrice
+ *         schema: { type: number }
+ *       - in: query
+ *         name: condition
+ *         schema: { type: string }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, default: all }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *       - in: query
+ *         name: offset
+ *         schema: { type: integer, default: 0 }
+ *     responses:
+ *       200: { description: Filtered vibes retrieved successfully }
+ */
+router.get("/vibes/filter", authenticateToken, requireStaff, getVibesWithFilters);
+
+/**
+ * @swagger
+ * /admin/vibes:
+ *   get:
+ *     summary: Get all vibes (admin)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, default: all }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *       - in: query
+ *         name: offset
+ *         schema: { type: integer, default: 0 }
+ *       - in: query
+ *         name: sortBy
+ *         schema: { type: string, enum: [newest, oldest, price_asc, price_desc, likes, views], default: newest }
+ *     responses:
+ *       200: { description: All vibes retrieved successfully }
+ */
+router.get("/vibes", authenticateToken, requireStaff, getAllVibesAdmin);
+
+/**
+ * @swagger
+ * /admin/vibes/{vibeId}:
+ *   get:
+ *     summary: Get vibe detail (admin)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: vibeId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Vibe detail retrieved successfully }
+ *       404: { description: Vibe not found }
+ */
+router.get("/vibes/:vibeId", authenticateToken, requireStaff, getVibeDetailAdmin);
+
+/**
+ * @swagger
+ * /admin/users/ban-for-comment:
+ *   post:
+ *     summary: Ban user for bad comment (AI detection)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, commentId]
+ *             properties:
+ *               userId: { type: string }
+ *               commentId: { type: string }
+ *               reason: { type: string }
+ *     responses:
+ *       200: { description: User banned successfully }
+ *       400: { description: Invalid request or comment does not violate guidelines }
+ *       404: { description: User or comment not found }
+ */
+router.post("/users/ban-for-comment", authenticateToken, requireStaff, banUserForBadComment);
 
 export default router;
