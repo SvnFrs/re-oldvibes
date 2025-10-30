@@ -7,6 +7,10 @@ import {
   banUser,
   unbanUser,
   listAllUsers,
+  removeTempBan,
+  resetBadBehavior,
+  getTempBannedUsers,
+  getUserBadBehaviorHistory,
 } from "../controllers/admin.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireAdmin, requireStaff } from "../middleware/role.middleware";
@@ -174,5 +178,91 @@ router.patch(
  *       200: { description: List of users }
  */
 router.get("/users", authenticateToken, requireStaff, listAllUsers);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/remove-temp-ban:
+ *   patch:
+ *     summary: Remove temporary ban from user
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Temp ban removed }
+ *       404: { description: User not found }
+ */
+router.patch(
+  "/users/:userId/remove-temp-ban",
+  authenticateToken,
+  requireStaff as RequestHandler,
+  removeTempBan as RequestHandler,
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/reset-bad-behavior:
+ *   patch:
+ *     summary: Reset bad behavior count for user (admin only)
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Bad behavior reset }
+ *       404: { description: User not found }
+ */
+router.patch(
+  "/users/:userId/reset-bad-behavior",
+  authenticateToken,
+  requireAdmin as RequestHandler,
+  resetBadBehavior as RequestHandler,
+);
+
+/**
+ * @swagger
+ * /admin/temp-banned-users:
+ *   get:
+ *     summary: Get list of temporarily banned users
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: List of temp banned users }
+ */
+router.get(
+  "/temp-banned-users",
+  authenticateToken,
+  requireStaff as RequestHandler,
+  getTempBannedUsers as RequestHandler,
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/bad-behavior-history:
+ *   get:
+ *     summary: Get user's bad behavior history
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Bad behavior history }
+ *       404: { description: User not found }
+ */
+router.get(
+  "/users/:userId/bad-behavior-history",
+  authenticateToken,
+  requireStaff as RequestHandler,
+  getUserBadBehaviorHistory as RequestHandler,
+);
 
 export default router;

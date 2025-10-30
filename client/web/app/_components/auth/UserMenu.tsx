@@ -8,13 +8,15 @@ import {
   IconLogout,
   IconSettings,
   IconChevronDown,
+  IconAlertTriangle,
+  IconBan,
 } from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
 import { ShoppingBasket } from "lucide-react";
 
 export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, isBanned } = useAuth();
   const router = useRouter();
 
   if (!user) {
@@ -36,6 +38,9 @@ export default function UserMenu() {
     );
   }
 
+  const badBehaviorCount = user.badBehaviorCount || 0;
+  const hasViolations = badBehaviorCount > 0 && !isBanned;
+
   const handleLogout = async () => {
     await logout();
     setIsOpen(false);
@@ -52,9 +57,23 @@ export default function UserMenu() {
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
+          className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors relative"
           disabled={isLoading}
         >
+          {/* Warning Badge for violations */}
+          {hasViolations && (
+            <div className="absolute -top-1 -right-1 bg-gruvbox-yellow-light dark:bg-gruvbox-yellow-dark text-gruvbox-dark-bg0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gruvbox-light-bg0 dark:border-gruvbox-dark-bg0 z-10">
+              {badBehaviorCount}
+            </div>
+          )}
+          
+          {/* Ban Badge */}
+          {isBanned && (
+            <div className="absolute -top-1 -right-1 bg-gruvbox-red-light dark:bg-gruvbox-red-dark text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gruvbox-light-bg0 dark:border-gruvbox-dark-bg0 z-10">
+              !
+            </div>
+          )}
+          
           <div className="w-8 h-8 bg-gruvbox-orange rounded-full flex items-center justify-center">
             {user.profilePicture ? (
               <img
@@ -81,7 +100,7 @@ export default function UserMenu() {
           />
 
           {/* Menu */}
-          <div className="absolute right-0 mt-2 w-48 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg shadow-lg border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 z-20">
+          <div className="absolute right-0 mt-2 w-64 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg shadow-lg border border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3 z-20">
             <div className="py-2">
               <div className="px-4 py-2 border-b border-gruvbox-light-bg3 dark:border-gruvbox-dark-bg3">
                 <p className="text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1">
@@ -89,6 +108,43 @@ export default function UserMenu() {
                 </p>
                 <p className="text-xs text-gruvbox-gray">{user.email}</p>
               </div>
+
+              {/* Violation Warning */}
+              {hasViolations && (
+                <div className="mx-2 mt-2 p-2 bg-gruvbox-yellow-light/10 dark:bg-gruvbox-yellow-dark/10 border border-gruvbox-yellow-light dark:border-gruvbox-yellow-dark rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <IconAlertTriangle size={14} className="text-gruvbox-yellow-light dark:text-gruvbox-yellow-dark flex-shrink-0" />
+                    <span className="text-xs font-bold text-gruvbox-yellow-light dark:text-gruvbox-yellow-dark">
+                      Warning: {badBehaviorCount}/3 Strikes
+                    </span>
+                  </div>
+                  <p className="text-xs text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">
+                    Follow community guidelines to avoid a ban.
+                  </p>
+                </div>
+              )}
+
+              {/* Ban Notice */}
+              {isBanned && (
+                <div className="mx-2 mt-2 p-2 bg-gruvbox-red-light/10 dark:bg-gruvbox-red-dark/10 border border-gruvbox-red-light dark:border-gruvbox-red-dark rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <IconBan size={14} className="text-gruvbox-red-light dark:text-gruvbox-red-dark flex-shrink-0" />
+                    <span className="text-xs font-bold text-gruvbox-red-light dark:text-gruvbox-red-dark">
+                      Account Banned
+                    </span>
+                  </div>
+                  <p className="text-xs text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2 mb-2">
+                    {user.tempBanReason || "Repeated violations"}
+                  </p>
+                  <Link
+                    href="/contact-admin"
+                    className="text-xs text-gruvbox-orange underline hover:no-underline"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Contact admin to appeal
+                  </Link>
+                </div>
+              )}
 
               <Link
                 href="/profile"

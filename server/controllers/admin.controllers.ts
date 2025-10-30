@@ -222,3 +222,144 @@ export const listAllUsers = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error listing users", error });
   }
 };
+
+/**
+ * Remove temp ban from user (admin/staff)
+ */
+export const removeTempBan = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { User } = await import("../schema/user.schema");
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.isTempBanned) {
+      return res.status(400).json({ message: "User is not temp banned" });
+    }
+
+    // Remove temp ban
+    user.isTempBanned = false;
+    user.tempBanReason = undefined;
+    user.tempBanAt = undefined;
+    await user.save();
+
+    res.json({
+      message: "Temp ban removed successfully",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        badBehaviorCount: user.badBehaviorCount,
+        isTempBanned: user.isTempBanned,
+      },
+    });
+  } catch (error) {
+    console.error("Remove temp ban error:", error);
+    res.status(500).json({ message: "Error removing temp ban", error });
+  }
+};
+
+/**
+ * Reset bad behavior count for user (admin only)
+ */
+export const resetBadBehavior = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { User } = await import("../schema/user.schema");
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Reset bad behavior
+    user.badBehaviorCount = 0;
+    user.isTempBanned = false;
+    user.tempBanReason = undefined;
+    user.tempBanAt = undefined;
+    user.badBehaviorHistory = [];
+    await user.save();
+
+    res.json({
+      message: "Bad behavior count reset successfully",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        badBehaviorCount: user.badBehaviorCount,
+        isTempBanned: user.isTempBanned,
+      },
+    });
+  } catch (error) {
+    console.error("Reset bad behavior error:", error);
+    res.status(500).json({ message: "Error resetting bad behavior", error });
+  }
+};
+
+/**
+ * Get list of temp banned users (admin/staff)
+ */
+export const getTempBannedUsers = async (req: Request, res: Response) => {
+  try {
+    const { User } = await import("../schema/user.schema");
+
+    const tempBannedUsers = await User.find({ isTempBanned: true })
+      .select("_id username email badBehaviorCount tempBanReason tempBanAt badBehaviorHistory")
+      .sort({ tempBanAt: -1 })
+      .limit(100);
+
+    res.json({
+      users: tempBannedUsers.map((u) => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        badBehaviorCount: u.badBehaviorCount,
+        tempBanReason: u.tempBanReason,
+        tempBanAt: u.tempBanAt,
+        recentViolations: u.badBehaviorHistory.slice(-3),
+      })),
+      count: tempBannedUsers.length,
+    });
+  } catch (error) {
+    console.error("Get temp banned users error:", error);
+    res.status(500).json({ message: "Error fetching temp banned users", error });
+  }
+};
+
+/**
+ * Get user's bad behavior history (admin/staff)
+ */
+export const getUserBadBehaviorHistory = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { User } = await import("../schema/user.schema");
+
+    const user = await User.findById(userId)
+      .select("username email badBehaviorCount isTempBanned tempBanReason tempBanAt badBehaviorHistory")
+      .populate("badBehaviorHistory.vibeId", "itemName");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        badBehaviorCount: user.badBehaviorCount,
+        isTempBanned: user.isTempBanned,
+        tempBanReason: user.tempBanReason,
+        tempBanAt: user.tempBanAt,
+      },
+      violations: user.badBehaviorHistory,
+      totalViolations: user.badBehaviorHistory.length,
+    });
+  } catch (error) {
+    console.error("Get bad behavior history error:", error);
+    res.status(500).json({ message: "Error fetching bad behavior history", error });
+  }
+};

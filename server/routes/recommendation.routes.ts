@@ -35,24 +35,24 @@ router.get("/", authenticateToken as any, getRecommendations as RequestHandler);
 router.get("/trending", getTrendingVibes as RequestHandler);
 
 /**
- * @route   POST /api/interactions/track
+ * @route   POST /api/recommendations/track
  * @desc    Track user interaction with a vibe
  * @access  Private
  */
-router.post("/interactions/track", authenticateToken as any, trackInteraction as RequestHandler);
+router.post("/track", authenticateToken as any, trackInteraction as RequestHandler);
 
 /**
- * @route   GET /api/interactions/history
+ * @route   GET /api/recommendations/history
  * @desc    Get user's interaction history
  * @access  Private
  */
-router.get("/interactions/history", authenticateToken as any, getInteractionHistory as RequestHandler);
+router.get("/history", authenticateToken as any, getInteractionHistory as RequestHandler);
 
 /**
- * @route   GET /api/vibes/:vibeId/stats
+ * @route   GET /api/recommendations/stats/:vibeId
  * @desc    Get vibe interaction statistics
  * @access  Public
  */
-router.get("/vibes/:vibeId/stats", getVibeStats as RequestHandler);
+router.get("/stats/:vibeId", getVibeStats as RequestHandler);
 
 export default router;

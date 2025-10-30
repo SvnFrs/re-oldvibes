@@ -21,12 +21,18 @@ interface User {
   isVerified: boolean;
   profilePicture?: string;
   bio?: string;
+  // Ban status fields
+  isTempBanned?: boolean;
+  tempBanReason?: string;
+  tempBanAt?: string;
+  badBehaviorCount?: number;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isBanned: boolean;
   login: (
     email: string,
     password: string
@@ -51,6 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
 
   const isAuthenticated = !!user;
+  const isBanned = user?.isTempBanned || false;
 
   useEffect(() => {
     if (!hasCheckedAuth.current) {
@@ -156,6 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     isLoading,
     isAuthenticated,
+    isBanned,
     login,
     logout,
     refreshUser,

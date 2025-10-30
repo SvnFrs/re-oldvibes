@@ -123,6 +123,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
         isEmailVerified: user.isEmailVerified,
         isVerified: user.isVerified,
+        // Ban status information
+        isTempBanned: user.isTempBanned || false,
+        tempBanReason: user.tempBanReason,
+        tempBanAt: user.tempBanAt,
+        badBehaviorCount: user.badBehaviorCount || 0,
       },
     });
   } catch (error) {
@@ -239,7 +244,7 @@ export const me = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Return full user data
+    // Return full user data including ban status
     res.json({
       user: {
         id: user._id,
@@ -253,6 +258,11 @@ export const me = async (req: Request, res: Response): Promise<void> => {
         bio: user.bio,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        // Ban status information
+        isTempBanned: user.isTempBanned || false,
+        tempBanReason: user.tempBanReason,
+        tempBanAt: user.tempBanAt,
+        badBehaviorCount: user.badBehaviorCount || 0,
       }
     });
   } catch (error) {

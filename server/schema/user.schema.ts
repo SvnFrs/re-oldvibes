@@ -26,6 +26,17 @@ export interface IUser extends Document {
     categories: string[];
     conditions: string[];
   };
+  // Bad behavior tracking
+  badBehaviorCount: number;
+  isTempBanned: boolean;
+  tempBanReason?: string;
+  tempBanAt?: Date;
+  badBehaviorHistory: Array<{
+    reason: string;
+    comment?: string;
+    vibeId?: mongoose.Types.ObjectId;
+    timestamp: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +134,40 @@ const userSchema = new Schema<IUser>(
       categories: [String],
       conditions: [String],
     },
+    // Bad behavior tracking
+    badBehaviorCount: {
+      type: Number,
+      default: 0,
+    },
+    isTempBanned: {
+      type: Boolean,
+      default: false,
+    },
+    tempBanReason: {
+      type: String,
+      default: null,
+    },
+    tempBanAt: {
+      type: Date,
+      default: null,
+    },
+    badBehaviorHistory: [
+      {
+        reason: {
+          type: String,
+          required: true,
+        },
+        comment: String,
+        vibeId: {
+          type: Schema.Types.ObjectId,
+          ref: "Vibe",
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -61,6 +61,24 @@ export async function getCommentsByVibeId(vibeId: string): Promise<CommentsListR
   return data;
 }
 
+// Moderation error response
+export interface ModerationError {
+  message: string;
+  reason: string;
+  categories?: string[];
+  badBehaviorCount?: number;
+  warning?: string;
+}
+
+// Temp ban error response
+export interface TempBanError {
+  message: string;
+  reason: string;
+  bannedAt?: string;
+  badBehaviorCount?: number;
+  contact?: string;
+}
+
 // Create a new comment
 export async function createComment(vibeId: string, content: string, parentComment?: string): Promise<{ comment: CommentResponse }> {
   const requestBody: CreateCommentRequest = {
@@ -81,6 +99,29 @@ export async function createComment(vibeId: string, content: string, parentComme
 
   console.log('Create comment response status:', response.status);
 
+  // Handle moderation violation (400)
+  if (response.status === 400) {
+    const errorData: ModerationError = await response.json();
+    console.log('Moderation violation:', errorData);
+    
+    // Create a custom error with the moderation data
+    const error = new Error(errorData.message) as Error & { moderationError: ModerationError };
+    error.moderationError = errorData;
+    throw error;
+  }
+
+  // Handle temp ban (403)
+  if (response.status === 403) {
+    const errorData: TempBanError = await response.json();
+    console.log('Temp ban detected:', errorData);
+    
+    // Create a custom error with the temp ban data
+    const error = new Error(errorData.message) as Error & { tempBanError: TempBanError };
+    error.tempBanError = errorData;
+    throw error;
+  }
+
+  // Handle other errors
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Create comment error response:', errorText);

@@ -19,6 +19,7 @@ import {
   IconChevronRight,
   IconPlayerPlay,
   IconPhoto,
+  IconLoader2,
 } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,6 +29,8 @@ import { getVibeById } from "../../_apis/common/vibes";
 import {
   getCommentsByVibeId,
   createComment,
+  type ModerationError,
+  type TempBanError,
 } from "../../_apis/common/comments";
 import { Star } from "lucide-react";
 import Cookies from "js-cookie";
@@ -37,6 +40,7 @@ import {
   removeVibeFromWishlist,
 } from "../../_apis/common/wishlist";
 import ContactSellerButton from "../../_components/chat/ContactSellerButton";
+import { ModerationAlert } from "../../_components/moderation/ModerationAlert";
 
 // Media Carousel Component
 function MediaCarousel({
@@ -212,6 +216,18 @@ export default function VibeDetailPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isWishlist, setIsWishlist] = useState(false); // Thêm state cho wishlist
+  
+  // Moderation alert states
+  const [moderationAlert, setModerationAlert] = useState<{
+    type: "warning" | "banned";
+    message: string;
+    reason: string;
+    categories?: string[];
+    badBehaviorCount?: number;
+    warning?: string;
+    contact?: string;
+    bannedAt?: string;
+  } | null>(null);
 
   const vibeId = params.id as string;
   const userId = Cookies.get("userId");
@@ -279,13 +295,54 @@ export default function VibeDetailPage() {
 
     if (!newComment.trim()) return;
 
+    // Clear any previous alerts
+    setModerationAlert(null);
     setCommentLoading(true);
+
     try {
       const response = await createComment(vibeId, newComment.trim());
       setComments((prev) => [response.comment, ...prev]);
       setNewComment("");
-    } catch (error) {
+      
+      // Show success message if moderation passed (optional)
+      console.log("Comment posted successfully!");
+    } catch (error: any) {
       console.error("Error creating comment:", error);
+
+      // Handle moderation violation (400 error)
+      if (error.moderationError) {
+        const moderationError: ModerationError = error.moderationError;
+        setModerationAlert({
+          type: "warning",
+          message: moderationError.message,
+          reason: moderationError.reason,
+          categories: moderationError.categories,
+          badBehaviorCount: moderationError.badBehaviorCount,
+          warning: moderationError.warning,
+        });
+        return;
+      }
+
+      // Handle temp ban (403 error)
+      if (error.tempBanError) {
+        const tempBanError: TempBanError = error.tempBanError;
+        setModerationAlert({
+          type: "banned",
+          message: tempBanError.message,
+          reason: tempBanError.reason,
+          contact: tempBanError.contact,
+          bannedAt: tempBanError.bannedAt,
+          badBehaviorCount: tempBanError.badBehaviorCount,
+        });
+        return;
+      }
+
+      // Generic error handling
+      setModerationAlert({
+        type: "warning",
+        message: "Failed to post comment",
+        reason: error.message || "An unexpected error occurred. Please try again.",
+      });
     } finally {
       setCommentLoading(false);
     }
@@ -569,6 +626,21 @@ export default function VibeDetailPage() {
               Comments ({comments.length})
             </h2>
 
+            {/* Moderation Alert */}
+            {moderationAlert && (
+              <ModerationAlert
+                type={moderationAlert.type}
+                message={moderationAlert.message}
+                reason={moderationAlert.reason}
+                categories={moderationAlert.categories}
+                badBehaviorCount={moderationAlert.badBehaviorCount}
+                warning={moderationAlert.warning}
+                contact={moderationAlert.contact}
+                bannedAt={moderationAlert.bannedAt}
+                onClose={() => setModerationAlert(null)}
+              />
+            )}
+
             {/* Comment Form */}
             {isAuthenticated ? (
               <form onSubmit={handleComment} className="mb-8">
@@ -583,18 +655,28 @@ export default function VibeDetailPage() {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Write a comment..."
-                      className="w-full p-3 border border-gruvbox-light-bg2 dark:border-gruvbox-dark-bg2 bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-lg resize-none focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent"
+                      className="w-full p-3 border border-gruvbox-light-bg2 dark:border-gruvbox-dark-bg2 bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-lg resize-none focus:ring-2 focus:ring-gruvbox-orange focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                       rows={3}
                       required
+                      disabled={commentLoading || moderationAlert?.type === "banned"}
                     />
                     <div className="flex justify-end mt-2">
                       <button
                         type="submit"
-                        disabled={commentLoading || !newComment.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-gruvbox-orange text-gruvbox-light-bg0 dark:text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow transition disabled:opacity-50"
+                        disabled={commentLoading || !newComment.trim() || moderationAlert?.type === "banned"}
+                        className="flex items-center gap-2 px-4 py-2 bg-gruvbox-orange text-gruvbox-light-bg0 dark:text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                       >
-                        <IconSend size={16} />
-                        {commentLoading ? "Posting..." : "Post Comment"}
+                        {commentLoading ? (
+                          <>
+                            <IconLoader2 size={16} className="animate-spin" />
+                            <span>Posting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <IconSend size={16} />
+                            <span>Post Comment</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

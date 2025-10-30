@@ -7,6 +7,8 @@ import type {
   UpdateCommentInput,
   CommentFilters,
 } from "../types/comment.types";
+import { moderateComment } from "../services/moderation.services";
+import { User } from "../schema/user.schema";
 
 const commentModel = new CommentModel();
 const vibeModel = new VibeModel();
@@ -25,11 +27,66 @@ export const createComment = async (
       return;
     }
 
+    // Check if user is temp banned
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    if (user.isTempBanned) {
+      res.status(403).json({
+        message: "Your account is temporarily banned due to repeated violations",
+        reason: user.tempBanReason,
+        bannedAt: user.tempBanAt,
+        badBehaviorCount: user.badBehaviorCount,
+        contact: "Please contact an admin to appeal this ban",
+      });
+      return;
+    }
+
     // Check if vibe exists and is approved
     const vibe = await vibeModel.getById(vibeId);
     if (!vibe || vibe.status !== "approved") {
       res.status(404).json({
         message: "Vibe not found or not available for comments",
+      });
+      return;
+    }
+
+    // Moderate comment using Gemini AI
+    const moderationResult = await moderateComment(
+      commentData.content,
+      vibe.itemName
+    );
+
+    if (!moderationResult.isClean) {
+      // Increment bad behavior counter
+      user.badBehaviorCount += 1;
+      user.badBehaviorHistory.push({
+        reason: moderationResult.reason || "Inappropriate content",
+        comment: commentData.content,
+        vibeId: vibe._id,
+        timestamp: new Date(),
+      });
+
+      // Check if user should be temp banned (3 strikes)
+      if (user.badBehaviorCount >= 3 && !user.isTempBanned) {
+        user.isTempBanned = true;
+        user.tempBanReason = `Repeated violations: ${moderationResult.categories?.join(", ") || "inappropriate behavior"}`;
+        user.tempBanAt = new Date();
+      }
+
+      await user.save();
+
+      res.status(400).json({
+        message: "Comment violates community guidelines",
+        reason: moderationResult.reason,
+        categories: moderationResult.categories,
+        badBehaviorCount: user.badBehaviorCount,
+        warning: user.badBehaviorCount >= 3
+          ? "Your account has been temporarily banned. Contact an admin to appeal."
+          : `Warning ${user.badBehaviorCount}/3. Further violations will result in a temporary ban.`,
       });
       return;
     }
@@ -53,6 +110,10 @@ export const createComment = async (
         id: newComment._id,
         content: newComment.content,
         createdAt: newComment.createdAt,
+      },
+      moderationInfo: {
+        passed: true,
+        confidence: moderationResult.confidence,
       },
     });
   } catch (error) {
