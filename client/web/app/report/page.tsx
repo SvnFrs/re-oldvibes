@@ -15,7 +15,6 @@ import Image from "next/image";
 import Wrapper from "../_sections/wrapper";
 import { useAuth } from "../_contexts/AuthContext";
 import { reportAPI, type ReportInput } from "../_apis/common/feedback";
-import { uploadToCloudinaryImage } from "../_apis/common/upload";
 import { getVibeById } from "../_apis/common/vibes";
 import AuthGuard from "../_components/auth/AuthGuard";
 
@@ -182,30 +181,14 @@ export default function ReportPage() {
     setError("");
 
     try {
-      let uploadedImageUrls: string[] = [];
-
-      // Upload images to Cloudinary if any
-      if (imageFiles.length > 0) {
-        const cloudinaryResults = await uploadToCloudinaryImage(imageFiles);
-        if (cloudinaryResults === false) {
-          setError("Failed to upload images to Cloudinary");
-          setIsSubmitting(false);
-          return;
-        }
-        // Extract secure URLs from Cloudinary results
-        uploadedImageUrls = cloudinaryResults.map(
-          (result) => result.secure_url
-        );
-      }
-
       const reportData: ReportInput = {
         vibeId: formData.vibeId,
         reportType: formData.reportType,
         reportDescription: formData.reportDescription,
-        reportImages: uploadedImageUrls,
       };
 
-      await reportAPI.createReport(reportData);
+      // Send report with image files (backend will upload to AWS S3)
+      await reportAPI.createReport(reportData, imageFiles);
 
       // Success
       setSuccess(true);

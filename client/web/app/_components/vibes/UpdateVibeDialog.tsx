@@ -21,10 +21,10 @@ import {
   IconCurrencyDollar,
 } from "@tabler/icons-react";
 import Image from "next/image";
-import { updateVibe, uploadVibeMedia } from "../../_apis/common/vibes";
+import { updateVibe } from "../../_apis/common/vibes";
 import LocationPicker from "../upload/LocationPicker";
 import { useAuth } from "../../_contexts/AuthContext";
-import { uploadToCloudinaryImage } from "../../_apis/common/upload";
+import { uploadVibeMediaToBackend } from "../../_apis/common/upload";
 import { v4 as uuidv4 } from "uuid";
 
 interface Vibe {
@@ -277,27 +277,26 @@ export function UpdateVibeDialog({
     setIsSubmitting(true);
 
     try {
-      // Upload new images to Cloudinary first if any
-      let uploadedImageUrls: string[] = [];
-      const imageFiles = newMediaFiles.filter((file) =>
-        file.type.startsWith("image/")
-      );
-      const videoFiles = newMediaFiles.filter((file) =>
-        file.type.startsWith("video/")
-      );
+      const vibeId = vibe.id || "";
+      if (!vibeId) {
+        setError("Vibe ID is required");
+        setIsSubmitting(false);
+        return;
+      }
 
-      // Upload images to Cloudinary before updating
-      if (imageFiles.length > 0) {
-        const cloudinaryResults = await uploadToCloudinaryImage(imageFiles);
-        if (cloudinaryResults === false) {
-          setError("Failed to upload images to Cloudinary");
+      // Upload new media files to backend (AWS S3) if any
+      const newMediaFilesToUpload = newMediaFiles.filter((file) =>
+        file instanceof File
+      );
+      
+      if (newMediaFilesToUpload.length > 0) {
+        try {
+          await uploadVibeMediaToBackend(vibeId, newMediaFilesToUpload);
+        } catch (uploadError) {
+          setError(`Failed to upload media: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`);
           setIsSubmitting(false);
           return;
         }
-        // Extract secure URLs from Cloudinary results
-        uploadedImageUrls = cloudinaryResults.map(
-          (result) => result.secure_url
-        );
       }
 
       // Calculate which media files were removed
@@ -309,32 +308,19 @@ export function UpdateVibeDialog({
         .map((media) => media._id)
         .filter((id): id is string => id !== undefined);
 
-      // Prepare remaining existing media (to keep)
+      // Prepare remaining existing media (to keep) - these will be preserved
       const mediaFilesToKeep = existingMedia.map((media) => ({
         type: media.type,
         url: media.url,
         _id: media._id,
       }));
 
-      // Prepare new media URLs from Cloudinary
-      const newMediaUrls = uploadedImageUrls.map(
-        (url) =>
-          ({
-            type: "image" as const,
-            url: url,
-            _id: vibe.id || "",
-          } as const)
-      );
-
-      // Merge existing media files with new media URLs
-      const allMediaFiles = [...mediaFilesToKeep, ...newMediaUrls];
-
       const updateData = {
         ...formData,
         tags,
         price: Number(formData.price),
-        // Include all media files (existing + new)
-        mediaFiles: allMediaFiles,
+        // Include remaining media files (existing media that are kept)
+        mediaFiles: mediaFilesToKeep,
         // Include IDs of media files to remove
         ...(removedMediaIds.length > 0 && {
           removedMediaIds: removedMediaIds,
@@ -352,11 +338,6 @@ export function UpdateVibeDialog({
       // console.log("CHECK updateData", updateData);
 
       await updateVibe(vibe.id, userId, updateData);
-
-      // Upload video files via backend if any (videos handled separately)
-      if (videoFiles.length > 0) {
-        await uploadVibeMedia(vibe.id, videoFiles);
-      }
 
       // Call success callback
       if (onUpdateSuccess) {

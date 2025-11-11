@@ -10,7 +10,7 @@ import {
   IconX,
   IconCamera,
 } from "@tabler/icons-react";
-import { uploadToCloudinaryImage } from "@/app/_apis/common/upload";
+import { uploadProfilePictureToBackend } from "@/app/_apis/common/upload";
 
 interface UserInfo {
   id: string;
@@ -124,25 +124,12 @@ export default function ProfileInfo() {
     setSaveSuccess(false);
 
     try {
-      // Upload to Cloudinary first
-      const uploadResults = await uploadToCloudinaryImage([file]);
-
-      if (!uploadResults || !Array.isArray(uploadResults)) {
-        throw new Error("Failed to upload image to Cloudinary");
-      }
-
-      // Get the uploaded image URL
-      const uploadedImage = uploadResults[0];
-      const imageUrl = uploadedImage.secure_url;
+      // Upload to backend (AWS S3) - this also updates the profile automatically
+      const imageUrl = await uploadProfilePictureToBackend(file);
 
       if (!imageUrl) {
-        throw new Error("No image URL returned from upload");
+        throw new Error("Failed to upload profile picture");
       }
-
-      // Update user profile with the new image URL
-      const response = await updateMyProfile({
-        profilePicture: imageUrl,
-      });
 
       // Update local state with new profile picture
       setUser({ ...user, profilePicture: imageUrl });

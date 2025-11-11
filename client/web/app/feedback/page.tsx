@@ -20,7 +20,6 @@ import {
   type FeedbackInput,
   type FeedbackItem,
 } from "../_apis/common/feedback";
-import { uploadToCloudinaryImage } from "../_apis/common/upload";
 import AuthGuard from "../_components/auth/AuthGuard";
 import Link from "next/link";
 
@@ -226,29 +225,13 @@ export default function FeedbackPage() {
     setError("");
 
     try {
-      let uploadedImageUrls: string[] = [];
-
-      // Upload images to Cloudinary if any
-      if (imageFiles.length > 0) {
-        const cloudinaryResults = await uploadToCloudinaryImage(imageFiles);
-        if (cloudinaryResults === false) {
-          setError("Failed to upload images to Cloudinary");
-          setIsSubmitting(false);
-          return;
-        }
-        // Extract secure URLs from Cloudinary results
-        uploadedImageUrls = cloudinaryResults.map(
-          (result) => result.secure_url
-        );
-      }
-
       const feedbackData: FeedbackInput = {
         feedbackType: formData.feedbackType,
         feedbackDescription: formData.feedbackDescription,
-        feedbackImages: uploadedImageUrls,
       };
 
-      await feedbackAPI.createFeedback(feedbackData);
+      // Send feedback with image files (backend will upload to AWS S3)
+      await feedbackAPI.createFeedback(feedbackData, imageFiles);
       await fetchFeedbacks();
 
       // Success

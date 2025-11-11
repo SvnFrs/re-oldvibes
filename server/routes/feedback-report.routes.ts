@@ -11,6 +11,10 @@ import {
 } from "../controllers/feedback-report.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireUser, requireStaff } from "../middleware/role.middleware";
+import {
+  uploadFeedbackImages,
+  uploadReportImages,
+} from "../middleware/upload.middleware";
 import type { RequestHandler } from "../types/handler.types";
 
 const router = Router();
@@ -107,6 +111,7 @@ router.post(
   "/feedback/create",
   authenticateToken,
   requireUser as RequestHandler,
+  uploadFeedbackImages.array("images", 5),
   createFeedback as RequestHandler
 );
 
@@ -261,6 +266,7 @@ router.post(
   "/report/create",
   authenticateToken,
   requireUser as RequestHandler,
+  uploadReportImages.array("images", 5),
   createReport as RequestHandler
 );
 

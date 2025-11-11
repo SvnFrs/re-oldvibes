@@ -20,7 +20,7 @@ import {
   updateUserProfile,
   uploadUserProfilePicture,
 } from "@/app/_apis/common/user";
-import { uploadToCloudinaryImage } from "@/app/_apis/common/upload";
+import { uploadProfilePictureToBackend } from "@/app/_apis/common/upload";
 import Cookies from "js-cookie";
 import ChangePasswordFormAdmin from "@/app/_components/auth/ChangePasswordFormAdmin";
 
@@ -175,22 +175,14 @@ export default function AdminProfilePage() {
     setSuccess("");
 
     try {
-      // Upload to Cloudinary first
-      const uploadResults = await uploadToCloudinaryImage([file]);
-
-      if (!uploadResults || !Array.isArray(uploadResults)) {
-        throw new Error("Failed to upload image to Cloudinary");
-      }
-
-      // Get the uploaded image URL
-      const uploadedImage = uploadResults[0];
-      const imageUrl = uploadedImage.secure_url;
+      // Upload to backend (AWS S3) - this also updates the profile automatically
+      const imageUrl = await uploadProfilePictureToBackend(file);
 
       if (!imageUrl) {
-        throw new Error("No image URL returned from upload");
+        throw new Error("Failed to upload profile picture");
       }
 
-      // Update user profile with the new image URL
+      // Update user profile with other fields (profile picture is already updated by backend)
       const response = await updateUserProfile(token || "", {
         name: formData.name,
         username: formData.username,

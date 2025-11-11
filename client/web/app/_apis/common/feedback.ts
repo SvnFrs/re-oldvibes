@@ -42,12 +42,18 @@ class FeedbackAPI {
   ): Promise<T> {
     const url = `${API_BASE}${endpoint}`;
 
+    // If body is FormData, don't set Content-Type (browser will set it with boundary)
+    const isFormData = options.body instanceof FormData;
+    const headers: HeadersInit = isFormData
+      ? { ...options.headers }
+      : {
+          "Content-Type": "application/json",
+          ...options.headers,
+        };
+
     const config: RequestInit = {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
@@ -68,10 +74,24 @@ class FeedbackAPI {
     }
   }
 
-  async createFeedback(data: FeedbackInput): Promise<FeedbackResponse> {
+  async createFeedback(
+    data: FeedbackInput,
+    imageFiles?: File[]
+  ): Promise<FeedbackResponse> {
+    const formData = new FormData();
+    formData.append("feedbackType", data.feedbackType);
+    formData.append("feedbackDescription", data.feedbackDescription);
+
+    // Append image files if provided
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+
     return this.request<FeedbackResponse>("/feedback/create", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 
@@ -144,12 +164,18 @@ class ReportAPI {
   ): Promise<T> {
     const url = `${API_BASE}${endpoint}`;
 
+    // If body is FormData, don't set Content-Type (browser will set it with boundary)
+    const isFormData = options.body instanceof FormData;
+    const headers: HeadersInit = isFormData
+      ? { ...options.headers }
+      : {
+          "Content-Type": "application/json",
+          ...options.headers,
+        };
+
     const config: RequestInit = {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
@@ -170,10 +196,25 @@ class ReportAPI {
     }
   }
 
-  async createReport(data: ReportInput): Promise<ReportResponse> {
+  async createReport(
+    data: ReportInput,
+    imageFiles?: File[]
+  ): Promise<ReportResponse> {
+    const formData = new FormData();
+    formData.append("vibeId", data.vibeId);
+    formData.append("reportType", data.reportType);
+    formData.append("reportDescription", data.reportDescription);
+
+    // Append image files if provided
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+
     return this.request<ReportResponse>("/report/create", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 

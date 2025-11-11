@@ -69,7 +69,23 @@ export const createFeedback = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const feedbackData: FeedbackInput = req.body;
+    const files = req.files as Express.MulterS3.File[] | undefined;
+    
+    // Extract image URLs from uploaded files (AWS S3)
+    // If files are uploaded, use their S3 URLs; otherwise use URLs from body (backward compatibility)
+    const feedbackImages: string[] = files && files.length > 0
+      ? files.map((file) => file.location)
+      : req.body.feedbackImages
+      ? Array.isArray(req.body.feedbackImages)
+        ? req.body.feedbackImages
+        : [req.body.feedbackImages]
+      : [];
+
+    const feedbackData: FeedbackInput = {
+      feedbackType: req.body.feedbackType,
+      feedbackDescription: req.body.feedbackDescription || '',
+      feedbackImages: feedbackImages,
+    };
 
     // Validate required fields
     if (!feedbackData.feedbackType || !feedbackData.feedbackDescription) {
@@ -275,7 +291,24 @@ export const createReport = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const reportData: ReportInput = req.body;
+    const files = req.files as Express.MulterS3.File[] | undefined;
+    
+    // Extract image URLs from uploaded files (AWS S3)
+    // If files are uploaded, use their S3 URLs; otherwise use URLs from body (backward compatibility)
+    const reportImages: string[] = files && files.length > 0
+      ? files.map((file) => file.location)
+      : req.body.reportImages
+      ? Array.isArray(req.body.reportImages)
+        ? req.body.reportImages
+        : [req.body.reportImages]
+      : [];
+
+    const reportData: ReportInput = {
+      vibeId: req.body.vibeId,
+      reportType: req.body.reportType,
+      reportDescription: req.body.reportDescription || '',
+      reportImages: reportImages,
+    };
 
     // Validate required fields
     if (

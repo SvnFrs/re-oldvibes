@@ -98,3 +98,65 @@ export const uploadBannerImage = multer({
     }
   },
 });
+
+export const uploadReportImages = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET_NAME!,
+    key: (req, file, cb) => {
+      const timestamp = Date.now();
+      let ext = path.extname(file.originalname);
+      if (!ext) {
+        if (file.mimetype === "image/jpeg") ext = ".jpg";
+        else if (file.mimetype === "image/png") ext = ".png";
+        else if (file.mimetype === "image/webp") ext = ".webp";
+        else ext = "";
+      }
+      const baseName = path.basename(file.originalname, ext).replace(/\s+/g, "_");
+      const filename = `${timestamp}-${baseName}${ext}`;
+      cb(null, `reports/${filename}`);
+    },
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB for report images
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow images for reports
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed for reports"));
+    }
+  },
+});
+
+export const uploadFeedbackImages = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET_NAME!,
+    key: (req, file, cb) => {
+      const timestamp = Date.now();
+      let ext = path.extname(file.originalname);
+      if (!ext) {
+        if (file.mimetype === "image/jpeg") ext = ".jpg";
+        else if (file.mimetype === "image/png") ext = ".png";
+        else if (file.mimetype === "image/webp") ext = ".webp";
+        else ext = "";
+      }
+      const baseName = path.basename(file.originalname, ext).replace(/\s+/g, "_");
+      const filename = `${timestamp}-${baseName}${ext}`;
+      cb(null, `feedback/${filename}`);
+    },
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB for feedback images
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow images for feedback
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed for feedback"));
+    }
+  },
+});
