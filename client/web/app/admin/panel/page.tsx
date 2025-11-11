@@ -2450,7 +2450,6 @@ type BannerInputForm = {
   title: string;
   description?: string;
   imageUrl: string;
-  linkUrl?: string;
   displayOrder?: number;
   isActive?: boolean;
   startDate?: Date | string;
@@ -2471,7 +2470,6 @@ function BannerSection() {
     title: "",
     description: "",
     imageUrl: "",
-    linkUrl: "",
     displayOrder: 0,
     isActive: true,
   });
@@ -2547,9 +2545,6 @@ function BannerSection() {
       if (form.description) {
         formData.append("description", form.description);
       }
-      if (form.linkUrl) {
-        formData.append("linkUrl", form.linkUrl);
-      }
       formData.append("isActive", form.isActive ? "true" : "false");
       if (form.startDate) {
         formData.append("startDate", new Date(form.startDate).toISOString());
@@ -2567,7 +2562,7 @@ function BannerSection() {
       if (res.ok) {
         setSuccess("Banner created successfully!");
         setModalOpen(false);
-        setForm({ title: "", description: "", imageUrl: "", linkUrl: "", displayOrder: 0, isActive: true });
+        setForm({ title: "", description: "", imageUrl: "", displayOrder: 0, isActive: true });
         setImageFile(null);
         setImagePreview("");
         fetchBanners();
@@ -2594,9 +2589,6 @@ function BannerSection() {
       }
       if (form.description !== undefined) {
         formData.append("description", form.description || "");
-      }
-      if (form.linkUrl !== undefined) {
-        formData.append("linkUrl", form.linkUrl || "");
       }
       if (form.isActive !== undefined) {
         formData.append("isActive", form.isActive ? "true" : "false");
@@ -2677,7 +2669,6 @@ function BannerSection() {
       title: banner.title,
       description: banner.description || "",
       imageUrl: banner.imageUrl,
-      linkUrl: banner.linkUrl || "",
       displayOrder: banner.displayOrder,
       isActive: banner.isActive,
       startDate: banner.startDate,
@@ -2691,7 +2682,7 @@ function BannerSection() {
 
   const openCreateModal = () => {
     setSelectedBanner(null);
-    setForm({ title: "", description: "", imageUrl: "", linkUrl: "", displayOrder: 0, isActive: true });
+    setForm({ title: "", description: "", imageUrl: "", displayOrder: 0, isActive: true });
     setImageFile(null);
     setImagePreview("");
     setIsEditing(false);
@@ -2739,7 +2730,6 @@ function BannerSection() {
               <h3 className="font-bold text-lg mb-1">{banner.title}</h3>
               {banner.description && <p className="text-sm text-gray-600 mb-2 line-clamp-2">{banner.description}</p>}
               <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                {banner.isActive && <span>Order: {banner.displayOrder}</span>}
                 {banner.linkUrl && <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a>}
               </div>
               <div className="flex gap-2">
@@ -2794,10 +2784,6 @@ function BannerSection() {
                   Leave empty to keep current image, or upload a new one to replace it.
                 </p>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-bold mb-1">Link URL</label>
-              <input type="url" className="w-full border rounded px-3 py-2" value={form.linkUrl} onChange={(e) => setForm({ ...form, linkUrl: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-bold mb-1">Active</label>

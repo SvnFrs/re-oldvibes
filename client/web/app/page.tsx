@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   IconSearch,
   IconHeart,
@@ -17,8 +17,6 @@ import {
   IconBallBasketball,
   IconMoodSmile,
   IconTool,
-  IconChevronLeft,
-  IconChevronRight,
 } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,6 +26,7 @@ import { getVibesWithWishlist } from "./_apis/common/wishlist";
 import { useAuth } from "./_contexts/AuthContext";
 import { log } from "console";
 import Cookies from "js-cookie";
+import BannerCarousel from "./_components/banner/BannerCarousel";
 
 // Vibe Card Component
 function VibeCard({ vibe }: { vibe: any }) {
@@ -136,173 +135,6 @@ function VibeCard({ vibe }: { vibe: any }) {
   );
 }
 
-// Banner Carousel Component
-function BannerCarousel({
-  banners,
-}: {
-  banners: { id: string; imageUrl: string; title: string; linkUrl?: string; description?: string }[];
-}) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Auto-play carousel
-  useEffect(() => {
-    if (banners.length <= 1) return;
-
-    if (isAutoPlaying) {
-      intervalRef.current = setInterval(() => {
-        setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
-      }, 5000); // Change slide every 5 seconds
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [banners.length, isAutoPlaying]);
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
-    setIsAutoPlaying(false);
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
-    setIsAutoPlaying(false);
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  if (banners.length === 0) return null;
-
-  return (
-    <section className="py-6 md:py-8">
-      <div className="relative w-full">
-        {/* Banner Container */}
-        <div
-          className="relative w-full h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg2 shadow-lg"
-          onMouseEnter={() => setIsAutoPlaying(false)}
-          onMouseLeave={() => setIsAutoPlaying(true)}
-        >
-          {banners.map((banner, index) => {
-            const isActive = index === currentIndex;
-            return (
-              <div
-                key={banner.id}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  isActive ? "opacity-100 z-0" : "opacity-0 z-[-1]"
-                }`}
-              >
-                {banner.linkUrl ? (
-                  <Link
-                    href={banner.linkUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full h-full"
-                  >
-                    <Image
-                      src={banner.imageUrl}
-                      alt={banner.title}
-                      fill
-                      className="object-cover"
-                      priority={isActive}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
-                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
-                        <h3 className="text-2xl md:text-3xl font-bold mb-2">{banner.title}</h3>
-                        {banner.description && (
-                          <p className="text-sm md:text-base text-white/90 line-clamp-2">
-                            {banner.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <>
-                    <Image
-                      src={banner.imageUrl}
-                      alt={banner.title}
-                      fill
-                      className="object-cover"
-                      priority={isActive}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
-                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
-                        <h3 className="text-2xl md:text-3xl font-bold mb-2">{banner.title}</h3>
-                        {banner.description && (
-                          <p className="text-sm md:text-base text-white/90 line-clamp-2">
-                            {banner.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Navigation Arrows */}
-          {banners.length > 1 && (
-            <>
-              <button
-                onClick={goToPrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 md:p-3 transition-all z-10"
-                aria-label="Previous banner"
-              >
-                <IconChevronLeft size={24} />
-              </button>
-              <button
-                onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 md:p-3 transition-all z-10"
-                aria-label="Next banner"
-              >
-                <IconChevronRight size={24} />
-              </button>
-            </>
-          )}
-
-          {/* Dots Indicator */}
-          {banners.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-              {banners.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentIndex
-                      ? "bg-white w-8"
-                      : "bg-white/50 hover:bg-white/75"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Slide Counter */}
-          {banners.length > 1 && (
-            <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-10">
-              {currentIndex + 1} / {banners.length}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // Categories Component
 function CategoriesSection() {
   const categories = [
@@ -353,7 +185,6 @@ function CategoriesSection() {
 // Main Homepage Component
 export default function HomePage() {
   const [vibes, setVibes] = useState<any[]>([]);
-  const [banners, setBanners] = useState<{ id: string; imageUrl: string; title: string; linkUrl?: string; description?: string; displayOrder?: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -383,24 +214,6 @@ export default function HomePage() {
       }
     };
 
-    const fetchBanners = async () => {
-      try {
-        const API = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
-        const res = await fetch(`${API}/banner/public`, { credentials: "include" });
-        const data = await res.json();
-        if (res.ok && Array.isArray(data.banners)) {
-          // Sort banners by displayOrder (ascending)
-          const sortedBanners = [...data.banners].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-          setBanners(sortedBanners);
-        } else {
-          setBanners([]);
-        }
-      } catch (e) {
-        console.error("Error fetching banners:", e);
-        setBanners([]);
-      }
-    };
-
     const loadMoreVibes = async () => {
       if (!pagination.hasNext || loadingMore) return;
 
@@ -420,7 +233,6 @@ export default function HomePage() {
     };
 
     fetchVibes();
-    fetchBanners();
   }, []);
 
   return (
@@ -465,13 +277,11 @@ export default function HomePage() {
       </section>
 
       {/* Active Banners Carousel */}
-      {banners.length > 0 && (
-        <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 px-4">
-          <div className="max-w-7xl mx-auto">
-            <BannerCarousel banners={banners} />
-          </div>
+      <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 px-4">
+        <div className="max-w-7xl mx-auto">
+          <BannerCarousel />
         </div>
-      )}
+      </div>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* Categories */}

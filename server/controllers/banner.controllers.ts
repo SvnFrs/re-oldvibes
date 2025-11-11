@@ -16,6 +16,7 @@ export const getActiveBanners = async (
 ): Promise<void> => {
   try {
     const banners = await bannerModel.getActiveBanners();
+    console.log(`[Banner API] Found ${banners.length} active banner(s) for public endpoint`);
 
     res.json({
       banners,

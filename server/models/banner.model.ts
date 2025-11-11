@@ -147,9 +147,22 @@ export class BannerModel {
       ],
     };
 
+    console.log(`[Banner Model] Query for active banners:`, JSON.stringify(query, null, 2));
+    
+    const allBanners = await Banner.find({ isActive: true }).lean();
+    console.log(`[Banner Model] Total active banners in DB: ${allBanners.length}`);
+    allBanners.forEach((b) => {
+      console.log(`  - Banner: ${b.title}, isActive: ${b.isActive}, startDate: ${b.startDate}, endDate: ${b.endDate}`);
+    });
+
     const banners = await Banner.find(query)
       .sort({ displayOrder: 1, createdAt: -1 })
       .lean();
+
+    console.log(`[Banner Model] Banners matching date criteria: ${banners.length}`);
+    banners.forEach((b) => {
+      console.log(`  - Banner: ${b.title}, displayOrder: ${b.displayOrder}`);
+    });
 
     return banners.map((banner) => this.formatBannerResponse(banner));
   }
