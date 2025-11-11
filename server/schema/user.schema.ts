@@ -13,6 +13,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   isEmailVerified: boolean;
   isActive: boolean;
+  deletedAt?: Date; // Soft delete timestamp
   // OAuth fields
   googleId?: string; // Only Google users have this
   // Recommendation fields
@@ -108,6 +109,10 @@ const userSchema = new Schema<IUser>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
     // OAuth fields
     googleId: {

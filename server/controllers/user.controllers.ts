@@ -120,6 +120,42 @@ export const updateProfile = async (
       return;
     }
 
+    // Validate username format if provided
+    if (updateData.username) {
+      const usernameRegex = /^[a-zA-Z0-9_]+$/;
+      if (!usernameRegex.test(updateData.username)) {
+        res.status(400).json({ 
+          message: "Username can only contain letters, numbers, and underscores" 
+        });
+        return;
+      }
+      // Check if username is already taken by another user
+      const existingUser = await userModel.getByUsername(updateData.username.toLowerCase());
+      if (existingUser && existingUser._id!.toString() !== userId) {
+        res.status(409).json({ message: "Username already taken" });
+        return;
+      }
+      // Convert to lowercase
+      updateData.username = updateData.username.toLowerCase().trim();
+    }
+
+    // Validate email format if provided
+    if (updateData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.email)) {
+        res.status(400).json({ message: "Invalid email format" });
+        return;
+      }
+      // Check if email is already taken by another user
+      const existingUser = await userModel.getByEmail(updateData.email.toLowerCase());
+      if (existingUser && existingUser._id!.toString() !== userId) {
+        res.status(409).json({ message: "Email already taken" });
+        return;
+      }
+      // Convert to lowercase
+      updateData.email = updateData.email.toLowerCase().trim();
+    }
+
     const updatedUser = await userModel.updateUser(userId, updateData);
     if (!updatedUser) {
       res.status(404).json({ message: "User not found" });
@@ -139,6 +175,14 @@ export const updateProfile = async (
     });
   } catch (error) {
     console.error("Update profile error:", error);
+    // Handle MongoDB duplicate key error
+    if ((error as any).code === 11000) {
+      const field = Object.keys((error as any).keyPattern)[0];
+      res.status(409).json({ 
+        message: `${field === 'email' ? 'Email' : 'Username'} already taken` 
+      });
+      return;
+    }
     res.status(500).json({ message: "Error updating profile", error });
   }
 };
@@ -326,5 +370,42 @@ export const getFollowing = async (
   } catch (error) {
     console.error("Get following error:", error);
     res.status(500).json({ message: "Error fetching following", error });
+  }
+};
+
+export const softDeleteAccount = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+
+    // Check if user exists
+    const user = await userModel.getById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Check if account is already deleted
+    if (user.deletedAt) {
+      res.status(400).json({ message: "Account is already deleted" });
+      return;
+    }
+
+    // Soft delete the account
+    const success = await userModel.softDeleteAccount(userId);
+    if (!success) {
+      res.status(500).json({ message: "Failed to delete account" });
+      return;
+    }
+
+    res.json({ 
+      message: "Account deleted successfully",
+      deletedAt: new Date()
+    });
+  } catch (error) {
+    console.error("Soft delete account error:", error);
+    res.status(500).json({ message: "Error deleting account", error });
   }
 };

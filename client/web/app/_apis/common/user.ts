@@ -3,6 +3,35 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
 
 /**
+ * Update user profile information (using cookies for auth)
+ */
+export async function updateMyProfile(profileData: {
+  name?: string;
+  username?: string;
+  email?: string;
+  bio?: string;
+  profilePicture?: string;
+}): Promise<{ message: string; profile: any }> {
+  const response = await fetch(`${API_BASE}/users/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(profileData),
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to update profile" }));
+    throw new Error(error.message || "Failed to update profile");
+  }
+
+  return await response.json();
+}
+
+/**
  * Update admin profile information
  */
 export async function updateUserProfile(
@@ -57,6 +86,28 @@ export async function uploadUserProfilePicture(
       .json()
       .catch(() => ({ message: "Failed to upload profile picture" }));
     throw new Error(error.message || "Failed to upload profile picture");
+  }
+
+  return await response.json();
+}
+
+/**
+ * Delete user account (soft delete)
+ */
+export async function deleteAccount(): Promise<{ message: string; deletedAt: string }> {
+  const response = await fetch(`${API_BASE}/users/me`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Failed to delete account" }));
+    throw new Error(error.message || "Failed to delete account");
   }
 
   return await response.json();

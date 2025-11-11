@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/app/_components/ui/dialog";
 import { Input } from "@/app/_components/ui/input";
 import { Label } from "@/app/_components/ui/label";
@@ -23,9 +22,36 @@ import {
 } from "@tabler/icons-react";
 import Image from "next/image";
 import { updateVibe, uploadVibeMedia } from "../../_apis/common/vibes";
-import LocationPicker from "../../_components/upload/LocationPicker";
+import LocationPicker from "../upload/LocationPicker";
 import { useAuth } from "../../_contexts/AuthContext";
 import { uploadToCloudinaryImage } from "../../_apis/common/upload";
+import { v4 as uuidv4 } from "uuid";
+
+interface Vibe {
+  id: string;
+  itemName: string;
+  description: string;
+  price: number;
+  category: string;
+  condition: string;
+  tags: string[];
+  location?: string;
+  mediaFiles: {
+    type: "image" | "video";
+    url: string;
+    thumbnail?: string;
+    _id?: string;
+  }[];
+  userId: string;
+  status: string;
+}
+
+interface UpdateVibeDialogProps {
+  open: boolean;
+  onClose: () => void;
+  vibe: Vibe | null;
+  onUpdateSuccess?: () => void;
+}
 
 const CATEGORIES = [
   "Electronics",
@@ -93,19 +119,24 @@ function MediaPreview({
   );
 }
 
-export function VibeUpdate({ data }: { data: any }) {
+export function UpdateVibeDialog({
+  open,
+  onClose,
+  vibe,
+  onUpdateSuccess,
+}: UpdateVibeDialogProps) {
   const { user } = useAuth();
-  const [tags, setTags] = useState<string[]>(data?.tags || []);
+  const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    itemName: data?.itemName || "",
-    description: data?.description || "",
-    price: data?.price || "",
-    category: data?.category || "",
-    condition: data?.condition || "",
-    location: data?.location || "",
+    itemName: "",
+    description: "",
+    price: "",
+    category: "",
+    condition: "",
+    location: "",
   });
 
   // Existing media files from the vibe
@@ -121,26 +152,26 @@ export function VibeUpdate({ data }: { data: any }) {
   const [newMediaPreviews, setNewMediaPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form data when data prop changes
+  // Update form data when vibe prop changes
   useEffect(() => {
-    if (data) {
+    if (vibe) {
       setFormData({
-        itemName: data.itemName || "",
-        description: data.description || "",
-        price: data.price?.toString() || "",
-        category: data.category || "",
-        condition: data.condition || "",
-        location: data.location || "",
+        itemName: vibe.itemName || "",
+        description: vibe.description || "",
+        price: vibe.price?.toString() || "",
+        category: vibe.category || "",
+        condition: vibe.condition || "",
+        location: vibe.location || "",
       });
-      setTags(data.tags || []);
-      const mediaFiles = data.mediaFiles || [];
+      setTags(vibe.tags || []);
+      const mediaFiles = vibe.mediaFiles || [];
       setExistingMedia(mediaFiles);
       setOriginalMedia(mediaFiles); // Store original to track deletions
       setNewMediaFiles([]);
       setNewMediaPreviews([]);
       setError("");
     }
-  }, [data]);
+  }, [vibe, open]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -225,7 +256,7 @@ export function VibeUpdate({ data }: { data: any }) {
     e.preventDefault();
     setError("");
 
-    if (!data) return;
+    if (!vibe) return;
 
     // Validate form
     if (!formData.itemName.trim()) {
@@ -291,7 +322,7 @@ export function VibeUpdate({ data }: { data: any }) {
           ({
             type: "image" as const,
             url: url,
-            _id: data.id || data._id || "",
+            _id: vibe.id || "",
           } as const)
       );
 
@@ -311,30 +342,28 @@ export function VibeUpdate({ data }: { data: any }) {
       };
 
       // Update vibe basic info (includes media file updates)
-      const vibeId = data.id || data._id || "";
-      const userId = data.userId || user?.id || "";
-
-      if (!vibeId) {
-        setError("Vibe ID is required");
-        setIsSubmitting(false);
-        return;
-      }
-
+      const userId = vibe.userId || user?.id || "";
       if (!userId) {
         setError("User ID is required");
         setIsSubmitting(false);
         return;
       }
 
-      await updateVibe(vibeId, userId, updateData);
+      // console.log("CHECK updateData", updateData);
+
+      await updateVibe(vibe.id, userId, updateData);
 
       // Upload video files via backend if any (videos handled separately)
       if (videoFiles.length > 0) {
-        await uploadVibeMedia(vibeId, videoFiles);
+        await uploadVibeMedia(vibe.id, videoFiles);
       }
 
-      // Optionally close the dialog or refresh the page
-      window.location.reload();
+      // Call success callback
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      }
+
+      onClose();
     } catch (error: any) {
       console.error("Error updating vibe:", error);
       setError(error.message || "Failed to update vibe. Please try again.");
@@ -343,13 +372,10 @@ export function VibeUpdate({ data }: { data: any }) {
     }
   };
 
+  if (!vibe) return null;
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="bg-gruvbox-orange text-white text-base cursor-pointer h-10 px-4 py-1 rounded-lg">
-          Edit
-        </button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -480,7 +506,7 @@ export function VibeUpdate({ data }: { data: any }) {
                 <button
                   type="button"
                   onClick={addTag}
-                  className="bg-gruvbox-orange text-white px-3 py-2 rounded-md text-sm hover:bg-gruvbox-orange/90"
+                  className="bg-gruvbox-orange text-white px-4 py-2 rounded-md text-sm hover:bg-gruvbox-orange/90"
                 >
                   Add
                 </button>
@@ -490,7 +516,7 @@ export function VibeUpdate({ data }: { data: any }) {
                   {tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
+                      className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-sm flex items-center gap-1 "
                     >
                       <IconTag size={14} /> {tag}
                       <button
@@ -576,6 +602,7 @@ export function VibeUpdate({ data }: { data: any }) {
               )}
             </div>
           </div>
+
           <DialogFooter>
             <DialogClose asChild>
               <button

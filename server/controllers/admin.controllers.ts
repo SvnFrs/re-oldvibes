@@ -191,6 +191,19 @@ export const unbanUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found or not banned" });
     }
 
+    const { User } = await import("../schema/user.schema");
+    const previouslyDeleted = await User.exists({
+      _id: targetUserId,
+      deletedAt: { $exists: true, $ne: null },
+    });
+
+    if (previouslyDeleted) {
+      await User.updateOne(
+        { _id: targetUserId },
+        { $unset: { deletedAt: "" } }
+      );
+    }
+
     res.json({ message: "User unbanned successfully" });
   } catch (error) {
     console.error("Unban user error:", error);
@@ -216,6 +229,7 @@ export const listAllUsers = async (req: Request, res: Response) => {
         isActive: u.isActive,
         isEmailVerified: u.isEmailVerified,
         createdAt: u.createdAt,
+        deletedAt: u.deletedAt,
       })),
       count: users.length,
       limit,
@@ -311,7 +325,9 @@ export const getTempBannedUsers = async (req: Request, res: Response) => {
     const { User } = await import("../schema/user.schema");
 
     const tempBannedUsers = await User.find({ isTempBanned: true })
-      .select("_id username email badBehaviorCount tempBanReason tempBanAt badBehaviorHistory")
+      .select(
+        "_id username email badBehaviorCount tempBanReason tempBanAt badBehaviorHistory"
+      )
       .sort({ tempBanAt: -1 })
       .limit(100);
 
@@ -329,20 +345,27 @@ export const getTempBannedUsers = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Get temp banned users error:", error);
-    res.status(500).json({ message: "Error fetching temp banned users", error });
+    res
+      .status(500)
+      .json({ message: "Error fetching temp banned users", error });
   }
 };
 
 /**
  * Get user's bad behavior history (admin/staff)
  */
-export const getUserBadBehaviorHistory = async (req: Request, res: Response) => {
+export const getUserBadBehaviorHistory = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { userId } = req.params;
     const { User } = await import("../schema/user.schema");
 
     const user = await User.findById(userId)
-      .select("username email badBehaviorCount isTempBanned tempBanReason tempBanAt badBehaviorHistory")
+      .select(
+        "username email badBehaviorCount isTempBanned tempBanReason tempBanAt badBehaviorHistory"
+      )
       .populate("badBehaviorHistory.vibeId", "itemName");
 
     if (!user) {
@@ -364,7 +387,9 @@ export const getUserBadBehaviorHistory = async (req: Request, res: Response) => 
     });
   } catch (error) {
     console.error("Get bad behavior history error:", error);
-    res.status(500).json({ message: "Error fetching bad behavior history", error });
+    res
+      .status(500)
+      .json({ message: "Error fetching bad behavior history", error });
   }
 };
 // ===== NEW ADMIN FEATURES =====
@@ -373,11 +398,11 @@ export const getUserBadBehaviorHistory = async (req: Request, res: Response) => 
 export const getCommentsByVibe = async (req: Request, res: Response) => {
   try {
     const { vibeId } = req.params;
-    const { 
-      limit = "20", 
-      offset = "0", 
+    const {
+      limit = "20",
+      offset = "0",
       sortBy = "newest",
-      search = ""
+      search = "",
     } = req.query;
 
     if (!vibeId) {
@@ -389,7 +414,7 @@ export const getCommentsByVibe = async (req: Request, res: Response) => {
       limit: parseInt(limit as string),
       offset: parseInt(offset as string),
       sortBy: sortBy as "newest" | "oldest" | "likes",
-      search: search as string
+      search: search as string,
     };
 
     const result = await commentModel.getCommentsByVibe(filters);
@@ -420,7 +445,7 @@ export const getVibesWithFilters = async (req: Request, res: Response) => {
       condition,
       status = "all",
       limit = "20",
-      offset = "0"
+      offset = "0",
     } = req.query;
 
     const filters = {
@@ -431,7 +456,7 @@ export const getVibesWithFilters = async (req: Request, res: Response) => {
       condition: condition as string,
       status: status as string,
       limit: parseInt(limit as string),
-      offset: parseInt(offset as string)
+      offset: parseInt(offset as string),
     };
 
     const result = await vibeModel.getVibesWithFilters(filters);
@@ -445,8 +470,8 @@ export const getVibesWithFilters = async (req: Request, res: Response) => {
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         condition: filters.condition,
-        status: filters.status
-      }
+        status: filters.status,
+      },
     });
   } catch (error) {
     console.error("Get vibes with filters error:", error);
@@ -457,18 +482,18 @@ export const getVibesWithFilters = async (req: Request, res: Response) => {
 // View all vibes (admin)
 export const getAllVibesAdmin = async (req: Request, res: Response) => {
   try {
-    const { 
+    const {
       status = "all",
-      limit = "50", 
+      limit = "50",
       offset = "0",
-      sortBy = "newest"
+      sortBy = "newest",
     } = req.query;
 
     const filters = {
       status: status as string,
       limit: parseInt(limit as string),
       offset: parseInt(offset as string),
-      sortBy: sortBy as string
+      sortBy: sortBy as string,
     };
 
     const result = await vibeModel.getAllVibesAdmin(filters);
@@ -476,7 +501,7 @@ export const getAllVibesAdmin = async (req: Request, res: Response) => {
     res.json({
       vibes: result.data,
       pagination: result.pagination,
-      totalCount: result.totalCount
+      totalCount: result.totalCount,
     });
   } catch (error) {
     console.error("Get all vibes admin error:", error);
@@ -503,13 +528,13 @@ export const getVibeDetailAdmin = async (req: Request, res: Response) => {
       vibeId,
       limit: 10,
       offset: 0,
-      sortBy: "newest"
+      sortBy: "newest",
     });
 
     res.json({
       vibe,
       comments: commentsResult.comments,
-      commentsCount: commentsResult.total
+      commentsCount: commentsResult.total,
     });
   } catch (error) {
     console.error("Get vibe detail admin error:", error);
@@ -523,8 +548,8 @@ export const banUserForBadComment = async (req: Request, res: Response) => {
     const requester = (req as any).user;
 
     if (!userId || !commentId) {
-      return res.status(400).json({ 
-        message: "User ID and Comment ID are required" 
+      return res.status(400).json({
+        message: "User ID and Comment ID are required",
       });
     }
 
@@ -534,33 +559,37 @@ export const banUserForBadComment = async (req: Request, res: Response) => {
     }
 
     if (comment.user.id !== userId) {
-      return res.status(400).json({ 
-        message: "User does not own this comment" 
+      return res.status(400).json({
+        message: "User does not own this comment",
       });
     }
 
     const isBadComment = await detectBadComment(comment.content);
-    
+
     if (!isBadComment) {
-      return res.status(400).json({ 
-        message: "Comment does not violate community guidelines" 
+      return res.status(400).json({
+        message: "Comment does not violate community guidelines",
       });
     }
 
     const banned = await userModel.banUser(userId);
     if (!banned) {
-      return res.status(404).json({ 
-        message: "User not found or already banned" 
+      return res.status(404).json({
+        message: "User not found or already banned",
       });
     }
 
-    console.log(`User ${userId} banned for bad comment ${commentId} by ${requester.userId}. Reason: ${reason || 'AI detected inappropriate content'}`);
+    console.log(
+      `User ${userId} banned for bad comment ${commentId} by ${
+        requester.userId
+      }. Reason: ${reason || "AI detected inappropriate content"}`
+    );
 
-    res.json({ 
+    res.json({
       message: "User banned successfully for inappropriate comment",
       userId,
       commentId,
-      reason: reason || 'AI detected inappropriate content'
+      reason: reason || "AI detected inappropriate content",
     });
   } catch (error) {
     console.error("Ban user for bad comment error:", error);
@@ -570,10 +599,18 @@ export const banUserForBadComment = async (req: Request, res: Response) => {
 
 async function detectBadComment(content: string): Promise<boolean> {
   const badKeywords = [
-    'spam', 'scam', 'fake', 'hate', 'abuse', 'harassment',
-    'inappropriate', 'offensive', 'vulgar', 'threat'
+    "spam",
+    "scam",
+    "fake",
+    "hate",
+    "abuse",
+    "harassment",
+    "inappropriate",
+    "offensive",
+    "vulgar",
+    "threat",
   ];
-  
+
   const lowerContent = content.toLowerCase();
-  return badKeywords.some(keyword => lowerContent.includes(keyword));
+  return badKeywords.some((keyword) => lowerContent.includes(keyword));
 }

@@ -1133,6 +1133,10 @@ export default function VibeDetailPage() {
     );
   }
 
+  const handleFacebookShare = (link: string) => {
+    window.open(`https://www.facebook.com/share.php?u=${link}`, "_blank");
+  };
+
   return (
     <Wrapper>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
@@ -1279,13 +1283,15 @@ export default function VibeDetailPage() {
                 </div>
               </div>
 
-              {/* Contact Seller Button */}
-              <div className="flex justify-center">
-                <ContactSellerButton
-                  vibeId={vibe.id}
-                  sellerId={vibe.user?.id}
-                  className="w-full sm:w-auto"
-                />
+              <div className="flex flex-row gap-4">
+                {/* Contact Seller Button */}
+                <div className="flex justify-center">
+                  <ContactSellerButton
+                    vibeId={vibe.id}
+                    sellerId={vibe.user?.id}
+                    className="w-full sm:w-auto"
+                  />
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -1305,14 +1311,26 @@ export default function VibeDetailPage() {
                   {likesCount} Likes
                 </button>
 
-                <button className="flex items-center gap-2 px-6 py-3 text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 rounded-lg font-medium transition">
+                <button
+                  onClick={() =>
+                    handleFacebookShare(
+                      `http://www.oldvibes.com/vibes/${vibe.id}`
+                    )
+                  }
+                  className="flex items-center gap-2 px-6 py-3 text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 rounded-lg font-medium transition"
+                >
                   <IconShare size={20} />
                   Share
                 </button>
 
                 <button className="flex items-center gap-2 px-6 py-3 text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 rounded-lg font-medium transition">
-                  <IconFlag size={20} />
-                  Report
+                  <Link
+                    href={`/report?vibeId=${vibe.id}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 transition"
+                  >
+                    <IconFlag size={20} />
+                    Report
+                  </Link>
                 </button>
               </div>
             </div>
@@ -1385,7 +1403,6 @@ export default function VibeDetailPage() {
                     </div>
                   </div>
                 </div>
-                )
               </form>
             ) : (
               <div className="mb-8 p-4 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg text-center">

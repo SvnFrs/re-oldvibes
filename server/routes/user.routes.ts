@@ -11,6 +11,7 @@ import {
   getFollowing,
   getProfileById,
   updateProfileById,
+  softDeleteAccount,
 } from "../controllers/user.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireUser } from "../middleware/role.middleware";
@@ -78,6 +79,15 @@ const router = Router();
  *     responses:
  *       200: { description: Profile updated }
  *       400: { description: Invalid input }
+ *   delete:
+ *     summary: Soft delete own account
+ *     tags: [Users]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Account deleted successfully }
+ *       400: { description: Account already deleted }
+ *       401: { description: Unauthorized }
+ *       404: { description: User not found }
  */
 router.get("/me", authenticateToken, getMyProfile);
 router.patch(
@@ -85,6 +95,12 @@ router.patch(
   authenticateToken,
   requireUser as RequestHandler,
   updateProfile
+);
+router.delete(
+  "/me",
+  authenticateToken,
+  requireUser as RequestHandler,
+  softDeleteAccount
 );
 
 /**

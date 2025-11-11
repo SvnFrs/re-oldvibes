@@ -14,9 +14,10 @@ import {
   IconCheck,
   IconX,
   IconRefresh,
+  IconReport,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { CircleEllipsis } from "lucide-react";
+import { CircleEllipsis, Flag, Info } from "lucide-react";
 
 // API endpoint
 const API = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
@@ -35,9 +36,9 @@ function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center ">
       <div
-        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative"
+        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative !min-w-5xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -84,6 +85,16 @@ const tabs = [
     label: "Comment Moderation",
     icon: <IconMessageCircle size={20} />,
   },
+  {
+    id: "feedbacks",
+    label: "Feedbacks",
+    icon: <Info size={20} />,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <Flag size={20} />,
+  },
 ];
 
 // --- Main Admin Panel ---
@@ -96,6 +107,7 @@ type User = {
   isActive?: boolean;
   isEmailVerified?: boolean;
   createdAt?: string;
+  deletedAt?: string;
 };
 
 export default function AdminPanel() {
@@ -191,6 +203,8 @@ export default function AdminPanel() {
           {tab === "show-vibes" && <ShowVibesSection />}
           {tab === "vibes" && <VibeModerationSection />}
           {tab === "comments" && <CommentModerationSection />}
+          {tab === "feedbacks" && <FeedbackSection />}
+          {tab === "reports" && <ReportSection />}
         </main>
       </div>
     </div>
@@ -409,14 +423,22 @@ function UserSection() {
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
   };
-  useEffect(fetchUsers, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Ban/unban
-  const handleBan = async (id: string, banned: boolean) => {
+  const handleBan = async (
+    id: string,
+    banned: boolean,
+    checkDeleted: string | undefined
+  ) => {
     if (
       !window.confirm(
         banned
-          ? "Unban this user?"
+          ? checkDeleted
+            ? "Restore this user?"
+            : "Unban this user?"
           : "Ban this user? They will not be able to login."
       )
     )
@@ -479,7 +501,9 @@ function UserSection() {
                   {u.isActive ? (
                     <span className="text-green-600">Active</span>
                   ) : (
-                    <span className="text-red-600">Banned</span>
+                    <span className="text-red-500">
+                      {u.deletedAt ? "Deleted" : "Banned"}
+                    </span>
                   )}
                 </td>
                 <td className="py-2 w-14 text-center">
@@ -502,7 +526,7 @@ function UserSection() {
                           ? "bg-red-100 text-red-600 hover:bg-red-200"
                           : "bg-green-100 text-green-600 hover:bg-green-200"
                       }`}
-                      onClick={() => handleBan(u.id, !u.isActive)}
+                      onClick={() => handleBan(u.id, !u.isActive, u.deletedAt)}
                     >
                       {u.isActive ? (
                         <>
@@ -510,7 +534,8 @@ function UserSection() {
                         </>
                       ) : (
                         <>
-                          <IconRefresh size={14} className="inline" /> Unban
+                          <IconRefresh size={14} className="inline" />{" "}
+                          {u.deletedAt ? "Restore" : "Unban"}
                         </>
                       )}
                     </button>
@@ -584,7 +609,7 @@ function VibeModerationSection() {
       limit: "50",
       offset: "0",
     });
-    
+
     fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setVibes(d.vibes || []))
@@ -604,26 +629,27 @@ function VibeModerationSection() {
     notes = ""
   ) => {
     try {
-    await fetch(API + `/vibes/${id}/moderate`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, notes }),
-    });
-    fetchVibes();
-    setSuccess(`Vibe ${action}d`);
-    setModalOpen(false);
-    setTimeout(() => setSuccess(""), 2000);
+      await fetch(API + `/vibes/${id}/moderate`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, notes }),
+      });
+      fetchVibes();
+      setSuccess(`Vibe ${action}d`);
+      setModalOpen(false);
+      setTimeout(() => setSuccess(""), 2000);
     } catch (err) {
       setError("Failed to moderate vibe");
     }
   };
 
   // Filter vibes by search term
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -683,19 +709,26 @@ function VibeModerationSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-bold text-lg">{v.itemName}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      v.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      v.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        v.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : v.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : v.status === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : v.status === "sold"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {v.status.toUpperCase()}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
                     <div>
-                      <span className="font-bold">User:</span> {v.user?.username}
+                      <span className="font-bold">User:</span>{" "}
+                      {v.user?.username}
                     </div>
                     <div>
                       <span className="font-bold">Price:</span> ${v.price}
@@ -704,7 +737,8 @@ function VibeModerationSection() {
                       <span className="font-bold">Category:</span> {v.category}
                     </div>
                     <div>
-                      <span className="font-bold">Condition:</span> {v.condition}
+                      <span className="font-bold">Condition:</span>{" "}
+                      {v.condition}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-xs text-gray-500 mb-2">
@@ -713,14 +747,18 @@ function VibeModerationSection() {
                     <div>💬 {v.commentsCount || 0} comments</div>
                   </div>
                   <div className="text-sm text-gray-700">
-                    <span className="font-bold">Description:</span> {v.description}
+                    <span className="font-bold">Description:</span>{" "}
+                    {v.description}
                   </div>
                   {v.tags && v.tags.length > 0 && (
                     <div className="mt-2">
                       <span className="font-bold text-sm">Tags:</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {v.tags.map((tag, i) => (
-                          <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                          <span
+                            key={i}
+                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                          >
                             {tag}
                           </span>
                         ))}
@@ -728,7 +766,8 @@ function VibeModerationSection() {
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
-                    Posted: {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
+                    Posted:{" "}
+                    {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -741,7 +780,7 @@ function VibeModerationSection() {
                   >
                     View Details
                   </button>
-                  {v.status === 'pending' && (
+                  {v.status === "pending" && (
                     <>
                       <button
                         className="text-green-600 hover:bg-green-50 px-2 py-1 rounded text-xs"
@@ -870,7 +909,7 @@ function ShowVibesSection() {
       limit: itemsPerPage.toString(),
       offset: offset.toString(),
     });
-    
+
     fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
@@ -890,10 +929,11 @@ function ShowVibesSection() {
   }, [statusFilter, sortBy]);
 
   // Filter vibes by search term
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // View vibe details
@@ -969,34 +1009,52 @@ function ShowVibesSection() {
           {/* Vibe Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {filteredVibes.map((v) => (
-              <div key={v.id} className="border rounded p-4 bg-white hover:shadow-md transition-shadow">
+              <div
+                key={v.id}
+                className="border rounded p-4 bg-white hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-lg truncate">{v.itemName}</h3>
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    v.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    v.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-bold ${
+                      v.status === "approved"
+                        ? "bg-green-100 text-green-800"
+                        : v.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : v.status === "rejected"
+                        ? "bg-red-100 text-red-800"
+                        : v.status === "sold"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {v.status.toUpperCase()}
                   </span>
                 </div>
-                
+
                 <div className="text-sm text-gray-600 mb-2">
-                  <div><span className="font-bold">User:</span> {v.user?.username}</div>
-                  <div><span className="font-bold">Price:</span> ${v.price}</div>
-                  <div><span className="font-bold">Category:</span> {v.category}</div>
+                  <div>
+                    <span className="font-bold">User:</span> {v.user?.username}
+                  </div>
+                  <div>
+                    <span className="font-bold">Price:</span> ${v.price}
+                  </div>
+                  <div>
+                    <span className="font-bold">Category:</span> {v.category}
+                  </div>
                 </div>
-                
+
                 <div className="text-xs text-gray-500 mb-3">
-                  <div>👀 {v.views || 0} views • 👍 {v.likesCount || 0} likes • 💬 {v.commentsCount || 0} comments</div>
+                  <div>
+                    👀 {v.views || 0} views • 👍 {v.likesCount || 0} likes • 💬{" "}
+                    {v.commentsCount || 0} comments
+                  </div>
                 </div>
-                
+
                 <div className="text-sm text-gray-700 mb-3 line-clamp-2">
                   {v.description}
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     className="flex-1 bg-gruvbox-orange text-white px-3 py-2 rounded text-sm font-semibold hover:bg-gruvbox-yellow transition"
@@ -1043,33 +1101,47 @@ function ShowVibesSection() {
         {selectedVibe && (
           <div className="max-h-96 overflow-y-auto">
             <div className="mb-4">
-              <h3 className="text-xl font-bold mb-2">{selectedVibe.itemName}</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {selectedVibe.itemName}
+              </h3>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                  selectedVibe.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  selectedVibe.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  selectedVibe.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                  selectedVibe.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedVibe.status === "approved"
+                      ? "bg-green-100 text-green-800"
+                      : selectedVibe.status === "pending"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : selectedVibe.status === "rejected"
+                      ? "bg-red-100 text-red-800"
+                      : selectedVibe.status === "sold"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
                   {selectedVibe.status.toUpperCase()}
                 </span>
-                <span className="text-lg font-bold text-gruvbox-orange">${selectedVibe.price}</span>
+                <span className="text-lg font-bold text-gruvbox-orange">
+                  ${selectedVibe.price}
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
-                <span className="font-bold">User:</span> {selectedVibe.user?.username}
+                <span className="font-bold">User:</span>{" "}
+                {selectedVibe.user?.username}
               </div>
               <div>
-                <span className="font-bold">Category:</span> {selectedVibe.category}
+                <span className="font-bold">Category:</span>{" "}
+                {selectedVibe.category}
               </div>
               <div>
-                <span className="font-bold">Condition:</span> {selectedVibe.condition}
+                <span className="font-bold">Condition:</span>{" "}
+                {selectedVibe.condition}
               </div>
               <div>
-                <span className="font-bold">Location:</span> {selectedVibe.location}
+                <span className="font-bold">Location:</span>{" "}
+                {selectedVibe.location}
               </div>
             </div>
 
@@ -1083,7 +1155,10 @@ function ShowVibesSection() {
                 <span className="font-bold text-sm">Tags:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {selectedVibe.tags.map((tag, i) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                    <span
+                      key={i}
+                      className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -1098,17 +1173,25 @@ function ShowVibesSection() {
             </div>
 
             <div className="text-xs text-gray-500">
-              <div>Created: {selectedVibe.createdAt ? new Date(selectedVibe.createdAt).toLocaleString() : ""}</div>
-              <div>Updated: {selectedVibe.updatedAt ? new Date(selectedVibe.updatedAt).toLocaleString() : ""}</div>
+              <div>
+                Created:{" "}
+                {selectedVibe.createdAt
+                  ? new Date(selectedVibe.createdAt).toLocaleString()
+                  : ""}
+              </div>
+              <div>
+                Updated:{" "}
+                {selectedVibe.updatedAt
+                  ? new Date(selectedVibe.updatedAt).toLocaleString()
+                  : ""}
+              </div>
             </div>
           </div>
         )}
       </Modal>
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
-          {error}
-        </div>
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
       )}
       {success && (
         <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
@@ -1135,7 +1218,6 @@ type Comment = {
   createdAt: string;
   isActive: boolean;
 };
-
 
 function CommentModerationSection() {
   const [vibes, setVibes] = useState<Vibe[]>([]);
@@ -1171,7 +1253,7 @@ function CommentModerationSection() {
         sortBy,
         search: searchTerm,
       });
-      
+
       const res = await fetch(
         `${API}/admin/vibes/${vibeId}/comments?${params}`,
         { credentials: "include" }
@@ -1186,7 +1268,7 @@ function CommentModerationSection() {
   // Ban user for bad comment
   const banUserForComment = async (userId: string, commentId: string) => {
     if (!window.confirm("Ban this user for inappropriate comment?")) return;
-    
+
     try {
       const res = await fetch(API + "/admin/users/ban-for-comment", {
         method: "POST",
@@ -1198,7 +1280,7 @@ function CommentModerationSection() {
           reason: "Inappropriate content detected",
         }),
       });
-      
+
       if (res.ok) {
         setSuccess("User banned successfully");
         if (selectedVibe) fetchComments(selectedVibe.id);
@@ -1221,9 +1303,10 @@ function CommentModerationSection() {
     }
   }, [selectedVibe, searchTerm, sortBy]);
 
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -1258,7 +1341,7 @@ function CommentModerationSection() {
             <option value="likes">Most Liked</option>
           </select>
         </div>
-        
+
         {loading ? (
           <div>Loading vibes...</div>
         ) : (
@@ -1292,16 +1375,13 @@ function CommentModerationSection() {
           <h3 className="font-bold mb-4">
             Comments for "{selectedVibe.itemName}" ({comments.length})
           </h3>
-          
+
           {comments.length === 0 ? (
             <div className="text-gray-500">No comments found.</div>
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border rounded p-4 bg-white"
-                >
+                <div key={comment.id} className="border rounded p-4 bg-white">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -1341,9 +1421,997 @@ function CommentModerationSection() {
       )}
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
-          {error}
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
         </div>
+      )}
+    </div>
+  );
+}
+
+// --- FEEDBACK SECTION ---
+type Feedback = {
+  id: string;
+  userId:
+    | string
+    | {
+        _id: string;
+        username?: string;
+        name?: string;
+        profilePicture?: string;
+      };
+  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackDescription: string;
+  feedbackImages: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+type UserInfo = {
+  id: string;
+  username: string;
+  name: string;
+  profilePicture?: string;
+};
+
+function FeedbackSection() {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, UserInfo>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
+    null
+  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch user information by userId
+  const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
+    // Check if we already have this user's info
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+
+    try {
+      const res = await fetch(API + `/users/${userId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        const userInfo: UserInfo = {
+          id: data.profile.id,
+          username: data.profile.username || "Unknown",
+          name: data.profile.name || "Unknown",
+          profilePicture: data.profile.profilePicture,
+        };
+        setUserInfoMap((prev) => ({ ...prev, [userId]: userInfo }));
+        return userInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    }
+    return null;
+  };
+
+  // Fetch feedbacks
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      limit: "50",
+      offset: "0",
+    });
+
+    if (typeFilter !== "all") {
+      params.append("feedbackType", typeFilter);
+    }
+
+    try {
+      const res = await fetch(API + `/feedback?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.feedbacks) {
+        setFeedbacks(data.feedbacks);
+        // Fetch user info for all feedbacks
+        const userIds = new Set<string>();
+        data.feedbacks.forEach((f: Feedback) => {
+          if (typeof f.userId === "string") {
+            userIds.add(f.userId);
+          } else if (f.userId && typeof f.userId === "object") {
+            userIds.add(f.userId._id);
+          }
+        });
+        // Fetch user info for all unique user IDs
+        await Promise.all(
+          Array.from(userIds).map((userId) => fetchUserInfo(userId))
+        );
+      } else {
+        setFeedbacks([]);
+      }
+    } catch (err) {
+      setFeedbacks([]);
+      setError("Failed to fetch feedbacks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [typeFilter]);
+
+  // View feedback details
+  const viewFeedbackDetails = async (feedbackId: string) => {
+    try {
+      const res = await fetch(API + `/feedback/${feedbackId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.feedback) {
+        // Fetch user info if not populated
+        if (typeof data.feedback.userId === "string") {
+          await fetchUserInfo(data.feedback.userId);
+        }
+        setSelectedFeedback(data.feedback);
+        setModalOpen(true);
+      } else {
+        setError("Failed to fetch feedback details");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
+  // Get user info from feedback
+  const getUserInfo = (feedback: Feedback): UserInfo => {
+    if (typeof feedback.userId === "object" && feedback.userId !== null) {
+      return {
+        id: feedback.userId._id,
+        username: feedback.userId.username || "Unknown",
+        name: feedback.userId.name || "Unknown",
+        profilePicture: feedback.userId.profilePicture,
+      };
+    }
+    // If userId is a string, try to get from userInfoMap
+    const userId = feedback.userId as string;
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+    return {
+      id: userId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Filter feedbacks by search term
+  const filteredFeedbacks = feedbacks.filter((f) => {
+    const userInfo = getUserInfo(f);
+    return (
+      f.feedbackDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.feedbackType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // Sort feedbacks
+  const sortedFeedbacks = [...filteredFeedbacks].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Feedback Management</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={fetchFeedbacks}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search feedbacks by description, type, or user..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="bug">Bug</option>
+          <option value="feature">Feature</option>
+          <option value="suggestion">Suggestion</option>
+          <option value="other">Other</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : sortedFeedbacks.length === 0 ? (
+        <div className="text-gray-500">No feedbacks found.</div>
+      ) : (
+        <div className="space-y-4">
+          {sortedFeedbacks.map((feedback) => {
+            const userInfo = getUserInfo(feedback);
+            return (
+              <div key={feedback.id} className="border rounded p-4 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-lg">
+                        Feedback #{feedback.id.slice(-8)}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          feedback.feedbackType === "bug"
+                            ? "bg-red-100 text-red-800"
+                            : feedback.feedbackType === "feature"
+                            ? "bg-blue-100 text-blue-800"
+                            : feedback.feedbackType === "suggestion"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {feedback.feedbackType.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                      <div>
+                        <span className="font-bold">User:</span>{" "}
+                        {userInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Name:</span> {userInfo.name}
+                      </div>
+                      <div>
+                        <span className="font-bold">User ID:</span>{" "}
+                        {userInfo.id.slice(-8)}
+                      </div>
+                      <div>
+                        <span className="font-bold">Images:</span>{" "}
+                        {feedback.feedbackImages?.length || 0}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-bold">Description:</span>{" "}
+                      {feedback.feedbackDescription}
+                    </div>
+                    {feedback.feedbackImages &&
+                      feedback.feedbackImages.length > 0 && (
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          {feedback.feedbackImages.map((img, i) => (
+                            <Image
+                              key={i}
+                              src={img}
+                              alt={`Feedback image ${i + 1}`}
+                              width={80}
+                              height={80}
+                              className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(img, "_blank")}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    <div className="text-xs text-gray-500 mt-2">
+                      Created: {new Date(feedback.createdAt).toLocaleString()} |
+                      Updated: {new Date(feedback.updatedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      className="text-gruvbox-blue hover:underline text-sm"
+                      onClick={() => viewFeedbackDetails(feedback.id)}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Feedback Details Modal */}
+      <Modal
+        open={modalOpen && !!selectedFeedback}
+        onClose={() => setModalOpen(false)}
+        title="Feedback Details"
+      >
+        {selectedFeedback && (
+          <div className="max-h-[80vh] overflow-y-auto ">
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xl font-bold">
+                  Feedback #{selectedFeedback.id.slice(-8)}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedFeedback.feedbackType === "bug"
+                      ? "bg-red-100 text-red-800"
+                      : selectedFeedback.feedbackType === "feature"
+                      ? "bg-blue-100 text-blue-800"
+                      : selectedFeedback.feedbackType === "suggestion"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {selectedFeedback.feedbackType.toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="font-bold">User ID:</span>{" "}
+                {getUserInfo(selectedFeedback).id}
+              </div>
+              <div>
+                <span className="font-bold">Username:</span>{" "}
+                {getUserInfo(selectedFeedback).username}
+              </div>
+              <div>
+                <span className="font-bold">Name:</span>{" "}
+                {getUserInfo(selectedFeedback).name}
+              </div>
+              <div>
+                <span className="font-bold">Images:</span>{" "}
+                {selectedFeedback.feedbackImages?.length || 0}
+              </div>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Description:</span>
+              <p className="mt-1 text-gray-700">
+                {selectedFeedback.feedbackDescription}
+              </p>
+            </div>
+
+            {selectedFeedback.feedbackImages &&
+              selectedFeedback.feedbackImages.length > 0 && (
+                <div className="mb-4">
+                  <span className="font-bold text-sm">Images:</span>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {selectedFeedback.feedbackImages.map((img, i) => (
+                      <Image
+                        key={i}
+                        src={img}
+                        alt={`Feedback image ${i + 1}`}
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(img, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            <div className="text-xs text-gray-500">
+              <div>
+                Created: {new Date(selectedFeedback.createdAt).toLocaleString()}
+              </div>
+              <div>
+                Updated: {new Date(selectedFeedback.updatedAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- REPORT SECTION ---
+type Report = {
+  id: string;
+  userId:
+    | string
+    | {
+        _id: string;
+        username?: string;
+        name?: string;
+        profilePicture?: string;
+      };
+  vibeId:
+    | string
+    | {
+        _id: string;
+        itemName?: string;
+        description?: string;
+        mediaFiles?: MediaFile[];
+        userId?: string | { _id: string; username?: string; name?: string };
+      };
+  reportType: "spam" | "inappropriate" | "abusive" | "other";
+  reportDescription: string;
+  reportImages: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+type VibeInfo = {
+  id: string;
+  itemName: string;
+  description: string;
+  mediaFiles: MediaFile[];
+  userId?: string | { _id: string; username?: string; name?: string };
+};
+
+function ReportSection() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, UserInfo>>({});
+  const [vibeInfoMap, setVibeInfoMap] = useState<Record<string, VibeInfo>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch user information by userId
+  const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
+    // Check if we already have this user's info
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+
+    try {
+      const res = await fetch(API + `/users/${userId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        const userInfo: UserInfo = {
+          id: data.profile.id,
+          username: data.profile.username || "Unknown",
+          name: data.profile.name || "Unknown",
+          profilePicture: data.profile.profilePicture,
+        };
+        setUserInfoMap((prev) => ({ ...prev, [userId]: userInfo }));
+        return userInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    }
+    return null;
+  };
+
+  // Fetch vibe information by vibeId
+  const fetchVibeInfo = async (vibeId: string): Promise<VibeInfo | null> => {
+    // Check if we already have this vibe's info
+    if (vibeInfoMap[vibeId]) {
+      return vibeInfoMap[vibeId];
+    }
+
+    try {
+      const res = await fetch(API + `/vibes/${vibeId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.vibe) {
+        const vibeInfo: VibeInfo = {
+          id: data.vibe.id,
+          itemName: data.vibe.itemName || "Unknown",
+          description: data.vibe.description || "No description",
+          mediaFiles: data.vibe.mediaFiles || [],
+          userId: data.vibe.userId || data.vibe.user?._id || data.vibe.user?.id,
+        };
+        setVibeInfoMap((prev) => ({ ...prev, [vibeId]: vibeInfo }));
+
+        // Fetch vibe owner's user info if userId is a string
+        if (vibeInfo.userId && typeof vibeInfo.userId === "string") {
+          await fetchUserInfo(vibeInfo.userId);
+        }
+
+        return vibeInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch vibe info:", err);
+    }
+    return null;
+  };
+
+  // Fetch reports
+  const fetchReports = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      limit: "50",
+      offset: "0",
+    });
+
+    if (typeFilter !== "all") {
+      params.append("reportType", typeFilter);
+    }
+
+    try {
+      const res = await fetch(API + `/report?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.reports) {
+        setReports(data.reports);
+        // Fetch user and vibe info for all reports
+        const userIds = new Set<string>();
+        const vibeIds = new Set<string>();
+        data.reports.forEach((r: Report) => {
+          if (typeof r.userId === "string") {
+            userIds.add(r.userId);
+          } else if (r.userId && typeof r.userId === "object") {
+            userIds.add(r.userId._id);
+          }
+          if (typeof r.vibeId === "string") {
+            vibeIds.add(r.vibeId);
+          } else if (r.vibeId && typeof r.vibeId === "object") {
+            vibeIds.add(r.vibeId._id);
+          }
+        });
+        // Fetch user and vibe info for all unique IDs
+        const vibeInfos = await Promise.all(
+          Array.from(vibeIds).map((vibeId) => fetchVibeInfo(vibeId))
+        );
+
+        // Extract vibe owner user IDs and fetch their info
+        vibeInfos.forEach((vibeInfo) => {
+          if (vibeInfo && vibeInfo.userId) {
+            const vibeOwnerId =
+              typeof vibeInfo.userId === "string"
+                ? vibeInfo.userId
+                : vibeInfo.userId._id;
+            if (vibeOwnerId) {
+              userIds.add(vibeOwnerId);
+            }
+          }
+        });
+
+        // Fetch all user info (reporters + vibe owners)
+        await Promise.all(
+          Array.from(userIds).map((userId) => fetchUserInfo(userId))
+        );
+      } else {
+        setReports([]);
+      }
+    } catch (err) {
+      setReports([]);
+      setError("Failed to fetch reports");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, [typeFilter]);
+
+  // View report details
+  const viewReportDetails = async (reportId: string) => {
+    try {
+      const res = await fetch(API + `/report/${reportId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.report) {
+        // Fetch user and vibe info if not populated
+        if (typeof data.report.userId === "string") {
+          await fetchUserInfo(data.report.userId);
+        }
+        if (typeof data.report.vibeId === "string") {
+          const vibeInfo = await fetchVibeInfo(data.report.vibeId);
+          // Fetch vibe owner's user info if available
+          if (vibeInfo && vibeInfo.userId) {
+            const vibeOwnerId =
+              typeof vibeInfo.userId === "string"
+                ? vibeInfo.userId
+                : vibeInfo.userId._id;
+            if (vibeOwnerId) {
+              await fetchUserInfo(vibeOwnerId);
+            }
+          }
+        }
+        setSelectedReport(data.report);
+        setModalOpen(true);
+      } else {
+        setError("Failed to fetch report details");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
+  // Get user info from report
+  const getUserInfo = (report: Report): UserInfo => {
+    if (typeof report.userId === "object" && report.userId !== null) {
+      return {
+        id: report.userId._id,
+        username: report.userId.username || "Unknown",
+        name: report.userId.name || "Unknown",
+        profilePicture: report.userId.profilePicture,
+      };
+    }
+    // If userId is a string, try to get from userInfoMap
+    const userId = report.userId as string;
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+    return {
+      id: userId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Get vibe info from report
+  const getVibeInfo = (report: Report): VibeInfo => {
+    if (typeof report.vibeId === "object" && report.vibeId !== null) {
+      return {
+        id: report.vibeId._id,
+        itemName: report.vibeId.itemName || "Unknown",
+        description: report.vibeId.description || "No description",
+        mediaFiles: report.vibeId.mediaFiles || [],
+        userId: report.vibeId.userId,
+      };
+    }
+    // If vibeId is a string, try to get from vibeInfoMap
+    const vibeId = report.vibeId as string;
+    if (vibeInfoMap[vibeId]) {
+      return vibeInfoMap[vibeId];
+    }
+    return {
+      id: vibeId,
+      itemName: "Loading...",
+      description: "Loading...",
+      mediaFiles: [],
+    };
+  };
+
+  // Get vibe owner info (the user who posted the vibe)
+  const getVibeOwnerInfo = (report: Report): UserInfo => {
+    const vibeInfo = getVibeInfo(report);
+    if (!vibeInfo.userId) {
+      return {
+        id: "Unknown",
+        username: "Unknown",
+        name: "Unknown",
+        profilePicture: undefined,
+      };
+    }
+
+    const vibeOwnerId =
+      typeof vibeInfo.userId === "string"
+        ? vibeInfo.userId
+        : vibeInfo.userId._id;
+
+    if (userInfoMap[vibeOwnerId]) {
+      return userInfoMap[vibeOwnerId];
+    }
+
+    // If userId is an object with username/name, use it
+    if (typeof vibeInfo.userId === "object" && vibeInfo.userId !== null) {
+      return {
+        id: vibeInfo.userId._id,
+        username: vibeInfo.userId.username || "Unknown",
+        name: vibeInfo.userId.name || "Unknown",
+        profilePicture: undefined,
+      };
+    }
+
+    return {
+      id: vibeOwnerId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Filter reports by search term
+  const filteredReports = reports.filter((r) => {
+    const userInfo = getUserInfo(r);
+    const vibeInfo = getVibeInfo(r);
+    const vibeOwnerInfo = getVibeOwnerInfo(r);
+    return (
+      r.reportDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.reportType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeOwnerInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeOwnerInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeInfo.itemName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // Sort reports
+  const sortedReports = [...filteredReports].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Report Management</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={fetchReports}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search reports by description, type, user, or vibe..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="spam">Spam</option>
+          <option value="inappropriate">Inappropriate</option>
+          <option value="abusive">Abusive</option>
+          <option value="other">Other</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : sortedReports.length === 0 ? (
+        <div className="text-gray-500">No reports found.</div>
+      ) : (
+        <div className="space-y-4">
+          {sortedReports.map((report) => {
+            const userInfo = getUserInfo(report);
+            const vibeInfo = getVibeInfo(report);
+            const vibeOwnerInfo = getVibeOwnerInfo(report);
+            return (
+              <div key={report.id} className="border rounded p-4 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-lg">
+                        Report #{report.id.slice(-8)}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          report.reportType === "spam"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : report.reportType === "inappropriate"
+                            ? "bg-orange-100 text-orange-800"
+                            : report.reportType === "abusive"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {report.reportType.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                      <div>
+                        <span className="font-bold">Reported By:</span>{" "}
+                        {userInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Report to:</span>{" "}
+                        {vibeOwnerInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Vibe:</span>{" "}
+                        {vibeInfo.itemName}
+                      </div>
+                      <div>
+                        <span className="font-bold">Vibe ID:</span>{" "}
+                        {vibeInfo.id.slice(-8)}
+                      </div>
+                      <div>
+                        <span className="font-bold">Images:</span>{" "}
+                        {report.reportImages?.length || 0}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-bold">Description:</span>{" "}
+                      {report.reportDescription}
+                    </div>
+                    {report.reportImages && report.reportImages.length > 0 && (
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {report.reportImages.map((img, i) => (
+                          <Image
+                            key={i}
+                            src={img}
+                            alt={`Report image ${i + 1}`}
+                            width={80}
+                            height={80}
+                            className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(img, "_blank")}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 mt-2">
+                      Created: {new Date(report.createdAt).toLocaleString()} |
+                      Updated: {new Date(report.updatedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      className="text-gruvbox-blue hover:underline text-sm"
+                      onClick={() => viewReportDetails(report.id)}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Report Details Modal */}
+      <Modal
+        open={modalOpen && !!selectedReport}
+        onClose={() => setModalOpen(false)}
+        title="Report Details"
+      >
+        {selectedReport && (
+          <div className="max-h-96 overflow-y-auto">
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xl font-bold">
+                  Report #{selectedReport.id.slice(-8)}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedReport.reportType === "spam"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : selectedReport.reportType === "inappropriate"
+                      ? "bg-orange-100 text-orange-800"
+                      : selectedReport.reportType === "abusive"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {selectedReport.reportType.toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="font-bold">Reported By (User ID):</span>{" "}
+                {getUserInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Reported By (Username):</span>{" "}
+                {getUserInfo(selectedReport).username}
+              </div>
+              <div>
+                <span className="font-bold">Reported By (Name):</span>{" "}
+                {getUserInfo(selectedReport).name}
+              </div>
+              <div>
+                <span className="font-bold">Report to (User ID):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Report to (Username):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).username}
+              </div>
+              <div>
+                <span className="font-bold">Report to (Name):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).name}
+              </div>
+              <div>
+                <span className="font-bold">Vibe ID:</span>{" "}
+                {getVibeInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Vibe Name:</span>{" "}
+                {getVibeInfo(selectedReport).itemName}
+              </div>
+              <div>
+                <span className="font-bold">Images:</span>{" "}
+                {selectedReport.reportImages?.length || 0}
+              </div>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Vibe Description:</span>
+              <p className="mt-1 text-gray-700">
+                {getVibeInfo(selectedReport).description}
+              </p>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Report Description:</span>
+              <p className="mt-1 text-gray-700">
+                {selectedReport.reportDescription}
+              </p>
+            </div>
+
+            {selectedReport.reportImages &&
+              selectedReport.reportImages.length > 0 && (
+                <div className="mb-4">
+                  <span className="font-bold text-sm">Report Images:</span>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {selectedReport.reportImages.map((img, i) => (
+                      <Image
+                        key={i}
+                        src={img}
+                        alt={`Report image ${i + 1}`}
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(img, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            <div className="text-xs text-gray-500">
+              <div>
+                Created: {new Date(selectedReport.createdAt).toLocaleString()}
+              </div>
+              <div>
+                Updated: {new Date(selectedReport.updatedAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
       )}
       {success && (
         <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">

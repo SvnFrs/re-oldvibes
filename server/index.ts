@@ -20,6 +20,7 @@ import chatRoutes from "./routes/chat.routes";
 import adminRoutes from "./routes/admin.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import recommendationRoutes from "./routes/recommendation.routes";
+import feedbackReportRoutes from "./routes/feedback-report.routes";
 
 import { setupCronJobs } from "./job/cleanup.job";
 
@@ -30,6 +31,8 @@ import "./schema/message.schema";
 import "./schema/conversation.schema";
 import "./schema/wishlist.schema";
 import "./schema/interaction.schema";
+import "./schema/feedback.schema";
+import "./schema/report.schema";
 
 // Load environment variables
 dotenv.config();
@@ -150,6 +153,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api", feedbackReportRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);

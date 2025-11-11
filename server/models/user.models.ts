@@ -358,4 +358,18 @@ export class UserModel {
     );
     return !!result;
   }
+
+  // Soft delete user account
+  async softDeleteAccount(userId: string): Promise<boolean> {
+    const result = await User.findByIdAndUpdate(
+      userId,
+      {
+        isActive: false,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+    return !!result;
+  }
 }

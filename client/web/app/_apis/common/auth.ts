@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
 
 interface AuthResponse {
   message: string;
@@ -14,6 +15,7 @@ interface AuthResponse {
     profilePicture?: string;
     bio?: string;
     provider?: "local" | "google";
+    createdAt?: string;
   };
 }
 
@@ -50,9 +52,12 @@ interface PasswordStatusResponse {
 }
 
 class AuthAPI {
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     const url = `${API_BASE}${endpoint}`;
-    
+
     const config: RequestInit = {
       credentials: "include",
       headers: {
@@ -118,18 +123,28 @@ class AuthAPI {
     });
   }
 
-  async verifyEmail(data: VerifyEmailData): Promise<{ message: string; verified: boolean }> {
-    return this.request<{ message: string; verified: boolean }>("/auth/verify-email", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  async verifyEmail(
+    data: VerifyEmailData
+  ): Promise<{ message: string; verified: boolean }> {
+    return this.request<{ message: string; verified: boolean }>(
+      "/auth/verify-email",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
   }
 
-  async resendVerification(email: string): Promise<{ message: string; emailSent: boolean }> {
-    return this.request<{ message: string; emailSent: boolean }>("/auth/resend-verification", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
+  async resendVerification(
+    email: string
+  ): Promise<{ message: string; emailSent: boolean }> {
+    return this.request<{ message: string; emailSent: boolean }>(
+      "/auth/resend-verification",
+      {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }
+    );
   }
 
   async forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
@@ -146,7 +161,10 @@ class AuthAPI {
     });
   }
 
-  async changePassword(currentPassword: string | undefined, newPassword: string): Promise<{ message: string; passwordCreated?: boolean }> {
+  async changePassword(
+    currentPassword: string | undefined,
+    newPassword: string
+  ): Promise<{ message: string; passwordCreated?: boolean }> {
     const body: any = {
       newPassword,
     };
@@ -156,10 +174,13 @@ class AuthAPI {
       body.currentPassword = currentPassword;
     }
 
-    return this.request<{ message: string; passwordCreated?: boolean }>("/auth/change-password", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    return this.request<{ message: string; passwordCreated?: boolean }>(
+      "/auth/change-password",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
   }
 
   // Google OAuth methods
@@ -174,4 +195,12 @@ class AuthAPI {
 }
 
 export const authAPI = new AuthAPI();
-export type { RegisterData, LoginData, ForgotPasswordData, ResetPasswordData, VerifyEmailData, AuthResponse, PasswordStatusResponse };
+export type {
+  RegisterData,
+  LoginData,
+  ForgotPasswordData,
+  ResetPasswordData,
+  VerifyEmailData,
+  AuthResponse,
+  PasswordStatusResponse,
+};

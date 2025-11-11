@@ -124,8 +124,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Save to localStorage for persistence
         localStorage.setItem("user", JSON.stringify(userData));
         Cookies.set("userId", data.user.id, { expires: 1 });
+        Cookies.set("tokenSession", data.token, { expires: 1 });
         setUser(userData);
-        
+
         // Redirect based on user role
         console.log("User role:", userData.role); // Debug log
         if (userData.role === "admin" || userData.role === "staff") {
@@ -135,9 +136,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log("Redirecting to feed"); // Debug log
           window.location.href = "/feed";
         }
-        
+
         return { success: true };
       } else {
+        // Check if account is deleted
+        if (data.code === "ACCOUNT_DELETED" || response.status === 403) {
+          return { 
+            success: false, 
+            error: "Tài khoản này đã bị xóa. Vui lòng liên hệ hỗ trợ nếu bạn cần khôi phục tài khoản." 
+          };
+        }
         return { success: false, error: data.message || "Đăng nhập thất bại" };
       }
     } catch (error) {

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IconEye, IconEyeOff, IconLock, IconLoader2, IconCheck } from "@tabler/icons-react";
+import {
+  IconEye,
+  IconEyeOff,
+  IconLock,
+  IconLoader2,
+  IconCheck,
+} from "@tabler/icons-react";
 import { authAPI } from "../../_apis/common/auth";
 
 export default function ChangePasswordForm() {
@@ -33,9 +39,9 @@ export default function ChangePasswordForm() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -48,13 +54,16 @@ export default function ChangePasswordForm() {
       setError("New password must be at least 6 characters");
       return false;
     }
-    
+
     // Only check if current password is different for existing password users
-    if (passwordStatus?.canChangePassword && formData.currentPassword === formData.newPassword) {
+    if (
+      passwordStatus?.canChangePassword &&
+      formData.currentPassword === formData.newPassword
+    ) {
       setError("New password must be different from current password");
       return false;
     }
-    
+
     return true;
   };
 
@@ -70,10 +79,12 @@ export default function ChangePasswordForm() {
 
     try {
       const result = await authAPI.changePassword(
-        passwordStatus?.canChangePassword ? formData.currentPassword : undefined,
+        passwordStatus?.canChangePassword
+          ? formData.currentPassword
+          : undefined,
         formData.newPassword
       );
-      
+
       setSuccess(true);
       setFormData({
         currentPassword: "",
@@ -81,7 +92,11 @@ export default function ChangePasswordForm() {
         confirmPassword: "",
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Connection error. Please try again.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Connection error. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -96,13 +111,14 @@ export default function ChangePasswordForm() {
               <IconCheck className="w-8 h-8 text-gruvbox-green" />
             </div>
             <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-              {passwordStatus?.canCreatePassword ? "Password created successfully! 🎉" : "Password changed successfully! 🎉"}
+              {passwordStatus?.canCreatePassword
+                ? "Password created successfully! 🎉"
+                : "Password changed successfully! 🎉"}
             </h2>
             <p className="text-gruvbox-gray mb-6">
-              {passwordStatus?.canCreatePassword 
+              {passwordStatus?.canCreatePassword
                 ? "Your password has been created successfully. You can now login with email and password."
-                : "Your password has been changed successfully."
-              }
+                : "Your password has been changed successfully."}
             </p>
             <button
               onClick={() => setSuccess(false)}
@@ -131,7 +147,7 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
+      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
@@ -139,14 +155,15 @@ export default function ChangePasswordForm() {
               <IconLock className="text-white w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
-              {passwordStatus.canCreatePassword ? "Create Password" : "Change Password"}
+              {passwordStatus.canCreatePassword
+                ? "Create Password"
+                : "Change Password"}
             </h1>
           </div>
           <p className="text-gruvbox-gray">
-            {passwordStatus.canCreatePassword 
+            {passwordStatus.canCreatePassword
               ? "Create a new password for your account"
-              : "Enter your current password and new password"
-            }
+              : "Enter your current password and new password"}
           </p>
         </div>
 
@@ -171,7 +188,10 @@ export default function ChangePasswordForm() {
           {/* Current Password Field - Only show for users who can change password */}
           {passwordStatus.canChangePassword && (
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2"
+              >
                 Current Password
               </label>
               <div className="relative">
@@ -207,7 +227,10 @@ export default function ChangePasswordForm() {
 
           {/* New Password Field */}
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
+            <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2"
+            >
               New Password
             </label>
             <div className="relative">
@@ -245,7 +268,10 @@ export default function ChangePasswordForm() {
 
           {/* Confirm Password Field */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2"
+            >
               Confirm New Password
             </label>
             <div className="relative">
@@ -287,10 +313,14 @@ export default function ChangePasswordForm() {
             {isLoading ? (
               <>
                 <IconLoader2 className="animate-spin h-5 w-5 mr-2" />
-                {passwordStatus.canCreatePassword ? "Creating..." : "Changing..."}
+                {passwordStatus.canCreatePassword
+                  ? "Creating..."
+                  : "Changing..."}
               </>
+            ) : passwordStatus.canCreatePassword ? (
+              "Create Password"
             ) : (
-              passwordStatus.canCreatePassword ? "Create Password" : "Change Password"
+              "Change Password"
             )}
           </button>
         </form>
@@ -299,8 +329,9 @@ export default function ChangePasswordForm() {
         {passwordStatus.canCreatePassword && (
           <div className="mt-6 p-4 bg-gruvbox-blue-light dark:bg-gruvbox-blue-dark border border-gruvbox-blue rounded-lg">
             <p className="text-gruvbox-blue text-sm">
-              💡 <strong>Note:</strong> You are creating a password for your Google account. 
-              After creation, you can login with both Google and email/password.
+              💡 <strong>Note:</strong> You are creating a password for your
+              Google account. After creation, you can login with both Google and
+              email/password.
             </p>
           </div>
         )}

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import passport from "passport";
 import { UserModel } from "../models/user.models";
+import { User } from "../schema/user.schema";
 import { generateToken } from "../utils/jwt.utils";
 import { verificationService } from "../services/verification.services";
 import { emailService } from "../services/email.services";
@@ -94,10 +95,31 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Check if user exists (including deleted accounts) - check without isActive filter
+    const userByEmail = await User.findOne({ email: email.toLowerCase() });
+    
+    // Check if account is deleted
+    if (userByEmail && userByEmail.deletedAt) {
+      res.status(403).json({ 
+        message: "This account has been deleted",
+        code: "ACCOUNT_DELETED"
+      });
+      return;
+    }
+
     // validate user credentials
     const user = await userModel.validatePassword(email, password);
     if (!user) {
       res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    // Double check for deleted account (in case validatePassword doesn't filter it)
+    if (user.deletedAt) {
+      res.status(403).json({ 
+        message: "This account has been deleted",
+        code: "ACCOUNT_DELETED"
+      });
       return;
     }
 
@@ -494,6 +516,13 @@ export const googleCallback = async (
       return;
     }
 
+    // Check if account is deleted
+    if (user.deletedAt) {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      res.redirect(`${frontendUrl}/auth/login?error=account_deleted`);
+      return;
+    }
+
     // Generate JWT token
     const token = generateToken({
       userId: user._id!.toString(),
@@ -511,7 +540,10 @@ export const googleCallback = async (
   } catch (error) {
     console.error("Google callback error:", error);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
+    const errorMessage = error instanceof Error && error.message.includes("deleted")
+      ? "account_deleted"
+      : "Authentication failed";
+    res.redirect(`${frontendUrl}/auth/login?error=${errorMessage}`);
   }
 };
 
