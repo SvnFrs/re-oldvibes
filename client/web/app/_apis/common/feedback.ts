@@ -176,6 +176,64 @@ class ReportAPI {
       body: JSON.stringify(data),
     });
   }
+
+  async getReports(params?: {
+    userId?: string;
+    vibeId?: string;
+    reportType?: ReportInput["reportType"];
+    limit?: number;
+    offset?: number;
+  }): Promise<{ reports: ReportItem[]; count: number }> {
+    const searchParams = new URLSearchParams();
+
+    const hasUserId = !!params?.userId;
+
+    if (params?.vibeId) {
+      searchParams.set("vibeId", params.vibeId);
+    }
+
+    if (params?.reportType) {
+      searchParams.set("reportType", params.reportType);
+    }
+
+    if (typeof params?.limit === "number") {
+      searchParams.set("limit", params.limit.toString());
+    }
+
+    if (typeof params?.offset === "number") {
+      searchParams.set("offset", params.offset.toString());
+    }
+
+    const queryString =
+      searchParams.toString().length > 0 ? `?${searchParams.toString()}` : "";
+
+    // If requesting by userId, use user-scoped endpoint (no staff required)
+    if (hasUserId && params?.userId) {
+      return this.request<{ reports: ReportItem[]; count: number }>(
+        `/report/user/${params.userId}${queryString}`
+      );
+    }
+
+    // Otherwise, use staff/admin endpoint
+    return this.request<{ reports: ReportItem[]; count: number }>(
+      `/report${queryString}`
+    );
+  }
+
+  async getReportById(reportId: string): Promise<{ report: ReportItem }> {
+    return this.request<{ report: ReportItem }>(`/report/${reportId}`);
+  }
+}
+
+export interface ReportItem {
+  id: string;
+  userId: string;
+  vibeId: string;
+  reportType: ReportInput["reportType"];
+  reportDescription: string;
+  reportImages: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const reportAPI = new ReportAPI();

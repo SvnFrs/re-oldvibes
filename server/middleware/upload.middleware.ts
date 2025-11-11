@@ -67,3 +67,34 @@ export const uploadProfilePicture = multer({
     }
   },
 });
+
+export const uploadBannerImage = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET_NAME!,
+    key: (req, file, cb) => {
+      const timestamp = Date.now();
+      let ext = path.extname(file.originalname);
+      if (!ext) {
+        if (file.mimetype === "image/jpeg") ext = ".jpg";
+        else if (file.mimetype === "image/png") ext = ".png";
+        else if (file.mimetype === "image/webp") ext = ".webp";
+        else ext = "";
+      }
+      const baseName = path.basename(file.originalname, ext).replace(/\s+/g, "_");
+      const filename = `${timestamp}-${baseName}${ext}`;
+      cb(null, `banners/${filename}`);
+    },
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB for banner images
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow images for banners
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed for banners"));
+    }
+  },
+});

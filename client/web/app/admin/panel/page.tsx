@@ -15,6 +15,9 @@ import {
   IconX,
   IconRefresh,
   IconReport,
+  IconEdit,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { CircleEllipsis, Flag, Info } from "lucide-react";
@@ -94,6 +97,11 @@ const tabs = [
     id: "reports",
     label: "Reports",
     icon: <Flag size={20} />,
+  },
+  {
+    id: "banners",
+    label: "Banner Management",
+    icon: <IconPhoto size={20} />,
   },
 ];
 
@@ -205,6 +213,7 @@ export default function AdminPanel() {
           {tab === "comments" && <CommentModerationSection />}
           {tab === "feedbacks" && <FeedbackSection />}
           {tab === "reports" && <ReportSection />}
+          {tab === "banners" && <BannerSection />}
         </main>
       </div>
     </div>
@@ -2418,6 +2427,414 @@ function ReportSection() {
           {success}
         </div>
       )}
+    </div>
+  );
+}
+
+// --- BANNER SECTION ---
+type BannerItem = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type BannerInputForm = {
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+  startDate?: Date | string;
+  endDate?: Date | string;
+};
+
+function BannerSection() {
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedBanner, setSelectedBanner] = useState<BannerItem | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [form, setForm] = useState<BannerInputForm>({
+    title: "",
+    description: "",
+    imageUrl: "",
+    linkUrl: "",
+    displayOrder: 0,
+    isActive: true,
+  });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
+  const fetchBanners = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (isActiveFilter !== undefined) {
+        params.append("isActive", isActiveFilter.toString());
+      }
+      if (searchTerm) {
+        params.append("search", searchTerm);
+      }
+      params.append("limit", "50");
+      params.append("offset", "0");
+
+      const res = await fetch(`${API}/banner?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBanners(data.banners || []);
+      } else {
+        setError(data.message || "Failed to fetch banners");
+        setBanners([]);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch banners");
+      setBanners([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBanners();
+  }, [isActiveFilter]);
+
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    if (!form.title) {
+      setError("Title is required");
+      return;
+    }
+    if (!imageFile) {
+      setError("Image file is required");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("title", form.title);
+      if (form.description) {
+        formData.append("description", form.description);
+      }
+      if (form.linkUrl) {
+        formData.append("linkUrl", form.linkUrl);
+      }
+      formData.append("isActive", form.isActive ? "true" : "false");
+      if (form.startDate) {
+        formData.append("startDate", new Date(form.startDate).toISOString());
+      }
+      if (form.endDate) {
+        formData.append("endDate", new Date(form.endDate).toISOString());
+      }
+
+      const res = await fetch(`${API}/banner`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner created successfully!");
+        setModalOpen(false);
+        setForm({ title: "", description: "", imageUrl: "", linkUrl: "", displayOrder: 0, isActive: true });
+        setImageFile(null);
+        setImagePreview("");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to create banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to create banner");
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBanner) return;
+    setError("");
+    setSuccess("");
+    try {
+      const formData = new FormData();
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+      if (form.title) {
+        formData.append("title", form.title);
+      }
+      if (form.description !== undefined) {
+        formData.append("description", form.description || "");
+      }
+      if (form.linkUrl !== undefined) {
+        formData.append("linkUrl", form.linkUrl || "");
+      }
+      if (form.isActive !== undefined) {
+        formData.append("isActive", form.isActive ? "true" : "false");
+      }
+      if (form.startDate) {
+        formData.append("startDate", new Date(form.startDate).toISOString());
+      }
+      if (form.endDate) {
+        formData.append("endDate", new Date(form.endDate).toISOString());
+      }
+
+      const res = await fetch(`${API}/banner/${selectedBanner.id}`, {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner updated successfully!");
+        setModalOpen(false);
+        setIsEditing(false);
+        setSelectedBanner(null);
+        setImageFile(null);
+        setImagePreview("");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to update banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update banner");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this banner?")) return;
+    setError("");
+    try {
+      const res = await fetch(`${API}/banner/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner deleted successfully!");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to delete banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to delete banner");
+    }
+  };
+
+  const handleToggleActive = async (banner: BannerItem) => {
+    setError("");
+    try {
+      const res = await fetch(`${API}/banner/${banner.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !banner.isActive }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(`Banner ${banner.isActive ? "deactivated" : "activated"} successfully!`);
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to update banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update banner");
+    }
+  };
+
+  const openEditModal = (banner: BannerItem) => {
+    setSelectedBanner(banner);
+    setForm({
+      title: banner.title,
+      description: banner.description || "",
+      imageUrl: banner.imageUrl,
+      linkUrl: banner.linkUrl || "",
+      displayOrder: banner.displayOrder,
+      isActive: banner.isActive,
+      startDate: banner.startDate,
+      endDate: banner.endDate,
+    });
+    setImageFile(null);
+    setImagePreview(banner.imageUrl);
+    setIsEditing(true);
+    setModalOpen(true);
+  };
+
+  const openCreateModal = () => {
+    setSelectedBanner(null);
+    setForm({ title: "", description: "", imageUrl: "", linkUrl: "", displayOrder: 0, isActive: true });
+    setImageFile(null);
+    setImagePreview("");
+    setIsEditing(false);
+    setModalOpen(true);
+  };
+
+  const filteredBanners = banners.filter((banner) => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      banner.title.toLowerCase().includes(search) ||
+      (banner.description && banner.description.toLowerCase().includes(search))
+    );
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Banner Management</h2>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 text-gruvbox-orange hover:underline" onClick={fetchBanners}>
+            <IconRefresh size={16} /> Refresh
+          </button>
+          <button className="flex items-center gap-2 bg-gruvbox-orange text-white px-4 py-2 rounded hover:bg-orange-600" onClick={openCreateModal}>
+            <IconPlus size={16} /> Add Banner
+          </button>
+        </div>
+      </div>
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input className="flex-1 min-w-64 border rounded px-3 py-1 text-sm" placeholder="Search banners by title or description..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <select className="border rounded px-3 py-1 text-sm" value={isActiveFilter === undefined ? "all" : isActiveFilter ? "active" : "inactive"} onChange={(e) => { if (e.target.value === "all") setIsActiveFilter(undefined); else setIsActiveFilter(e.target.value === "active"); }}>
+          <option value="all">All Banners</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+      </div>
+      {loading ? <div>Loading...</div> : filteredBanners.length === 0 ? <div className="text-gray-500">No banners found.</div> : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredBanners.map((banner) => (
+            <div key={banner.id} className={`border rounded p-4 bg-white ${!banner.isActive ? "opacity-60" : ""}`}>
+              <div className="relative mb-3">
+                <Image src={banner.imageUrl} alt={banner.title} width={400} height={200} className="w-full h-40 object-cover rounded" />
+                {!banner.isActive && <div className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">Inactive</div>}
+              </div>
+              <h3 className="font-bold text-lg mb-1">{banner.title}</h3>
+              {banner.description && <p className="text-sm text-gray-600 mb-2 line-clamp-2">{banner.description}</p>}
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                {banner.isActive && <span>Order: {banner.displayOrder}</span>}
+                {banner.linkUrl && <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a>}
+              </div>
+              <div className="flex gap-2">
+                <button className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700" onClick={() => openEditModal(banner)}>
+                  <IconEdit size={14} /> Edit
+                </button>
+                <button className="flex items-center justify-center gap-1 bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700" onClick={() => handleToggleActive(banner)} title={banner.isActive ? "Deactivate" : "Activate"}>
+                  {banner.isActive ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+                </button>
+                <button className="flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700" onClick={() => handleDelete(banner.id)}>
+                  <IconTrash size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); }} title={isEditing ? "Edit Banner" : "Create Banner"}>
+        <form onSubmit={isEditing ? handleUpdate : handleCreate}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold mb-1">Title *</label>
+              <input type="text" className="w-full border rounded px-3 py-2" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Description</label>
+              <textarea className="w-full border rounded px-3 py-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} rows={3} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Banner Image *</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full border rounded px-3 py-2"
+                onChange={handleImageChange}
+                required={!isEditing}
+              />
+              {(imagePreview || (isEditing && form.imageUrl)) && (
+                <div className="mt-2">
+                  <Image
+                    src={imagePreview || form.imageUrl}
+                    alt="Preview"
+                    width={400}
+                    height={200}
+                    className="w-full h-40 object-cover rounded"
+                    onError={() => setError("Failed to load image")}
+                  />
+                </div>
+              )}
+              {isEditing && !imageFile && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty to keep current image, or upload a new one to replace it.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Link URL</label>
+              <input type="url" className="w-full border rounded px-3 py-2" value={form.linkUrl} onChange={(e) => setForm({ ...form, linkUrl: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Active</label>
+              <select className="w-full border rounded px-3 py-2" value={form.isActive ? "true" : "false"} onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })}>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+              {form.isActive && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Display order will be automatically assigned based on active banners count.
+                </p>
+              )}
+              {!form.isActive && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Inactive banners will not be displayed and don't have a display order.
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold mb-1">Start Date (optional)</label>
+                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.startDate ? new Date(form.startDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, startDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">End Date (optional)</label>
+                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.endDate ? new Date(form.endDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" className="flex-1 bg-gruvbox-orange text-white py-2 rounded font-bold">{isEditing ? "Update" : "Create"} Banner</button>
+              <button type="button" className="flex-1 bg-gray-600 text-white py-2 rounded font-bold" onClick={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); setImageFile(null); setImagePreview(""); }}>Cancel</button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+      {error && <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>}
+      {success && <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">{success}</div>}
     </div>
   );
 }
