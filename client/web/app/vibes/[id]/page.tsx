@@ -1322,16 +1322,17 @@ export default function VibeDetailPage() {
                   <IconShare size={20} />
                   Share
                 </button>
-
-                <button className="flex items-center gap-2 px-6 py-3 text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 rounded-lg font-medium transition">
-                  <Link
-                    href={`/report?vibeId=${vibe.id}`}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 transition"
-                  >
-                    <IconFlag size={20} />
-                    Report
-                  </Link>
-                </button>
+                {userId !== vibe.userId && (
+                  <button className="flex items-center gap-2 px-6 py-3 text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 rounded-lg font-medium transition">
+                    <Link
+                      href={`/report?vibeId=${vibe.id}`}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-gruvbox-gray hover:bg-gruvbox-light-bg1 dark:hover:bg-gruvbox-dark-bg2 transition"
+                    >
+                      <IconFlag size={20} />
+                      Report
+                    </Link>
+                  </button>
+                )}
               </div>
             </div>
           </div>
