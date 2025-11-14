@@ -258,7 +258,7 @@ export default function PendingVibesPanel() {
       {/* Review Modal */}
       {selectedVibe && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gruvbox-dark-bg1 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gruvbox-dark-bg1 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gruvbox-dark-bg2">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold">Review Vibe</h3>

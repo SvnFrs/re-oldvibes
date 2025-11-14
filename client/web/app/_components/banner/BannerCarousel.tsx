@@ -221,8 +221,8 @@ export default function BannerCarousel({ className = "" }: BannerCarouselProps) 
                   onClick={() => goToSlide(index)}
                   className={`w-2 h-2 rounded-full transition-all ${
                     index === currentIndex
-                      ? "bg-white w-8"
-                      : "bg-white/50 hover:bg-white/75"
+                      ? "bg-gruvbox-orange w-8"
+                      : "bg-gruvbox-dark-bg3 hover:bg-gruvbox-dark-bg4"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                   type="button"

@@ -18,6 +18,17 @@ import {
   IconEdit,
   IconEye,
   IconEyeOff,
+  IconSparkles,
+  IconShieldCheck,
+  IconSearch,
+  IconClock,
+  IconHeart,
+  IconMapPin,
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconChevronRight,
+  IconExternalLink,
+  IconMessage,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { CircleEllipsis, Flag, Info } from "lucide-react";
@@ -39,19 +50,20 @@ function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center ">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
       <div
-        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative !min-w-5xl"
+        className="bg-gruvbox-dark-bg0 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gruvbox-dark-bg2 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute top-3 right-3 text-gray-400 hover:text-red-500"
+          className="absolute top-4 right-4 text-gruvbox-gray hover:text-gruvbox-red transition-colors rounded-full p-1 hover:bg-gruvbox-dark-bg1"
           onClick={onClose}
         >
-          <IconX size={22} />
+          <IconX size={20} />
         </button>
         {title && (
-          <h2 className="text-xl font-bold mb-4 text-gruvbox-orange">
+          <h2 className="text-2xl font-bold mb-6 text-gruvbox-dark-fg0 flex items-center gap-2">
+            <IconSparkles size={24} className="text-gruvbox-orange" />
             {title}
           </h2>
         )}
@@ -63,11 +75,6 @@ function Modal({
 
 // --- Sidebar Tabs ---
 const tabs = [
-  {
-    id: "staff",
-    label: "Staff Management",
-    icon: <IconUserCog size={20} />,
-  },
   {
     id: "users",
     label: "User Management",
@@ -121,7 +128,7 @@ type User = {
 export default function AdminPanel() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("staff");
+  const [tab, setTab] = useState("users");
   const [error] = useState("");
 
   // Auth check
@@ -152,68 +159,90 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gruvbox-dark-bg0 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div>
-          <span className="text-2xl font-bold text-gruvbox-orange font-mono">
-            Old Vibes Admin Panel
-          </span>
-          <Link
-            href="/admin/profile"
-            className="ml-4 text-sm text-gray-500 font-mono"
-          >
-            {user.email} ({user.role})
-          </Link>
+      <div className="bg-gruvbox-dark-bg1 border-b border-gruvbox-dark-bg2 px-6 py-4 flex items-center justify-between shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gruvbox-orange to-gruvbox-yellow flex items-center justify-center shadow-lg">
+              <IconShieldCheck size={24} className="text-gruvbox-dark-bg0" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow bg-clip-text text-transparent font-mono">
+                Old Vibes Admin
+              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <Link
+                  href="/admin/profile"
+                  className="text-xs text-gruvbox-gray hover:text-gruvbox-dark-fg0 transition-colors"
+                >
+                  {user.email}
+                </Link>
+                <span className="px-2 py-0.5 bg-gruvbox-orange/20 text-gruvbox-orange text-xs rounded-full font-semibold border border-gruvbox-orange/30">
+                  {user.role}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
         <button
-          className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-4 py-2 rounded transition"
+          className="flex items-center gap-2 text-gruvbox-red hover:bg-gruvbox-red/10 px-4 py-2 rounded-lg transition-all border border-gruvbox-red/30 hover:border-gruvbox-red hover:shadow-lg hover:shadow-gruvbox-red/20"
           onClick={handleLogout}
         >
           <IconLogout size={18} />
-          Logout
+          <span className="font-medium">Logout</span>
         </button>
       </div>
 
       {/* Layout */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <nav className="w-56 bg-white border-r flex flex-col py-6 px-2 gap-2">
+        <nav className="w-64 bg-gruvbox-dark-bg1 border-r border-gruvbox-dark-bg2 flex flex-col py-6 px-3 gap-1.5 shadow-xl">
           {tabs.map((t) => (
             <button
               key={t.id}
-              className={`flex items-center gap-3 w-full px-4 py-3 rounded-md transition-all
+              className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden
                 ${
                   tab === t.id
-                    ? "bg-gruvbox-orange text-white font-bold shadow"
-                    : "text-gruvbox-gray hover:bg-gruvbox-orange/10"
+                    ? "bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-gruvbox-dark-bg0 font-bold shadow-lg shadow-gruvbox-orange/30 scale-[1.02]"
+                    : "text-gruvbox-dark-fg2 hover:bg-gruvbox-dark-bg2 hover:text-gruvbox-dark-fg0"
                 }
               `}
               onClick={() => setTab(t.id)}
             >
-              {React.cloneElement(t.icon, {
-                className: tab === t.id ? "text-white" : "text-gruvbox-orange",
-              })}
-              <span>{t.label}</span>
+              {tab === t.id && (
+                <div className="absolute inset-0 bg-gradient-to-r from-gruvbox-orange/20 to-gruvbox-yellow/20 animate-pulse" />
+              )}
+              <div className="relative flex items-center gap-3 w-full">
+                {React.cloneElement(t.icon, {
+                  className: tab === t.id ? "text-gruvbox-dark-bg0" : "text-gruvbox-orange group-hover:scale-110 transition-transform",
+                  size: 20,
+                })}
+                <span className="text-sm">{t.label}</span>
+              </div>
             </button>
           ))}
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 bg-gray-50">
+        <main className="flex-1 p-8 bg-gruvbox-dark-bg0 overflow-y-auto">
           {error && (
-            <div className="mb-4 text-red-600 bg-red-100 p-2 rounded">
-              {error}
+            <div className="mb-6 text-gruvbox-red bg-gruvbox-red/10 p-4 rounded-xl border border-gruvbox-red/30 animate-in slide-in-from-top duration-300">
+              <div className="flex items-center gap-2">
+                <IconX size={18} />
+                <span className="font-medium">{error}</span>
+              </div>
             </div>
           )}
-          {tab === "staff" && <StaffSection isAdmin={user.role === "admin"} />}
-          {tab === "users" && <UserSection />}
-          {tab === "show-vibes" && <ShowVibesSection />}
-          {tab === "vibes" && <VibeModerationSection />}
-          {tab === "comments" && <CommentModerationSection />}
-          {tab === "feedbacks" && <FeedbackSection />}
-          {tab === "reports" && <ReportSection />}
-          {tab === "banners" && <BannerSection />}
+          <div className="animate-in fade-in duration-500">
+            {tab === "users" && <UserSection />}
+            {tab === "show-vibes" && <ShowVibesSection />}
+            {tab === "vibes" && <VibeModerationSection />}
+            {tab === "comments" && <CommentModerationSection />}
+            {tab === "feedbacks" && <FeedbackSection />}
+            {tab === "reports" && <ReportSection />}
+            {tab === "banners" && <BannerSection />}
+          </div>
         </main>
       </div>
     </div>
@@ -1620,37 +1649,50 @@ function FeedbackSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Feedback Management</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-gruvbox-purple to-gruvbox-blue rounded-lg">
+            <IconMessage size={24} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gruvbox-fg">Feedback Management</h2>
+            <p className="text-sm text-gruvbox-fg/60">Review and manage user feedback</p>
+          </div>
+        </div>
         <button
-          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          className="flex items-center gap-2 px-4 py-2 bg-gruvbox-bg2 hover:bg-gruvbox-bg3 text-gruvbox-orange rounded-lg transition-colors"
           onClick={fetchFeedbacks}
         >
-          <IconRefresh size={16} /> Refresh
+          <IconRefresh size={18} />
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <input
-          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
-          placeholder="Search feedbacks by description, type, or user..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="relative md:col-span-1">
+          <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gruvbox-fg/40" />
+          <input
+            className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg pl-10 pr-4 py-2.5 text-gruvbox-fg placeholder-gruvbox-fg/40 focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
+            placeholder="Search feedbacks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
         <select
-          className="border rounded px-3 py-1 text-sm"
+          className="bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
         >
           <option value="all">All Types</option>
-          <option value="bug">Bug</option>
-          <option value="feature">Feature</option>
-          <option value="suggestion">Suggestion</option>
-          <option value="other">Other</option>
+          <option value="bug">🐛 Bug Reports</option>
+          <option value="feature">✨ Feature Requests</option>
+          <option value="suggestion">💡 Suggestions</option>
+          <option value="other">📝 Other</option>
         </select>
         <select
-          className="border rounded px-3 py-1 text-sm"
+          className="bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
         >
@@ -1660,85 +1702,103 @@ function FeedbackSection() {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gruvbox-orange"></div>
+        </div>
       ) : sortedFeedbacks.length === 0 ? (
-        <div className="text-gray-500">No feedbacks found.</div>
+        <div className="text-center py-12 bg-gruvbox-bg1 rounded-lg border border-gruvbox-bg3">
+          <IconMessage size={48} className="mx-auto mb-3 text-gruvbox-fg/20" />
+          <p className="text-gruvbox-fg/60">No feedbacks found.</p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedFeedbacks.map((feedback) => {
             const userInfo = getUserInfo(feedback);
             return (
-              <div key={feedback.id} className="border rounded p-4 bg-white">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-lg">
-                        Feedback #{feedback.id.slice(-8)}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${
-                          feedback.feedbackType === "bug"
-                            ? "bg-red-100 text-red-800"
-                            : feedback.feedbackType === "feature"
-                            ? "bg-blue-100 text-blue-800"
-                            : feedback.feedbackType === "suggestion"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {feedback.feedbackType.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
-                      <div>
-                        <span className="font-bold">User:</span>{" "}
-                        {userInfo.username}
-                      </div>
-                      <div>
-                        <span className="font-bold">Name:</span> {userInfo.name}
-                      </div>
-                      <div>
-                        <span className="font-bold">User ID:</span>{" "}
-                        {userInfo.id.slice(-8)}
-                      </div>
-                      <div>
-                        <span className="font-bold">Images:</span>{" "}
-                        {feedback.feedbackImages?.length || 0}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-700 mb-2">
-                      <span className="font-bold">Description:</span>{" "}
-                      {feedback.feedbackDescription}
-                    </div>
-                    {feedback.feedbackImages &&
-                      feedback.feedbackImages.length > 0 && (
-                        <div className="flex gap-2 mb-2 flex-wrap">
-                          {feedback.feedbackImages.map((img, i) => (
-                            <Image
-                              key={i}
-                              src={img}
-                              alt={`Feedback image ${i + 1}`}
-                              width={80}
-                              height={80}
-                              className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(img, "_blank")}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Created: {new Date(feedback.createdAt).toLocaleString()} |
-                      Updated: {new Date(feedback.updatedAt).toLocaleString()}
-                    </div>
+              <div 
+                key={feedback.id} 
+                className="bg-gruvbox-bg1 border border-gruvbox-bg3 rounded-lg p-4 hover:border-gruvbox-orange/50 transition-all group"
+              >
+                {/* Type Badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      feedback.feedbackType === "bug"
+                        ? "bg-red-500/20 text-red-400"
+                        : feedback.feedbackType === "feature"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : feedback.feedbackType === "suggestion"
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-gruvbox-bg3 text-gruvbox-fg/60"
+                    }`}
+                  >
+                    {feedback.feedbackType === "bug" && "🐛 "}
+                    {feedback.feedbackType === "feature" && "✨ "}
+                    {feedback.feedbackType === "suggestion" && "💡 "}
+                    {feedback.feedbackType === "other" && "📝 "}
+                    {feedback.feedbackType.toUpperCase()}
+                  </span>
+                  <span className="text-xs text-gruvbox-fg/40">
+                    #{feedback.id.slice(-8)}
+                  </span>
+                </div>
+
+                {/* User Info */}
+                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gruvbox-bg3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-red flex items-center justify-center text-white font-bold">
+                    {userInfo.name?.[0]?.toUpperCase() || "U"}
                   </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      className="text-gruvbox-blue hover:underline text-sm"
-                      onClick={() => viewFeedbackDetails(feedback.id)}
-                    >
-                      View Details
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gruvbox-fg truncate">
+                      {userInfo.name}
+                    </p>
+                    <p className="text-xs text-gruvbox-fg/60 truncate">
+                      @{userInfo.username}
+                    </p>
                   </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-sm text-gruvbox-fg/80 mb-3 line-clamp-3">
+                  {feedback.feedbackDescription}
+                </p>
+
+                {/* Images Preview */}
+                {feedback.feedbackImages && feedback.feedbackImages.length > 0 && (
+                  <div className="flex gap-2 mb-3">
+                    {feedback.feedbackImages.slice(0, 3).map((img, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden bg-gruvbox-bg2">
+                        <Image
+                          src={img}
+                          alt={`Feedback image ${i + 1}`}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => window.open(img, "_blank")}
+                        />
+                      </div>
+                    ))}
+                    {feedback.feedbackImages.length > 3 && (
+                      <div className="w-16 h-16 rounded-lg bg-gruvbox-bg2 flex items-center justify-center text-xs text-gruvbox-fg/60">
+                        +{feedback.feedbackImages.length - 3}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-gruvbox-bg3">
+                  <div className="flex items-center gap-1 text-xs text-gruvbox-fg/40">
+                    <IconClock size={14} />
+                    <span>{new Date(feedback.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <button
+                    className="flex items-center gap-1 text-xs text-gruvbox-orange hover:text-gruvbox-yellow transition-colors"
+                    onClick={() => viewFeedbackDetails(feedback.id)}
+                  >
+                    <span>View Details</span>
+                    <IconChevronRight size={14} />
+                  </button>
                 </div>
               </div>
             );
@@ -1753,80 +1813,97 @@ function FeedbackSection() {
         title="Feedback Details"
       >
         {selectedFeedback && (
-          <div className="max-h-[80vh] overflow-y-auto ">
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-bold">
-                  Feedback #{selectedFeedback.id.slice(-8)}
-                </h3>
+          <div className="max-h-[80vh] overflow-y-auto space-y-4">
+            {/* Header with Type Badge */}
+            <div className="flex items-center justify-between pb-4 border-b border-gruvbox-bg3">
+              <div className="flex items-center gap-3">
                 <span
-                  className={`px-2 py-1 rounded text-xs font-bold ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
                     selectedFeedback.feedbackType === "bug"
-                      ? "bg-red-100 text-red-800"
+                      ? "bg-red-500/20 text-red-400"
                       : selectedFeedback.feedbackType === "feature"
-                      ? "bg-blue-100 text-blue-800"
+                      ? "bg-blue-500/20 text-blue-400"
                       : selectedFeedback.feedbackType === "suggestion"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-gruvbox-bg3 text-gruvbox-fg/60"
                   }`}
                 >
+                  {selectedFeedback.feedbackType === "bug" && "🐛 "}
+                  {selectedFeedback.feedbackType === "feature" && "✨ "}
+                  {selectedFeedback.feedbackType === "suggestion" && "💡 "}
+                  {selectedFeedback.feedbackType === "other" && "📝 "}
                   {selectedFeedback.feedbackType.toUpperCase()}
+                </span>
+                <span className="text-sm text-gruvbox-fg/40">
+                  ID: {selectedFeedback.id.slice(-12)}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>
-                <span className="font-bold">User ID:</span>{" "}
-                {getUserInfo(selectedFeedback).id}
-              </div>
-              <div>
-                <span className="font-bold">Username:</span>{" "}
-                {getUserInfo(selectedFeedback).username}
-              </div>
-              <div>
-                <span className="font-bold">Name:</span>{" "}
-                {getUserInfo(selectedFeedback).name}
-              </div>
-              <div>
-                <span className="font-bold">Images:</span>{" "}
-                {selectedFeedback.feedbackImages?.length || 0}
+            {/* User Info */}
+            <div className="bg-gruvbox-bg2 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-3">Submitted By</h4>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-red flex items-center justify-center text-white font-bold text-lg">
+                  {getUserInfo(selectedFeedback).name?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div>
+                  <p className="font-semibold text-gruvbox-fg">
+                    {getUserInfo(selectedFeedback).name}
+                  </p>
+                  <p className="text-sm text-gruvbox-fg/60">
+                    @{getUserInfo(selectedFeedback).username}
+                  </p>
+                  <p className="text-xs text-gruvbox-fg/40 mt-0.5">
+                    ID: {getUserInfo(selectedFeedback).id.slice(-12)}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="text-sm mb-4">
-              <span className="font-bold">Description:</span>
-              <p className="mt-1 text-gray-700">
+            {/* Description */}
+            <div>
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-2">Description</h4>
+              <p className="text-sm text-gruvbox-fg/80 leading-relaxed bg-gruvbox-bg2 rounded-lg p-4">
                 {selectedFeedback.feedbackDescription}
               </p>
             </div>
 
-            {selectedFeedback.feedbackImages &&
-              selectedFeedback.feedbackImages.length > 0 && (
-                <div className="mb-4">
-                  <span className="font-bold text-sm">Images:</span>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {selectedFeedback.feedbackImages.map((img, i) => (
+            {/* Images */}
+            {selectedFeedback.feedbackImages && selectedFeedback.feedbackImages.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-2">
+                  Attached Images ({selectedFeedback.feedbackImages.length})
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {selectedFeedback.feedbackImages.map((img, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gruvbox-bg2 cursor-pointer hover:ring-2 hover:ring-gruvbox-orange transition-all group">
                       <Image
-                        key={i}
                         src={img}
                         alt={`Feedback image ${i + 1}`}
-                        width={120}
-                        height={120}
-                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        width={200}
+                        height={200}
+                        className="w-full h-full object-cover"
                         onClick={() => window.open(img, "_blank")}
                       />
-                    ))}
-                  </div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <IconExternalLink size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-            <div className="text-xs text-gray-500">
-              <div>
-                Created: {new Date(selectedFeedback.createdAt).toLocaleString()}
               </div>
-              <div>
-                Updated: {new Date(selectedFeedback.updatedAt).toLocaleString()}
+            )}
+
+            {/* Timestamps */}
+            <div className="flex items-center gap-6 text-xs text-gruvbox-fg/40 pt-4 border-t border-gruvbox-bg3">
+              <div className="flex items-center gap-1">
+                <IconClock size={14} />
+                <span>Created: {new Date(selectedFeedback.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <IconClock size={14} />
+                <span>Updated: {new Date(selectedFeedback.updatedAt).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -1834,11 +1911,15 @@ function FeedbackSection() {
       </Modal>
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+        <div className="mt-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg flex items-center gap-2">
+          <IconAlertCircle size={18} />
+          <span>{error}</span>
+        </div>
       )}
       {success && (
-        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
-          {success}
+        <div className="mt-4 bg-green-500/10 border border-green-500/20 text-green-400 p-3 rounded-lg flex items-center gap-2">
+          <IconCheck size={18} />
+          <span>{success}</span>
         </div>
       )}
     </div>
@@ -2173,37 +2254,50 @@ function ReportSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Report Management</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-gruvbox-red to-gruvbox-orange rounded-lg">
+            <IconAlertTriangle size={24} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gruvbox-fg">Report Management</h2>
+            <p className="text-sm text-gruvbox-fg/60">Review and handle user reports</p>
+          </div>
+        </div>
         <button
-          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          className="flex items-center gap-2 px-4 py-2 bg-gruvbox-bg2 hover:bg-gruvbox-bg3 text-gruvbox-orange rounded-lg transition-colors"
           onClick={fetchReports}
         >
-          <IconRefresh size={16} /> Refresh
+          <IconRefresh size={18} />
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <input
-          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
-          placeholder="Search reports by description, type, user, or vibe..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="relative md:col-span-1">
+          <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gruvbox-fg/40" />
+          <input
+            className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg pl-10 pr-4 py-2.5 text-gruvbox-fg placeholder-gruvbox-fg/40 focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
         <select
-          className="border rounded px-3 py-1 text-sm"
+          className="bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
         >
           <option value="all">All Types</option>
-          <option value="spam">Spam</option>
-          <option value="inappropriate">Inappropriate</option>
-          <option value="abusive">Abusive</option>
-          <option value="other">Other</option>
+          <option value="spam">🚫 Spam</option>
+          <option value="inappropriate">⚠️ Inappropriate</option>
+          <option value="abusive">🔴 Abusive</option>
+          <option value="other">📋 Other</option>
         </select>
         <select
-          className="border rounded px-3 py-1 text-sm"
+          className="bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
         >
@@ -2213,91 +2307,131 @@ function ReportSection() {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gruvbox-orange"></div>
+        </div>
       ) : sortedReports.length === 0 ? (
-        <div className="text-gray-500">No reports found.</div>
+        <div className="text-center py-12 bg-gruvbox-bg1 rounded-lg border border-gruvbox-bg3">
+          <IconAlertTriangle size={48} className="mx-auto mb-3 text-gruvbox-fg/20" />
+          <p className="text-gruvbox-fg/60">No reports found.</p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {sortedReports.map((report) => {
             const userInfo = getUserInfo(report);
             const vibeInfo = getVibeInfo(report);
             const vibeOwnerInfo = getVibeOwnerInfo(report);
             return (
-              <div key={report.id} className="border rounded p-4 bg-white">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-lg">
-                        Report #{report.id.slice(-8)}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${
-                          report.reportType === "spam"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : report.reportType === "inappropriate"
-                            ? "bg-orange-100 text-orange-800"
-                            : report.reportType === "abusive"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {report.reportType.toUpperCase()}
-                      </span>
+              <div 
+                key={report.id} 
+                className="bg-gruvbox-bg1 border border-gruvbox-bg3 rounded-lg p-4 hover:border-gruvbox-red/50 transition-all"
+              >
+                {/* Header with Type Badge */}
+                <div className="flex items-center justify-between mb-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      report.reportType === "spam"
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : report.reportType === "inappropriate"
+                        ? "bg-orange-500/20 text-orange-400"
+                        : report.reportType === "abusive"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-gruvbox-bg3 text-gruvbox-fg/60"
+                    }`}
+                  >
+                    {report.reportType === "spam" && "🚫 "}
+                    {report.reportType === "inappropriate" && "⚠️ "}
+                    {report.reportType === "abusive" && "🔴 "}
+                    {report.reportType === "other" && "📋 "}
+                    {report.reportType.toUpperCase()}
+                  </span>
+                  <span className="text-xs text-gruvbox-fg/40">
+                    #{report.id.slice(-8)}
+                  </span>
+                </div>
+
+                {/* Reporter & Reported User */}
+                <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gruvbox-bg3">
+                  <div>
+                    <p className="text-xs text-gruvbox-fg/40 mb-2">Reported By</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gruvbox-blue to-gruvbox-purple flex items-center justify-center text-white text-xs font-bold">
+                        {userInfo.name?.[0]?.toUpperCase() || "U"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gruvbox-fg truncate">
+                          {userInfo.username}
+                        </p>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
-                      <div>
-                        <span className="font-bold">Reported By:</span>{" "}
-                        {userInfo.username}
+                  </div>
+                  <div>
+                    <p className="text-xs text-gruvbox-fg/40 mb-2">Vibe Owner</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-red flex items-center justify-center text-white text-xs font-bold">
+                        {vibeOwnerInfo.name?.[0]?.toUpperCase() || "U"}
                       </div>
-                      <div>
-                        <span className="font-bold">Report to:</span>{" "}
-                        {vibeOwnerInfo.username}
-                      </div>
-                      <div>
-                        <span className="font-bold">Vibe:</span>{" "}
-                        {vibeInfo.itemName}
-                      </div>
-                      <div>
-                        <span className="font-bold">Vibe ID:</span>{" "}
-                        {vibeInfo.id.slice(-8)}
-                      </div>
-                      <div>
-                        <span className="font-bold">Images:</span>{" "}
-                        {report.reportImages?.length || 0}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gruvbox-fg truncate">
+                          {vibeOwnerInfo.username}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-700 mb-2">
-                      <span className="font-bold">Description:</span>{" "}
-                      {report.reportDescription}
-                    </div>
-                    {report.reportImages && report.reportImages.length > 0 && (
-                      <div className="flex gap-2 mb-2 flex-wrap">
-                        {report.reportImages.map((img, i) => (
-                          <Image
-                            key={i}
-                            src={img}
-                            alt={`Report image ${i + 1}`}
-                            width={80}
-                            height={80}
-                            className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                            onClick={() => window.open(img, "_blank")}
-                          />
-                        ))}
+                  </div>
+                </div>
+
+                {/* Vibe Info */}
+                <div className="bg-gruvbox-bg2 rounded-lg p-3 mb-3">
+                  <p className="text-xs text-gruvbox-fg/40 mb-1">Reported Vibe</p>
+                  <p className="text-sm font-semibold text-gruvbox-fg truncate">
+                    {vibeInfo.itemName}
+                  </p>
+                  <p className="text-xs text-gruvbox-fg/60 mt-1 line-clamp-2">
+                    {vibeInfo.description}
+                  </p>
+                </div>
+
+                {/* Description */}
+                <p className="text-sm text-gruvbox-fg/80 mb-3 line-clamp-2">
+                  {report.reportDescription}
+                </p>
+
+                {/* Images Preview */}
+                {report.reportImages && report.reportImages.length > 0 && (
+                  <div className="flex gap-2 mb-3">
+                    {report.reportImages.slice(0, 3).map((img, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden bg-gruvbox-bg2">
+                        <Image
+                          src={img}
+                          alt={`Report image ${i + 1}`}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => window.open(img, "_blank")}
+                        />
+                      </div>
+                    ))}
+                    {report.reportImages.length > 3 && (
+                      <div className="w-16 h-16 rounded-lg bg-gruvbox-bg2 flex items-center justify-center text-xs text-gruvbox-fg/60">
+                        +{report.reportImages.length - 3}
                       </div>
                     )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Created: {new Date(report.createdAt).toLocaleString()} |
-                      Updated: {new Date(report.updatedAt).toLocaleString()}
-                    </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      className="text-gruvbox-blue hover:underline text-sm"
-                      onClick={() => viewReportDetails(report.id)}
-                    >
-                      View Details
-                    </button>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-gruvbox-bg3">
+                  <div className="flex items-center gap-1 text-xs text-gruvbox-fg/40">
+                    <IconClock size={14} />
+                    <span>{new Date(report.createdAt).toLocaleDateString()}</span>
                   </div>
+                  <button
+                    className="flex items-center gap-1 text-xs text-gruvbox-orange hover:text-gruvbox-yellow transition-colors"
+                    onClick={() => viewReportDetails(report.id)}
+                  >
+                    <span>View Details</span>
+                    <IconChevronRight size={14} />
+                  </button>
                 </div>
               </div>
             );
@@ -2312,107 +2446,134 @@ function ReportSection() {
         title="Report Details"
       >
         {selectedReport && (
-          <div className="max-h-96 overflow-y-auto">
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-bold">
-                  Report #{selectedReport.id.slice(-8)}
-                </h3>
+          <div className="max-h-[80vh] overflow-y-auto space-y-4">
+            {/* Header with Type Badge */}
+            <div className="flex items-center justify-between pb-4 border-b border-gruvbox-bg3">
+              <div className="flex items-center gap-3">
                 <span
-                  className={`px-2 py-1 rounded text-xs font-bold ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
                     selectedReport.reportType === "spam"
-                      ? "bg-yellow-100 text-yellow-800"
+                      ? "bg-yellow-500/20 text-yellow-400"
                       : selectedReport.reportType === "inappropriate"
-                      ? "bg-orange-100 text-orange-800"
+                      ? "bg-orange-500/20 text-orange-400"
                       : selectedReport.reportType === "abusive"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gruvbox-bg3 text-gruvbox-fg/60"
                   }`}
                 >
+                  {selectedReport.reportType === "spam" && "🚫 "}
+                  {selectedReport.reportType === "inappropriate" && "⚠️ "}
+                  {selectedReport.reportType === "abusive" && "🔴 "}
+                  {selectedReport.reportType === "other" && "📋 "}
                   {selectedReport.reportType.toUpperCase()}
+                </span>
+                <span className="text-sm text-gruvbox-fg/40">
+                  ID: {selectedReport.id.slice(-12)}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>
-                <span className="font-bold">Reported By (User ID):</span>{" "}
-                {getUserInfo(selectedReport).id}
-              </div>
-              <div>
-                <span className="font-bold">Reported By (Username):</span>{" "}
-                {getUserInfo(selectedReport).username}
-              </div>
-              <div>
-                <span className="font-bold">Reported By (Name):</span>{" "}
-                {getUserInfo(selectedReport).name}
-              </div>
-              <div>
-                <span className="font-bold">Report to (User ID):</span>{" "}
-                {getVibeOwnerInfo(selectedReport).id}
-              </div>
-              <div>
-                <span className="font-bold">Report to (Username):</span>{" "}
-                {getVibeOwnerInfo(selectedReport).username}
-              </div>
-              <div>
-                <span className="font-bold">Report to (Name):</span>{" "}
-                {getVibeOwnerInfo(selectedReport).name}
-              </div>
-              <div>
-                <span className="font-bold">Vibe ID:</span>{" "}
-                {getVibeInfo(selectedReport).id}
-              </div>
-              <div>
-                <span className="font-bold">Vibe Name:</span>{" "}
-                {getVibeInfo(selectedReport).itemName}
-              </div>
-              <div>
-                <span className="font-bold">Images:</span>{" "}
-                {selectedReport.reportImages?.length || 0}
+            {/* Reporter Info */}
+            <div className="bg-gruvbox-bg2 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-3">Reported By</h4>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gruvbox-blue to-gruvbox-purple flex items-center justify-center text-white font-bold text-lg">
+                  {getUserInfo(selectedReport).name?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div>
+                  <p className="font-semibold text-gruvbox-fg">
+                    {getUserInfo(selectedReport).name}
+                  </p>
+                  <p className="text-sm text-gruvbox-fg/60">
+                    @{getUserInfo(selectedReport).username}
+                  </p>
+                  <p className="text-xs text-gruvbox-fg/40 mt-0.5">
+                    ID: {getUserInfo(selectedReport).id.slice(-12)}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="text-sm mb-4">
-              <span className="font-bold">Vibe Description:</span>
-              <p className="mt-1 text-gray-700">
-                {getVibeInfo(selectedReport).description}
-              </p>
+            {/* Vibe Owner Info */}
+            <div className="bg-gruvbox-bg2 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-3">Vibe Owner (Reported User)</h4>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-red flex items-center justify-center text-white font-bold text-lg">
+                  {getVibeOwnerInfo(selectedReport).name?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div>
+                  <p className="font-semibold text-gruvbox-fg">
+                    {getVibeOwnerInfo(selectedReport).name}
+                  </p>
+                  <p className="text-sm text-gruvbox-fg/60">
+                    @{getVibeOwnerInfo(selectedReport).username}
+                  </p>
+                  <p className="text-xs text-gruvbox-fg/40 mt-0.5">
+                    ID: {getVibeOwnerInfo(selectedReport).id.slice(-12)}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="text-sm mb-4">
-              <span className="font-bold">Report Description:</span>
-              <p className="mt-1 text-gray-700">
+            {/* Reported Vibe Info */}
+            <div>
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-2">Reported Vibe</h4>
+              <div className="bg-gruvbox-bg2 rounded-lg p-4">
+                <p className="font-semibold text-gruvbox-fg mb-2">
+                  {getVibeInfo(selectedReport).itemName}
+                </p>
+                <p className="text-sm text-gruvbox-fg/80 leading-relaxed">
+                  {getVibeInfo(selectedReport).description}
+                </p>
+                <p className="text-xs text-gruvbox-fg/40 mt-2">
+                  Vibe ID: {getVibeInfo(selectedReport).id.slice(-12)}
+                </p>
+              </div>
+            </div>
+
+            {/* Report Description */}
+            <div>
+              <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-2">Report Reason</h4>
+              <p className="text-sm text-gruvbox-fg/80 leading-relaxed bg-gruvbox-bg2 rounded-lg p-4">
                 {selectedReport.reportDescription}
               </p>
             </div>
 
-            {selectedReport.reportImages &&
-              selectedReport.reportImages.length > 0 && (
-                <div className="mb-4">
-                  <span className="font-bold text-sm">Report Images:</span>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {selectedReport.reportImages.map((img, i) => (
+            {/* Report Images */}
+            {selectedReport.reportImages && selectedReport.reportImages.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-gruvbox-fg/60 mb-2">
+                  Evidence Images ({selectedReport.reportImages.length})
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {selectedReport.reportImages.map((img, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-gruvbox-bg2 cursor-pointer hover:ring-2 hover:ring-gruvbox-orange transition-all group">
                       <Image
-                        key={i}
                         src={img}
                         alt={`Report image ${i + 1}`}
-                        width={120}
-                        height={120}
-                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        width={200}
+                        height={200}
+                        className="w-full h-full object-cover"
                         onClick={() => window.open(img, "_blank")}
                       />
-                    ))}
-                  </div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <IconExternalLink size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-            <div className="text-xs text-gray-500">
-              <div>
-                Created: {new Date(selectedReport.createdAt).toLocaleString()}
               </div>
-              <div>
-                Updated: {new Date(selectedReport.updatedAt).toLocaleString()}
+            )}
+
+            {/* Timestamps */}
+            <div className="flex items-center gap-6 text-xs text-gruvbox-fg/40 pt-4 border-t border-gruvbox-bg3">
+              <div className="flex items-center gap-1">
+                <IconClock size={14} />
+                <span>Created: {new Date(selectedReport.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <IconClock size={14} />
+                <span>Updated: {new Date(selectedReport.updatedAt).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -2420,11 +2581,15 @@ function ReportSection() {
       </Modal>
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+        <div className="mt-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg flex items-center gap-2">
+          <IconAlertCircle size={18} />
+          <span>{error}</span>
+        </div>
       )}
       {success && (
-        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
-          {success}
+        <div className="mt-4 bg-green-500/10 border border-green-500/20 text-green-400 p-3 rounded-lg flex items-center gap-2">
+          <IconCheck size={18} />
+          <span>{success}</span>
         </div>
       )}
     </div>
@@ -2700,127 +2865,325 @@ function BannerSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Banner Management</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-gruvbox-yellow to-gruvbox-orange rounded-lg">
+            <IconPhoto size={24} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gruvbox-fg">Banner Management</h2>
+            <p className="text-sm text-gruvbox-fg/60">Manage homepage banners and promotions</p>
+          </div>
+        </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 text-gruvbox-orange hover:underline" onClick={fetchBanners}>
-            <IconRefresh size={16} /> Refresh
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-gruvbox-bg2 hover:bg-gruvbox-bg3 text-gruvbox-orange rounded-lg transition-colors"
+            onClick={fetchBanners}
+          >
+            <IconRefresh size={18} />
+            <span>Refresh</span>
           </button>
-          <button className="flex items-center gap-2 bg-gruvbox-orange text-white px-4 py-2 rounded hover:bg-orange-600" onClick={openCreateModal}>
-            <IconPlus size={16} /> Add Banner
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white rounded-lg hover:shadow-lg transition-all"
+            onClick={openCreateModal}
+          >
+            <IconPlus size={18} />
+            <span>Add Banner</span>
           </button>
         </div>
       </div>
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <input className="flex-1 min-w-64 border rounded px-3 py-1 text-sm" placeholder="Search banners by title or description..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        <select className="border rounded px-3 py-1 text-sm" value={isActiveFilter === undefined ? "all" : isActiveFilter ? "active" : "inactive"} onChange={(e) => { if (e.target.value === "all") setIsActiveFilter(undefined); else setIsActiveFilter(e.target.value === "active"); }}>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="relative">
+          <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gruvbox-fg/40" />
+          <input 
+            className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg pl-10 pr-4 py-2.5 text-gruvbox-fg placeholder-gruvbox-fg/40 focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
+            placeholder="Search banners by title or description..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+        </div>
+        <select 
+          className="bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50"
+          value={isActiveFilter === undefined ? "all" : isActiveFilter ? "active" : "inactive"} 
+          onChange={(e) => { if (e.target.value === "all") setIsActiveFilter(undefined); else setIsActiveFilter(e.target.value === "active"); }}
+        >
           <option value="all">All Banners</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
+          <option value="active">✅ Active Only</option>
+          <option value="inactive">❌ Inactive Only</option>
         </select>
       </div>
-      {loading ? <div>Loading...</div> : filteredBanners.length === 0 ? <div className="text-gray-500">No banners found.</div> : (
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gruvbox-orange"></div>
+        </div>
+      ) : filteredBanners.length === 0 ? (
+        <div className="text-center py-12 bg-gruvbox-bg1 rounded-lg border border-gruvbox-bg3">
+          <IconPhoto size={48} className="mx-auto mb-3 text-gruvbox-fg/20" />
+          <p className="text-gruvbox-fg/60">No banners found.</p>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBanners.map((banner) => (
-            <div key={banner.id} className={`border rounded p-4 bg-white ${!banner.isActive ? "opacity-60" : ""}`}>
-              <div className="relative mb-3">
-                <Image src={banner.imageUrl} alt={banner.title} width={400} height={200} className="w-full h-40 object-cover rounded" />
-                {!banner.isActive && <div className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">Inactive</div>}
+            <div 
+              key={banner.id} 
+              className={`bg-gruvbox-bg1 border border-gruvbox-bg3 rounded-lg overflow-hidden hover:border-gruvbox-orange/50 transition-all group ${!banner.isActive ? "opacity-60" : ""}`}
+            >
+              {/* Banner Image */}
+              <div className="relative aspect-[2/1] bg-gruvbox-bg2 overflow-hidden">
+                <Image 
+                  src={banner.imageUrl} 
+                  alt={banner.title} 
+                  width={400} 
+                  height={200} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                />
+                {!banner.isActive && (
+                  <div className="absolute top-2 right-2 bg-red-500/90 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                    <IconEyeOff size={14} />
+                    Inactive
+                  </div>
+                )}
+                {banner.isActive && (
+                  <div className="absolute top-2 left-2 bg-green-500/90 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                    <IconEye size={14} />
+                    Active
+                  </div>
+                )}
               </div>
-              <h3 className="font-bold text-lg mb-1">{banner.title}</h3>
-              {banner.description && <p className="text-sm text-gray-600 mb-2 line-clamp-2">{banner.description}</p>}
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                {banner.linkUrl && <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a>}
-              </div>
-              <div className="flex gap-2">
-                <button className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700" onClick={() => openEditModal(banner)}>
-                  <IconEdit size={14} /> Edit
-                </button>
-                <button className="flex items-center justify-center gap-1 bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700" onClick={() => handleToggleActive(banner)} title={banner.isActive ? "Deactivate" : "Activate"}>
-                  {banner.isActive ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-                </button>
-                <button className="flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700" onClick={() => handleDelete(banner.id)}>
-                  <IconTrash size={14} />
-                </button>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="font-bold text-lg text-gruvbox-fg mb-2 line-clamp-1">
+                  {banner.title}
+                </h3>
+                {banner.description && (
+                  <p className="text-sm text-gruvbox-fg/60 mb-3 line-clamp-2">
+                    {banner.description}
+                  </p>
+                )}
+                
+                {/* Link */}
+                {banner.linkUrl && (
+                  <div className="flex items-center gap-1 text-xs text-gruvbox-blue mb-3">
+                    <IconExternalLink size={14} />
+                    <a 
+                      href={banner.linkUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:underline truncate"
+                    >
+                      {banner.linkUrl}
+                    </a>
+                  </div>
+                )}
+
+                {/* Date Info */}
+                {(banner.startDate || banner.endDate) && (
+                  <div className="text-xs text-gruvbox-fg/40 mb-3 space-y-1">
+                    {banner.startDate && (
+                      <div className="flex items-center gap-1">
+                        <IconClock size={12} />
+                        <span>Starts: {new Date(banner.startDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {banner.endDate && (
+                      <div className="flex items-center gap-1">
+                        <IconClock size={12} />
+                        <span>Ends: {new Date(banner.endDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-3 border-t border-gruvbox-bg3">
+                  <button 
+                    className="flex-1 flex items-center justify-center gap-1 bg-gruvbox-blue text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors" 
+                    onClick={() => openEditModal(banner)}
+                  >
+                    <IconEdit size={16} /> Edit
+                  </button>
+                  <button 
+                    className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm transition-colors ${banner.isActive ? "bg-gruvbox-bg3 text-gruvbox-fg hover:bg-gruvbox-bg2" : "bg-green-500/20 text-green-400 hover:bg-green-500/30"}`}
+                    onClick={() => handleToggleActive(banner)} 
+                    title={banner.isActive ? "Deactivate" : "Activate"}
+                  >
+                    {banner.isActive ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                  </button>
+                  <button 
+                    className="flex items-center justify-center gap-1 bg-red-500/20 text-red-400 px-3 py-2 rounded-lg text-sm hover:bg-red-500/30 transition-colors" 
+                    onClick={() => handleDelete(banner.id)}
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
-      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); }} title={isEditing ? "Edit Banner" : "Create Banner"}>
-        <form onSubmit={isEditing ? handleUpdate : handleCreate}>
-          <div className="space-y-4">
+
+      {/* Create/Edit Modal */}
+      <Modal 
+        open={modalOpen} 
+        onClose={() => { 
+          setModalOpen(false); 
+          setIsEditing(false); 
+          setSelectedBanner(null); 
+          setImageFile(null);
+          setImagePreview("");
+        }} 
+        title={isEditing ? "Edit Banner" : "Create New Banner"}
+      >
+        <form onSubmit={isEditing ? handleUpdate : handleCreate} className="space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+              Title <span className="text-red-400">*</span>
+            </label>
+            <input 
+              type="text" 
+              className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50" 
+              value={form.title} 
+              onChange={(e) => setForm({ ...form, title: e.target.value })} 
+              required 
+              maxLength={200}
+              placeholder="Enter banner title"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+              Description
+            </label>
+            <textarea 
+              className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50 resize-none" 
+              value={form.description} 
+              onChange={(e) => setForm({ ...form, description: e.target.value })} 
+              maxLength={500} 
+              rows={3}
+              placeholder="Optional description"
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+              Banner Image <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gruvbox-orange file:text-white hover:file:bg-orange-600 file:cursor-pointer cursor-pointer"
+              onChange={handleImageChange}
+              required={!isEditing}
+            />
+            
+            {/* Image Preview */}
+            {(imagePreview || (isEditing && form.imageUrl)) && (
+              <div className="mt-3 relative aspect-[2/1] rounded-lg overflow-hidden bg-gruvbox-bg2 border border-gruvbox-bg3">
+                <Image
+                  src={imagePreview || form.imageUrl}
+                  alt="Preview"
+                  width={600}
+                  height={300}
+                  className="w-full h-full object-cover"
+                  onError={() => setError("Failed to load image")}
+                />
+              </div>
+            )}
+            
+            {isEditing && !imageFile && (
+              <p className="text-xs text-gruvbox-fg/40 mt-2">
+                💡 Leave empty to keep current image, or upload a new one to replace it.
+              </p>
+            )}
+          </div>
+
+          {/* Active Status */}
+          <div>
+            <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+              Status
+            </label>
+            <select 
+              className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50" 
+              value={form.isActive ? "true" : "false"} 
+              onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })}
+            >
+              <option value="true">✅ Active (visible to users)</option>
+              <option value="false">❌ Inactive (hidden)</option>
+            </select>
+          </div>
+
+          {/* Date Range */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold mb-1">Title *</label>
-              <input type="text" className="w-full border rounded px-3 py-2" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} />
-            </div>
-            <div>
-              <label className="block text-sm font-bold mb-1">Description</label>
-              <textarea className="w-full border rounded px-3 py-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} rows={3} />
-            </div>
-            <div>
-              <label className="block text-sm font-bold mb-1">Banner Image *</label>
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full border rounded px-3 py-2"
-                onChange={handleImageChange}
-                required={!isEditing}
+              <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+                Start Date (optional)
+              </label>
+              <input 
+                type="datetime-local" 
+                className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50" 
+                value={form.startDate ? new Date(form.startDate).toISOString().slice(0, 16) : ""} 
+                onChange={(e) => setForm({ ...form, startDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} 
               />
-              {(imagePreview || (isEditing && form.imageUrl)) && (
-                <div className="mt-2">
-                  <Image
-                    src={imagePreview || form.imageUrl}
-                    alt="Preview"
-                    width={400}
-                    height={200}
-                    className="w-full h-40 object-cover rounded"
-                    onError={() => setError("Failed to load image")}
-                  />
-                </div>
-              )}
-              {isEditing && !imageFile && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to keep current image, or upload a new one to replace it.
-                </p>
-              )}
             </div>
             <div>
-              <label className="block text-sm font-bold mb-1">Active</label>
-              <select className="w-full border rounded px-3 py-2" value={form.isActive ? "true" : "false"} onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })}>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-              {form.isActive && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Display order will be automatically assigned based on active banners count.
-                </p>
-              )}
-              {!form.isActive && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Inactive banners will not be displayed and don't have a display order.
-                </p>
-              )}
+              <label className="block text-sm font-semibold text-gruvbox-fg mb-2">
+                End Date (optional)
+              </label>
+              <input 
+                type="datetime-local" 
+                className="w-full bg-gruvbox-bg2 border border-gruvbox-bg3 rounded-lg px-4 py-2.5 text-gruvbox-fg focus:outline-none focus:ring-2 focus:ring-gruvbox-orange/50" 
+                value={form.endDate ? new Date(form.endDate).toISOString().slice(0, 16) : ""} 
+                onChange={(e) => setForm({ ...form, endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} 
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold mb-1">Start Date (optional)</label>
-                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.startDate ? new Date(form.startDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, startDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
-              </div>
-              <div>
-                <label className="block text-sm font-bold mb-1">End Date (optional)</label>
-                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.endDate ? new Date(form.endDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-gruvbox-orange text-white py-2 rounded font-bold">{isEditing ? "Update" : "Create"} Banner</button>
-              <button type="button" className="flex-1 bg-gray-600 text-white py-2 rounded font-bold" onClick={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); setImageFile(null); setImagePreview(""); }}>Cancel</button>
-            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button 
+              type="submit" 
+              className="flex-1 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+            >
+              {isEditing ? "Update Banner" : "Create Banner"}
+            </button>
+            <button 
+              type="button" 
+              className="px-6 bg-gruvbox-bg3 text-gruvbox-fg py-3 rounded-lg font-semibold hover:bg-gruvbox-bg2 transition-colors" 
+              onClick={() => { 
+                setModalOpen(false); 
+                setIsEditing(false); 
+                setSelectedBanner(null); 
+                setImageFile(null); 
+                setImagePreview(""); 
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </Modal>
-      {error && <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>}
-      {success && <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">{success}</div>}
+
+      {/* Error/Success Messages */}
+      {error && (
+        <div className="mt-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg flex items-center gap-2">
+          <IconAlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="mt-4 bg-green-500/10 border border-green-500/20 text-green-400 p-3 rounded-lg flex items-center gap-2">
+          <IconCheck size={18} />
+          <span>{success}</span>
+        </div>
+      )}
     </div>
   );
 }

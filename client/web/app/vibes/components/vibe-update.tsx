@@ -18,8 +18,11 @@ import {
   IconUpload,
   IconX,
   IconPhoto,
-  IconVideo,
   IconCurrencyDollar,
+  IconAlertCircle,
+  IconLoader2,
+  IconPencil,
+  IconCheck,
 } from "@tabler/icons-react";
 import Image from "next/image";
 import { updateVibe } from "../../_apis/common/vibes";
@@ -46,7 +49,7 @@ const CONDITIONS = [
   { value: "poor", label: "Poor" },
 ];
 
-// Media Preview Component
+// Enhanced Media Preview Component
 function MediaPreview({
   url,
   type,
@@ -61,10 +64,15 @@ function MediaPreview({
   const isValidUrl = url && url.trim() !== "";
 
   return (
-    <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gruvbox-gray/20">
+    <div className="group relative w-24 h-24 rounded-xl overflow-hidden bg-gruvbox-dark-bg3 border-2 border-gruvbox-dark-bg3 hover:border-gruvbox-orange transition-all">
       {isValidUrl ? (
         type === "image" ? (
-          <Image src={url} alt="Preview" fill className="object-cover" />
+          <Image
+            src={url}
+            alt="Preview"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+          />
         ) : (
           <video src={url} className="w-full h-full object-cover" />
         )
@@ -73,19 +81,25 @@ function MediaPreview({
           <IconPhoto className="w-6 h-6 text-gruvbox-gray" />
         </div>
       )}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onRemove();
-        }}
-        className="absolute top-1 right-1 w-6 h-6 bg-gruvbox-red text-white rounded-full flex items-center justify-center hover:bg-gruvbox-red/80 transition-colors z-10"
-      >
-        <IconX className="w-4 h-4" />
-      </button>
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onRemove();
+          }}
+          className="p-2 bg-gruvbox-red rounded-full hover:scale-110 transition-transform"
+        >
+          <IconX className="w-4 h-4 text-white" />
+        </button>
+      </div>
+
+      {/* Badge */}
       {isExisting && isValidUrl && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-1 py-0.5">
+        <div className="absolute top-1 right-1 bg-gruvbox-blue/90 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full font-medium">
           Existing
         </div>
       )}
@@ -108,20 +122,16 @@ export function VibeUpdate({ data }: { data: any }) {
     location: data?.location || "",
   });
 
-  // Existing media files from the vibe
   const [existingMedia, setExistingMedia] = useState<
     { type: "image" | "video"; url: string; _id?: string }[]
   >([]);
-  // Original media files to track what was removed
   const [originalMedia, setOriginalMedia] = useState<
     { type: "image" | "video"; url: string; _id?: string }[]
   >([]);
-  // New media files to upload
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
   const [newMediaPreviews, setNewMediaPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form data when data prop changes
   useEffect(() => {
     if (data) {
       setFormData({
@@ -135,7 +145,7 @@ export function VibeUpdate({ data }: { data: any }) {
       setTags(data.tags || []);
       const mediaFiles = data.mediaFiles || [];
       setExistingMedia(mediaFiles);
-      setOriginalMedia(mediaFiles); // Store original to track deletions
+      setOriginalMedia(mediaFiles);
       setNewMediaFiles([]);
       setNewMediaPreviews([]);
       setError("");
@@ -175,11 +185,10 @@ export function VibeUpdate({ data }: { data: any }) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
 
-    // Validate file types and sizes
     const validFiles = files.filter((file) => {
       const isValidType =
         file.type.startsWith("image/") || file.type.startsWith("video/");
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB max
+      const isValidSize = file.size <= 10 * 1024 * 1024;
 
       if (!isValidType) {
         setError(`File ${file.name} is not a valid image or video`);
@@ -199,7 +208,6 @@ export function VibeUpdate({ data }: { data: any }) {
       return;
     }
 
-    // Create previews for new files
     validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -227,7 +235,6 @@ export function VibeUpdate({ data }: { data: any }) {
 
     if (!data) return;
 
-    // Validate form
     if (!formData.itemName.trim()) {
       setError("Item name is required");
       return;
@@ -253,22 +260,24 @@ export function VibeUpdate({ data }: { data: any }) {
         return;
       }
 
-      // Upload new media files to backend (AWS S3) if any
       const newMediaFilesToUpload = newMediaFiles.filter((file) =>
         file instanceof File
       );
-      
+
       if (newMediaFilesToUpload.length > 0) {
         try {
           await uploadVibeMediaToBackend(vibeId, newMediaFilesToUpload);
         } catch (uploadError) {
-          setError(`Failed to upload media: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`);
+          setError(
+            `Failed to upload media: ${
+              uploadError instanceof Error ? uploadError.message : "Unknown error"
+            }`
+          );
           setIsSubmitting(false);
           return;
         }
       }
 
-      // Calculate which media files were removed
       const remainingMediaIds = existingMedia
         .map((media) => media._id)
         .filter((id) => id !== undefined);
@@ -277,7 +286,6 @@ export function VibeUpdate({ data }: { data: any }) {
         .map((media) => media._id)
         .filter((id): id is string => id !== undefined);
 
-      // Prepare remaining existing media (to keep) - these will be preserved
       const mediaFilesToKeep = existingMedia.map((media) => ({
         type: media.type,
         url: media.url,
@@ -288,15 +296,12 @@ export function VibeUpdate({ data }: { data: any }) {
         ...formData,
         tags,
         price: Number(formData.price),
-        // Include remaining media files (existing media that are kept)
         mediaFiles: mediaFilesToKeep,
-        // Include IDs of media files to remove
         ...(removedMediaIds.length > 0 && {
           removedMediaIds: removedMediaIds,
         }),
       };
 
-      // Update vibe basic info (media files already uploaded via separate endpoint)
       const userId = data.userId || user?.id || "";
 
       if (!userId) {
@@ -306,8 +311,6 @@ export function VibeUpdate({ data }: { data: any }) {
       }
 
       await updateVibe(vibeId, userId, updateData);
-
-      // Optionally close the dialog or refresh the page
       window.location.reload();
     } catch (error: any) {
       console.error("Error updating vibe:", error);
@@ -320,58 +323,78 @@ export function VibeUpdate({ data }: { data: any }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="bg-gruvbox-orange text-white text-base cursor-pointer h-10 px-4 py-1 rounded-lg">
-          Edit
+        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200">
+          <IconPencil size={18} />
+          <span>Edit</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gruvbox-dark-bg1 border-gruvbox-dark-bg3">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Vibe</DialogTitle>
-            <DialogDescription>
-              Update your vibe details. Click save when you&apos;re done.
-            </DialogDescription>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-gruvbox-orange to-gruvbox-yellow rounded-full flex items-center justify-center">
+                <IconPencil className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-gruvbox-dark-fg0">
+                  Edit Vibe
+                </DialogTitle>
+                <DialogDescription className="text-gruvbox-gray">
+                  Update your vibe details and media
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+            <div className="my-4 bg-gruvbox-red/10 border border-gruvbox-red/30 rounded-xl p-4 animate-in slide-in-from-top-2 duration-200">
+              <p className="text-gruvbox-red text-sm flex items-center gap-2">
+                <IconAlertCircle size={16} />
+                {error}
+              </p>
             </div>
           )}
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
             {/* Item Name */}
             <div className="grid gap-2">
-              <Label htmlFor="itemName">Item Name</Label>
+              <Label htmlFor="itemName" className="text-gruvbox-dark-fg0">
+                Item Name *
+              </Label>
               <Input
                 id="itemName"
                 name="itemName"
                 value={formData.itemName}
                 onChange={handleInputChange}
                 placeholder="Enter item name"
+                className="bg-gruvbox-dark-bg2 border-gruvbox-dark-bg3 text-gruvbox-dark-fg0"
                 required
               />
             </div>
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-gruvbox-dark-fg0">
+                Description *
+              </Label>
               <textarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Describe your item..."
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[100px] w-full rounded-md border border-gruvbox-dark-bg3 bg-gruvbox-dark-bg2 px-3 py-2 text-sm text-gruvbox-dark-fg0 ring-offset-background placeholder:text-gruvbox-gray focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gruvbox-orange/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               />
             </div>
 
             {/* Price */}
             <div className="grid gap-2">
-              <Label htmlFor="price">Price (VND)</Label>
+              <Label htmlFor="price" className="text-gruvbox-dark-fg0">
+                Price (VND) *
+              </Label>
               <div className="relative">
-                <IconCurrencyDollar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <IconCurrencyDollar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gruvbox-gray" />
                 <Input
                   id="price"
                   name="price"
@@ -381,25 +404,27 @@ export function VibeUpdate({ data }: { data: any }) {
                   placeholder="Enter price"
                   min="0"
                   step="1000"
-                  className="pl-10"
+                  className="pl-10 bg-gruvbox-dark-bg2 border-gruvbox-dark-bg3 text-gruvbox-dark-fg0"
                   required
                 />
               </div>
             </div>
 
-            {/* Category and Condition Row */}
+            {/* Category and Condition */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category" className="text-gruvbox-dark-fg0">
+                  Category *
+                </Label>
                 <select
                   id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gruvbox-dark-bg3 bg-gruvbox-dark-bg2 px-3 py-2 text-sm text-gruvbox-dark-fg0 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gruvbox-orange/50 focus-visible:ring-offset-2"
                   required
                 >
-                  <option value="">Select a category</option>
+                  <option value="">Select category</option>
                   {CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
@@ -409,13 +434,15 @@ export function VibeUpdate({ data }: { data: any }) {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="condition">Condition</Label>
+                <Label htmlFor="condition" className="text-gruvbox-dark-fg0">
+                  Condition *
+                </Label>
                 <select
                   id="condition"
                   name="condition"
                   value={formData.condition}
                   onChange={handleInputChange}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-gruvbox-dark-bg3 bg-gruvbox-dark-bg2 px-3 py-2 text-sm text-gruvbox-dark-fg0 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gruvbox-orange/50 focus-visible:ring-offset-2"
                   required
                 >
                   <option value="">Select condition</option>
@@ -430,7 +457,9 @@ export function VibeUpdate({ data }: { data: any }) {
 
             {/* Location */}
             <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location" className="text-gruvbox-dark-fg0">
+                Location
+              </Label>
               <LocationPicker
                 value={formData.location}
                 onChange={(location) =>
@@ -442,7 +471,9 @@ export function VibeUpdate({ data }: { data: any }) {
 
             {/* Tags */}
             <div className="grid gap-2">
-              <Label htmlFor="tags">Tags</Label>
+              <Label htmlFor="tags" className="text-gruvbox-dark-fg0">
+                Tags
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="tags"
@@ -450,11 +481,12 @@ export function VibeUpdate({ data }: { data: any }) {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Add a tag and press Enter"
+                  className="bg-gruvbox-dark-bg2 border-gruvbox-dark-bg3 text-gruvbox-dark-fg0"
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="bg-gruvbox-orange text-white px-3 py-2 rounded-md text-sm hover:bg-gruvbox-orange/90"
+                  className="px-4 py-2 bg-gruvbox-orange text-white rounded-lg text-sm font-medium hover:bg-gruvbox-yellow transition-colors"
                 >
                   Add
                 </button>
@@ -464,15 +496,16 @@ export function VibeUpdate({ data }: { data: any }) {
                   {tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
+                      className="group flex items-center gap-1.5 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg0 px-3 py-1.5 rounded-lg text-sm border border-gruvbox-dark-bg3 hover:border-gruvbox-orange transition-colors"
                     >
-                      <IconTag size={14} /> {tag}
+                      <IconTag size={14} className="text-gruvbox-orange" />
+                      {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="ml-1 text-gruvbox-gray hover:text-gruvbox-red transition-colors"
                       >
-                        ×
+                        <IconX size={14} />
                       </button>
                     </span>
                   ))}
@@ -481,14 +514,18 @@ export function VibeUpdate({ data }: { data: any }) {
             </div>
 
             {/* Media Files */}
-            <div className="grid gap-2">
-              <Label>Media Files (Max 5 total)</Label>
+            <div className="grid gap-3">
+              <Label className="text-gruvbox-dark-fg0">
+                Media Files (Max 5 total)
+              </Label>
 
               {/* Existing Media */}
               {existingMedia.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-sm text-gray-600 mb-2">Existing Media:</p>
-                  <div className="flex flex-wrap gap-2">
+                <div>
+                  <p className="text-sm text-gruvbox-gray mb-3">
+                    Existing Media ({existingMedia.length})
+                  </p>
+                  <div className="flex flex-wrap gap-3">
                     {existingMedia.map((media, index) => (
                       <MediaPreview
                         key={index}
@@ -502,7 +539,7 @@ export function VibeUpdate({ data }: { data: any }) {
                 </div>
               )}
 
-              {/* New Media Upload */}
+              {/* Upload Button */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -515,22 +552,24 @@ export function VibeUpdate({ data }: { data: any }) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gruvbox-orange/50 hover:bg-gruvbox-orange/5 transition-colors"
+                className="relative w-full border-2 border-dashed border-gruvbox-dark-bg3 hover:border-gruvbox-orange/50 rounded-xl p-6 text-center transition-all duration-200 group bg-gruvbox-dark-bg2 hover:bg-gruvbox-orange/5"
               >
-                <IconUpload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">
-                  Click to upload new media or drag and drop
+                <IconUpload className="w-8 h-8 text-gruvbox-gray mx-auto mb-3 group-hover:text-gruvbox-orange transition-colors" />
+                <p className="text-sm text-gruvbox-dark-fg0 font-medium mb-1">
+                  Click to upload new media
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gruvbox-gray">
                   PNG, JPG, MP4 up to 10MB each
                 </p>
               </button>
 
               {/* New Media Previews */}
               {newMediaFiles.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-600 mb-2">New Media:</p>
-                  <div className="flex flex-wrap gap-2">
+                <div>
+                  <p className="text-sm text-gruvbox-gray mb-3">
+                    New Media ({newMediaFiles.length})
+                  </p>
+                  <div className="flex flex-wrap gap-3">
                     {newMediaFiles.map((file, index) => {
                       const fileType = file.type.startsWith("image/")
                         ? "image"
@@ -550,11 +589,13 @@ export function VibeUpdate({ data }: { data: any }) {
               )}
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="gap-2 pt-6 border-t border-gruvbox-dark-bg3">
             <DialogClose asChild>
               <button
                 type="button"
-                className="bg-gray-500 text-white text-base cursor-pointer px-4 py-2 rounded-lg hover:bg-gray-600"
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg0 rounded-xl font-medium hover:bg-gruvbox-dark-bg3 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -562,9 +603,19 @@ export function VibeUpdate({ data }: { data: any }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-gruvbox-orange text-white text-base cursor-pointer px-4 py-2 rounded-lg hover:bg-gruvbox-orange/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white rounded-xl font-medium hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting ? "Saving..." : "Save changes"}
+              {isSubmitting ? (
+                <>
+                  <IconLoader2 className="animate-spin h-5 w-5" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <IconCheck className="w-5 h-5" />
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </DialogFooter>
         </form>

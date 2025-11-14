@@ -135,17 +135,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--gruvbox-dark-bg1);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: var(--gruvbox-dark-bg3);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
+    background: var(--gruvbox-orange);
 }
 
 /* Custom animations */

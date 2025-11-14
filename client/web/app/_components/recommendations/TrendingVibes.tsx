@@ -76,10 +76,10 @@ export default function TrendingVibes({ limit = 5 }: TrendingVibesProps) {
 
   if (loading) {
     return (
-      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg p-4">
+      <div className="bg-gruvbox-dark-bg1 rounded-lg p-4 border border-gruvbox-dark-bg2">
         <div className="flex items-center gap-2 mb-4">
           <IconTrendingUp className="w-5 h-5 text-gruvbox-orange" />
-          <h2 className="text-lg font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
+          <h2 className="text-lg font-bold text-gruvbox-dark-fg0">
             Trending Now
           </h2>
         </div>
@@ -92,11 +92,11 @@ export default function TrendingVibes({ limit = 5 }: TrendingVibesProps) {
 
   if (error) {
     return (
-      <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg p-4">
+      <div className="bg-gruvbox-dark-bg1 rounded-lg p-4 border border-gruvbox-dark-bg2">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <IconTrendingUp className="w-5 h-5 text-gruvbox-orange" />
-            <h2 className="text-lg font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
+            <h2 className="text-lg font-bold text-gruvbox-dark-fg0">
               Trending Now
             </h2>
           </div>
@@ -113,11 +113,11 @@ export default function TrendingVibes({ limit = 5 }: TrendingVibesProps) {
   }
 
   return (
-    <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg p-4">
+    <div className="bg-gruvbox-dark-bg1 rounded-lg p-4 border border-gruvbox-dark-bg2">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <IconTrendingUp className="w-5 h-5 text-gruvbox-orange" />
-          <h2 className="text-lg font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
+          <h2 className="text-lg font-bold text-gruvbox-dark-fg0">
             Trending Now
           </h2>
         </div>
@@ -140,7 +140,7 @@ export default function TrendingVibes({ limit = 5 }: TrendingVibesProps) {
             <Link
               key={vibe._id}
               href={`/vibes/${vibe._id}`}
-              className="flex gap-3 p-2 rounded hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition group"
+              className="flex gap-3 p-2 rounded hover:bg-gruvbox-dark-bg2 transition group"
             >
               {/* Rank */}
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gruvbox-orange text-white text-xs font-bold">
@@ -157,13 +157,13 @@ export default function TrendingVibes({ limit = 5 }: TrendingVibesProps) {
                     className="object-cover group-hover:scale-110 transition"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2" />
+                  <div className="w-full h-full bg-gruvbox-dark-bg2" />
                 )}
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 truncate">
+                <h3 className="font-medium text-sm text-gruvbox-dark-fg0 truncate">
                   {vibe.itemName}
                 </h3>
                 <p className="text-sm font-bold text-gruvbox-orange">

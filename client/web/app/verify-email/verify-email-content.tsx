@@ -101,10 +101,9 @@ export default function VerifyEmailContent() {
       <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gruvbox-orange-light dark:bg-gruvbox-orange-dark rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">🌊</span>
-            </div>
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gruvbox-orange rounded-xl flex items-center justify-center">
+              <span className="text-gruvbox-dark-bg0 font-bold text-lg">🌊</span>
             <h1 className="text-2xl font-bold text-gruvbox-orange-light dark:text-gruvbox-orange-dark">
               Old Vibes
             </h1>

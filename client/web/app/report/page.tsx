@@ -12,11 +12,12 @@ import {
   IconLoader2,
 } from "@tabler/icons-react";
 import Image from "next/image";
-import Wrapper from "../_sections/wrapper";
-import { useAuth } from "../_contexts/AuthContext";
-import { reportAPI, type ReportInput } from "../_apis/common/feedback";
+import { ReportInput, reportAPI } from "../_apis/common/feedback";
 import { getVibeById } from "../_apis/common/vibes";
 import AuthGuard from "../_components/auth/AuthGuard";
+import { PageShell } from "../_components/layout/PageShell";
+import { useAuth } from "../_contexts/AuthContext";
+
 
 const REPORT_TYPES = [
   { value: "spam", label: "Spam" },
@@ -52,7 +53,8 @@ function ImagePreview({
       )}
       <button
         onClick={onRemove}
-        className="absolute top-1 right-1 w-6 h-6 bg-gruvbox-red text-gruvbox-light-bg0 rounded-full flex items-center justify-center hover:bg-gruvbox-red/80 transition-colors"
+        type="button"
+        className="absolute top-1 right-1 w-6 h-6 bg-gruvbox-red text-gruvbox-dark-bg0 rounded-full flex items-center justify-center hover:bg-gruvbox-red/80 transition-colors"
       >
         <IconX className="w-4 h-4" />
       </button>
@@ -209,14 +211,14 @@ export default function ReportPage() {
   if (loadingVibe) {
     return (
       <AuthGuard requireAuth={true}>
-        <Wrapper>
-          <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 flex items-center justify-center">
+        <div className="min-h-screen bg-gruvbox-dark-bg0 flex items-center justify-center py-12">
+          <PageShell width="md">
             <div className="text-center">
               <IconLoader2 className="w-8 h-8 text-gruvbox-orange animate-spin mx-auto mb-4" />
               <p className="text-gruvbox-gray">Loading vibe information...</p>
             </div>
-          </div>
-        </Wrapper>
+          </PageShell>
+        </div>
       </AuthGuard>
     );
   }
@@ -224,43 +226,41 @@ export default function ReportPage() {
   if (success) {
     return (
       <AuthGuard requireAuth={true}>
-        <Wrapper>
-          <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0">
-            <div className="max-w-2xl mx-auto px-4 py-8">
-              <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gruvbox-green-light dark:bg-gruvbox-green-dark rounded-full flex items-center justify-center mx-auto mb-4">
-                    <IconCheck className="w-8 h-8 text-gruvbox-green" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-                    Report Submitted Successfully! 🎉
-                  </h2>
-                  <p className="text-gruvbox-gray mb-6">
-                    Thank you for your report. We will review it and take
-                    appropriate action.
-                  </p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      onClick={() => {
-                        setSuccess(false);
-                        router.push(vibeId ? `/vibes/${vibeId}` : "/");
-                      }}
-                      className="px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
-                    >
-                      Go Back
-                    </button>
-                    <button
-                      onClick={() => setSuccess(false)}
-                      className="px-6 py-3 border border-gruvbox-gray/30 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-lg hover:bg-gruvbox-gray/10 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
+        <div className="min-h-screen bg-gruvbox-dark-bg0 py-12">
+          <PageShell width="md">
+            <div className="bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8 border border-gruvbox-dark-bg2">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gruvbox-green-light dark:bg-gruvbox-green-dark rounded-full flex items-center justify-center mx-auto mb-4">
+                  <IconCheck className="w-8 h-8 text-gruvbox-green" />
+                </div>
+                <h2 className="text-2xl font-bold text-gruvbox-dark-fg1 mb-2">
+                  Report Submitted Successfully! 🎉
+                </h2>
+                <p className="text-gruvbox-gray mb-6">
+                  Thank you for your report. We will review it and take
+                  appropriate action.
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => {
+                      setSuccess(false);
+                      router.push(vibeId ? `/vibes/${vibeId}` : "/");
+                    }}
+                    className="px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    onClick={() => setSuccess(false)}
+                    className="px-6 py-3 border border-gruvbox-gray/30 text-gruvbox-dark-fg0 rounded-lg hover:bg-gruvbox-gray/10 transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        </Wrapper>
+          </PageShell>
+        </div>
       </AuthGuard>
     );
   }
@@ -268,206 +268,201 @@ export default function ReportPage() {
   if (!vibe) {
     return (
       <AuthGuard requireAuth={true}>
-        <Wrapper>
-          <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0">
-            <div className="max-w-2xl mx-auto px-4 py-8">
-              <div className="bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8">
-                <div className="text-center">
-                  <IconAlertCircle className="w-12 h-12 text-gruvbox-red mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 mb-2">
-                    Vibe Not Found
-                  </h2>
-                  <p className="text-gruvbox-gray mb-6">
-                    {error || "The vibe you're trying to report could not be found."}
-                  </p>
-                  <button
-                    onClick={() => router.push("/")}
-                    className="px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
-                  >
-                    Go Home
-                  </button>
-                </div>
+        <div className="min-h-screen bg-gruvbox-dark-bg0 py-12">
+          <PageShell width="md">
+            <div className="bg-gruvbox-dark-bg1 rounded-2xl shadow-xl p-8 border border-gruvbox-dark-bg2">
+              <div className="text-center">
+                <IconAlertCircle className="w-12 h-12 text-gruvbox-red mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gruvbox-dark-fg1 mb-2">
+                  Vibe Not Found
+                </h2>
+                <p className="text-gruvbox-gray mb-6">
+                  {error || "The vibe you're trying to report could not be found."}
+                </p>
+                <button
+                  onClick={() => router.push("/")}
+                  className="px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                >
+                  Go Home
+                </button>
               </div>
             </div>
-          </div>
-        </Wrapper>
+          </PageShell>
+        </div>
       </AuthGuard>
     );
   }
 
   return (
     <AuthGuard requireAuth={true}>
-      <Wrapper>
-        <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0">
-          <div className="max-w-2xl mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-12 h-12 bg-gruvbox-red-light dark:bg-gruvbox-red-dark rounded-xl flex items-center justify-center">
-                  <IconFlag className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0">
-                  Report Vibe
-                </h1>
+      <div className="min-h-screen bg-gruvbox-dark-bg0 py-8">
+        <PageShell width="md">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-12 h-12 bg-gruvbox-red-light dark:bg-gruvbox-red-dark rounded-xl flex items-center justify-center">
+                <IconFlag className="w-6 h-6 text-white" />
               </div>
-              <p className="text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">
-                Report inappropriate content or behavior
-              </p>
+              <h1 className="text-3xl font-bold text-gruvbox-dark-fg0">
+                Report Vibe
+              </h1>
             </div>
+            <p className="text-gruvbox-dark-fg2">
+              Report inappropriate content or behavior
+            </p>
+          </div>
 
-            {/* Vibe Information */}
-            <div className="mb-6 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 rounded-lg p-4 border border-gruvbox-gray/20">
-              <h3 className="text-sm font-medium text-gruvbox-gray mb-2">
-                Reporting Vibe:
-              </h3>
-              <p className="text-lg font-semibold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-1">
-                {vibe.itemName}
-              </p>
-              <div className="flex items-center space-x-2 text-sm text-gruvbox-gray">
-                <span>by</span>
-                <span className="font-medium text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1">
-                  {vibe.user?.name || "Unknown User"}
+          {/* Vibe Information */}
+          <div className="mb-6 bg-gruvbox-dark-bg1 rounded-lg p-4 border border-gruvbox-gray/20">
+            <h3 className="text-sm font-medium text-gruvbox-gray mb-2">
+              Reporting Vibe:
+            </h3>
+            <p className="text-lg font-semibold text-gruvbox-dark-fg0 mb-1">
+              {vibe.itemName}
+            </p>
+            <div className="flex items-center space-x-2 text-sm text-gruvbox-gray">
+              <span>by</span>
+              <span className="font-medium text-gruvbox-dark-fg1">
+                {vibe.user?.name || "Unknown User"}
+              </span>
+              {vibe.user?.username && (
+                <span className="text-gruvbox-gray">
+                  (@{vibe.user.username})
                 </span>
-                {vibe.user?.username && (
-                  <span className="text-gruvbox-gray">
-                    (@{vibe.user.username})
-                  </span>
-                )}
+              )}
+            </div>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="bg-gruvbox-red/10 border border-gruvbox-red/20 rounded-lg p-4 flex items-center space-x-2">
+                <IconAlertCircle className="w-5 h-5 text-gruvbox-red flex-shrink-0" />
+                <span className="text-gruvbox-red">{error}</span>
               </div>
+            )}
+
+            {/* Report Type */}
+            <div>
+              <label className="block text-sm font-medium text-gruvbox-dark-fg0 mb-2">
+                Report Type *
+              </label>
+              <select
+                value={formData.reportType}
+                onChange={(e) =>
+                  handleInputChange(
+                    "reportType",
+                    e.target.value as ReportInput["reportType"]
+                  )
+                }
+                className="w-full px-4 py-3 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0"
+                required
+              >
+                {REPORT_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error Message */}
-              {error && (
-                <div className="bg-gruvbox-red/10 border border-gruvbox-red/20 rounded-lg p-4 flex items-center space-x-2">
-                  <IconAlertCircle className="w-5 h-5 text-gruvbox-red flex-shrink-0" />
-                  <span className="text-gruvbox-red">{error}</span>
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gruvbox-dark-fg0 mb-2">
+                Description *
+              </label>
+              <textarea
+                value={formData.reportDescription}
+                onChange={(e) =>
+                  handleInputChange("reportDescription", e.target.value)
+                }
+                rows={6}
+                className="w-full px-4 py-3 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0 resize-none"
+                placeholder="Please describe the issue in detail..."
+                required
+                maxLength={1000}
+              />
+              <p className="mt-1 text-xs text-gruvbox-gray">
+                {formData.reportDescription.length}/1000 characters
+              </p>
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gruvbox-dark-fg0 mb-2">
+                Images (Optional)
+              </label>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gruvbox-gray/30 rounded-lg p-8 text-center hover:border-gruvbox-yellow/50 hover:bg-gruvbox-yellow/5 transition-colors"
+              >
+                <IconUpload className="w-8 h-8 text-gruvbox-gray mx-auto mb-2" />
+                <p className="text-gruvbox-dark-fg2">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-sm text-gruvbox-gray mt-1">
+                  PNG, JPG up to 10MB each (max 5 images)
+                </p>
+              </button>
+
+              {/* Image Previews */}
+              {imageFiles.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex flex-wrap gap-3">
+                    {imageFiles.map((file, index) => (
+                      <ImagePreview
+                        key={index}
+                        file={file}
+                        onRemove={() => handleRemoveImage(index)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
 
-              {/* Report Type */}
-              <div>
-                <label className="block text-sm font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
-                  Report Type *
-                </label>
-                <select
-                  value={formData.reportType}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "reportType",
-                      e.target.value as ReportInput["reportType"]
-                    )
-                  }
-                  className="w-full px-4 py-3 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0"
-                  required
-                >
-                  {REPORT_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
-                  Description *
-                </label>
-                <textarea
-                  value={formData.reportDescription}
-                  onChange={(e) =>
-                    handleInputChange("reportDescription", e.target.value)
-                  }
-                  rows={6}
-                  className="w-full px-4 py-3 bg-gruvbox-light-bg1 dark:bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 resize-none"
-                  placeholder="Please describe the issue in detail..."
-                  required
-                  maxLength={1000}
-                />
-                <p className="mt-1 text-xs text-gruvbox-gray">
-                  {formData.reportDescription.length}/1000 characters
-                </p>
-              </div>
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
-                  Images (Optional)
-                </label>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gruvbox-gray/30 rounded-lg p-8 text-center hover:border-gruvbox-yellow/50 hover:bg-gruvbox-yellow/5 transition-colors"
-                >
-                  <IconUpload className="w-8 h-8 text-gruvbox-gray mx-auto mb-2" />
-                  <p className="text-gruvbox-light-fg2 dark:text-gruvbox-dark-fg2">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-sm text-gruvbox-gray mt-1">
-                    PNG, JPG up to 10MB each (max 5 images)
-                  </p>
-                </button>
-
-                {/* Image Previews */}
-                {imageFiles.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex flex-wrap gap-3">
-                      {imageFiles.map((file, index) => (
-                        <ImagePreview
-                          key={index}
-                          file={file}
-                          onRemove={() => handleRemoveImage(index)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+            {/* Submit Button */}
+            <div className="flex justify-end space-x-4 pt-6">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-3 border border-gruvbox-gray/30 text-gruvbox-dark-fg0 rounded-lg hover:bg-gruvbox-gray/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gruvbox-red text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gruvbox-light-bg0 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconFlag className="w-4 h-4" />
+                    <span>Submit Report</span>
+                  </>
                 )}
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end space-x-4 pt-6">
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  className="px-6 py-3 border border-gruvbox-gray/30 text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 rounded-lg hover:bg-gruvbox-gray/10 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-gruvbox-red text-gruvbox-light-bg0 font-medium rounded-lg hover:bg-gruvbox-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gruvbox-light-bg0 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <IconFlag className="w-4 h-4" />
-                      <span>Submit Report</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </Wrapper>
+              </button>
+            </div>
+          </form>
+        </PageShell>
+      </div>
     </AuthGuard>
   );
 }
-

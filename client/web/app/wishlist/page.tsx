@@ -3,22 +3,30 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../_contexts/AuthContext";
-import Wrapper from "../_sections/wrapper";
-import { Star } from "lucide-react";
-import { MapPin } from "lucide-react";
-import { Eye } from "lucide-react";
-import { MessageCircle } from "lucide-react";
-import { Heart } from "lucide-react";
-import { Share2 } from "lucide-react";
-import { Search, Filter, X } from "lucide-react";
+import {
+  IconStar,
+  IconStarFilled,
+  IconMapPin,
+  IconEye,
+  IconMessageCircle,
+  IconHeart,
+  IconShare,
+  IconSearch,
+  IconFilter,
+  IconX,
+  IconTrendingUp,
+  IconCurrencyDollar,
+  IconAdjustments,
+} from "@tabler/icons-react";
 import Image from "next/image";
 import {
   getWishlistByUserId,
   removeVibeFromWishlist,
 } from "../_apis/common/wishlist";
 import Cookies from "js-cookie";
-
-// interface WishlistItem {}
+import { PageShell, SectionHeader } from "../_components/layout/PageShell";
+import AuthGuard from "../_components/auth/AuthGuard";
+import { FadeIn, SlideUp } from "../_motion/MotionWrappers";
 
 export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
@@ -26,23 +34,10 @@ export default function WishlistPage() {
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [viewsRange, setViewsRange] = useState({ min: "", max: "" });
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const userId = Cookies.get("userId");
-
-  const toggleLike = (id: string) => {
-    setWishlistItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              isLiked: !item.isLiked,
-              likes: item.isLiked ? item.likes - 1 : item.likes + 1,
-            }
-          : item
-      )
-    );
-  };
 
   const toggleWishlist = async (wishlistItemId: string, vibeId: string) => {
     if (!isAuthenticated) {
@@ -56,19 +51,12 @@ export default function WishlistPage() {
     }
 
     try {
-      // Xóa khỏi wishlist
-      const response = await removeVibeFromWishlist(vibeId, userId);
-      console.log("check response", response);
-
-      // Cập nhật state để xóa item khỏi danh sách
+      await removeVibeFromWishlist(vibeId, userId);
       setWishlistItems((prev) =>
         prev.filter((item) => item.id !== wishlistItemId)
       );
-
-      console.log("Removed from wishlist");
     } catch (error) {
       console.error("Error removing from wishlist:", error);
-      // Có thể thêm toast notification để thông báo lỗi
     }
   };
 
@@ -86,18 +74,15 @@ export default function WishlistPage() {
   // Filter logic
   const filteredItems = useMemo(() => {
     return wishlistItems.filter((item) => {
-      // Search filter
       const matchesSearch = item.vibeId.itemName
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
-      // Price filter
       const price = item.vibeId.price;
       const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0;
       const maxPrice = priceRange.max ? parseFloat(priceRange.max) : Infinity;
       const matchesPrice = price >= minPrice && price <= maxPrice;
 
-      // Views filter
       const views = item.vibeId.views || 0;
       const minViews = viewsRange.min ? parseInt(viewsRange.min) : 0;
       const maxViews = viewsRange.max ? parseInt(viewsRange.max) : Infinity;
@@ -107,14 +92,12 @@ export default function WishlistPage() {
     });
   }, [wishlistItems, searchTerm, priceRange, viewsRange]);
 
-  // Clear all filters
   const clearFilters = () => {
     setSearchTerm("");
     setPriceRange({ min: "", max: "" });
     setViewsRange({ min: "", max: "" });
   };
 
-  // Check if any filters are active
   const hasActiveFilters =
     searchTerm ||
     priceRange.min ||
@@ -125,299 +108,349 @@ export default function WishlistPage() {
   useEffect(() => {
     const fetchWishlistItems = async () => {
       if (userId) {
-        const response = await getWishlistByUserId(userId);
-        setWishlistItems(response.wishlists[0].wishlist_vibes);
+        try {
+          const response = await getWishlistByUserId(userId);
+          setWishlistItems(response.wishlists[0]?.wishlist_vibes || []);
+        } catch (error) {
+          console.error("Error fetching wishlist:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
       }
     };
     fetchWishlistItems();
-  }, []);
+  }, [userId]);
+
+  const getConditionColor = (condition: string) => {
+    switch (condition) {
+      case "new":
+        return "text-gruvbox-green bg-gruvbox-green/10";
+      case "like-new":
+        return "text-gruvbox-blue bg-gruvbox-blue/10";
+      case "good":
+        return "text-gruvbox-yellow bg-gruvbox-yellow/10";
+      case "fair":
+        return "text-gruvbox-orange bg-gruvbox-orange/10";
+      case "poor":
+        return "text-gruvbox-red bg-gruvbox-red/10";
+      default:
+        return "text-gruvbox-gray bg-gruvbox-gray/10";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AuthGuard requireAuth={true}>
+        <div className="min-h-screen bg-gruvbox-dark-bg0 py-12">
+          <PageShell width="xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-gruvbox-dark-bg1 rounded-xl overflow-hidden border border-gruvbox-dark-bg2 animate-pulse"
+                >
+                  <div className="aspect-square bg-gruvbox-dark-bg2"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gruvbox-dark-bg2 rounded w-3/4"></div>
+                    <div className="h-6 bg-gruvbox-dark-bg2 rounded w-1/2"></div>
+                    <div className="h-3 bg-gruvbox-dark-bg2 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </PageShell>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   return (
-    <Wrapper>
-      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-[#FCF2C8] dark:bg-gruvbox-dark-bg2">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              My Wishlist
-            </h2>
-            <p className="text-gray-600">Items you've saved for later</p>
-          </div>
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-gruvbox-dark-bg0 py-8">
+        <PageShell width="xl">
+          {/* Header */}
+          <SectionHeader
+            title="My Wishlist"
+            subtitle="Items you've saved for later"
+            actions={
+              <div className="flex items-center gap-2 text-sm text-gruvbox-dark-fg2">
+                <IconStarFilled className="w-4 h-4 text-gruvbox-yellow" />
+                <span className="font-medium">
+                  {wishlistItems.length} {wishlistItems.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+            }
+          />
 
           {/* Search and Filter Controls */}
           <div className="mb-6 space-y-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gruvbox-gray" size={20} />
               <input
                 type="text"
-                placeholder="Tìm kiếm theo tên sản phẩm..."
+                placeholder="Search by item name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0 placeholder-gruvbox-gray"
               />
-            </div>
-
-            {/* Filter Toggle Button */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Filter size={16} />
-                <span>Bộ lọc</span>
-              </button>
-
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <X size={16} />
-                  <span>Xóa bộ lọc</span>
-                </button>
-              )}
             </div>
 
             {/* Filter Controls */}
-            {showFilters && (
-              <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Price Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lọc theo giá (VND)
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="number"
-                        placeholder="Từ"
-                        value={priceRange.min}
-                        onChange={(e) =>
-                          setPriceRange((prev) => ({
-                            ...prev,
-                            min: e.target.value,
-                          }))
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Đến"
-                        value={priceRange.max}
-                        onChange={(e) =>
-                          setPriceRange((prev) => ({
-                            ...prev,
-                            max: e.target.value,
-                          }))
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  showFilters
+                    ? "bg-gruvbox-yellow text-gruvbox-dark-bg0"
+                    : "bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 text-gruvbox-dark-fg0 hover:bg-gruvbox-dark-bg2"
+                }`}
+              >
+                <IconFilter size={16} />
+                <span>Filters</span>
+                {hasActiveFilters && (
+                  <span className="w-2 h-2 bg-gruvbox-orange rounded-full"></span>
+                )}
+              </button>
 
-                  {/* Views Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lọc theo lượt xem
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="number"
-                        placeholder="Từ"
-                        value={viewsRange.min}
-                        onChange={(e) =>
-                          setViewsRange((prev) => ({
-                            ...prev,
-                            min: e.target.value,
-                          }))
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Đến"
-                        value={viewsRange.max}
-                        onChange={(e) =>
-                          setViewsRange((prev) => ({
-                            ...prev,
-                            max: e.target.value,
-                          }))
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
+              <div className="flex items-center gap-3 text-sm text-gruvbox-gray">
+                <span>
+                  Showing {filteredItems.length} of {wishlistItems.length}
+                </span>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center space-x-1 px-3 py-1.5 text-gruvbox-red hover:bg-gruvbox-red/10 rounded-lg transition-colors"
+                  >
+                    <IconX size={14} />
+                    <span>Clear</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <FadeIn>
+                <div className="bg-gruvbox-dark-bg1 p-4 rounded-lg border border-gruvbox-gray/20 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Price Filter */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gruvbox-dark-fg0 mb-2">
+                        <IconCurrencyDollar size={16} className="text-gruvbox-yellow" />
+                        Price Range (VND)
+                      </label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={priceRange.min}
+                          onChange={(e) =>
+                            setPriceRange((prev) => ({ ...prev, min: e.target.value }))
+                          }
+                          className="flex-1 px-3 py-2 bg-gruvbox-dark-bg0 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={priceRange.max}
+                          onChange={(e) =>
+                            setPriceRange((prev) => ({ ...prev, max: e.target.value }))
+                          }
+                          className="flex-1 px-3 py-2 bg-gruvbox-dark-bg0 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Views Filter */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gruvbox-dark-fg0 mb-2">
+                        <IconTrendingUp size={16} className="text-gruvbox-aqua" />
+                        Views Range
+                      </label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={viewsRange.min}
+                          onChange={(e) =>
+                            setViewsRange((prev) => ({ ...prev, min: e.target.value }))
+                          }
+                          className="flex-1 px-3 py-2 bg-gruvbox-dark-bg0 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={viewsRange.max}
+                          onChange={(e) =>
+                            setViewsRange((prev) => ({ ...prev, max: e.target.value }))
+                          }
+                          className="flex-1 px-3 py-2 bg-gruvbox-dark-bg0 border border-gruvbox-gray/20 rounded-lg focus:ring-2 focus:ring-gruvbox-yellow/50 focus:border-transparent text-gruvbox-dark-fg0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </FadeIn>
             )}
-
-            {/* Results Count */}
-            <div className="text-sm text-gray-600">
-              Hiển thị {filteredItems.length} trong {wishlistItems.length} sản
-              phẩm
-            </div>
           </div>
 
           {/* Wishlist Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-              >
-                {/* Image Container */}
-                <div
-                  onClick={() => router.push(`/vibes/${item.vibeId._id}`)}
-                  className="relative aspect-square cursor-pointer"
-                >
-                  <Image
-                    src={item.vibeId.mediaFiles[0].url}
-                    alt={item.vibeId.mediaFiles[0].url}
-                    className="w-full h-full object-cover"
-                    width={500}
-                    height={500}
-                  />
-                  <button
-                    onClick={() => toggleWishlist(item.id, item.vibeId._id)}
-                    className="absolute top-3 right-3 p-2 rounded-full transition-colors bg-orange-500 text-white hover:bg-red-500"
-                  >
-                    <Star size={16} className="fill-current" />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  {/* Title and Price */}
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
-                      {item.vibeId.itemName}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-xl font-bold text-orange-600">
-                      {formatPrice(item.vibeId.price)}
-                    </span>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {item.vibeId.tags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Seller Information */}
-                  {/* <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                      <span className="text-sm text-white">
-                        {item.vibeId.user?.name?.charAt(0) || "U"}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        cds
-                      </p>
-                    </div>
-                  </div> */}
-
-                  {/* Location and Stats */}
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <div className="flex items-center space-x-1">
-                      <MapPin size={12} />
-                      <span>{item.vibeId.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-1">
-                        <Eye size={12} />
-                        <span>{item.vibeId.views}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <MessageCircle size={12} />
-                        <span>{item.vibeId.commentsCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() => toggleLike(item.id)}
-                      className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm transition-colors ${
-                        item.isLiked
-                          ? "bg-red-100 text-red-600"
-                          : "bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600"
-                      }`}
+          {filteredItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredItems.map((item) => (
+                <FadeIn key={item.id}>
+                  <div className="bg-gruvbox-dark-bg1 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gruvbox-dark-bg2 hover:border-gruvbox-yellow/50 group">
+                    {/* Image Container */}
+                    <div
+                      onClick={() => router.push(`/vibes/${item.vibeId._id}`)}
+                      className="relative aspect-square cursor-pointer overflow-hidden"
                     >
-                      <Heart
-                        size={14}
-                        className={item.isLiked ? "fill-current" : ""}
+                      <Image
+                        src={item.vibeId.mediaFiles[0]?.url || "/placeholder.jpg"}
+                        alt={item.vibeId.itemName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        width={500}
+                        height={500}
                       />
-                      <span>{item.vibeId.likesCount}</span>
-                    </button>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                    <button
-                      onClick={() =>
-                        handleShare(
-                          `https://oldvibes.vercel.app/vibes/${item.vibeId._id}`
-                        )
-                      }
-                      className="flex items-center space-x-1 px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-colors"
-                    >
-                      <Share2 size={14} />
-                      <span>Share</span>
-                    </button>
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(item.id, item.vibeId._id);
+                        }}
+                        className="absolute top-3 right-3 p-2 rounded-full transition-all bg-gruvbox-yellow text-gruvbox-dark-bg0 hover:bg-gruvbox-red hover:scale-110 shadow-lg"
+                      >
+                        <IconStarFilled size={16} />
+                      </button>
+
+                      {/* Condition Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(item.vibeId.condition)}`}>
+                          {item.vibeId.condition}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      {/* Title */}
+                      <h3 className="text-lg font-semibold text-gruvbox-dark-fg0 line-clamp-2 mb-2 min-h-[3.5rem]">
+                        {item.vibeId.itemName}
+                      </h3>
+
+                      {/* Price */}
+                      <div className="mb-3">
+                        <span className="text-xl font-bold text-gruvbox-orange">
+                          {formatPrice(item.vibeId.price)}
+                        </span>
+                      </div>
+
+                      {/* Tags */}
+                      {item.vibeId.tags && item.vibeId.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {item.vibeId.tags.slice(0, 3).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg2 text-xs rounded-full"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                          {item.vibeId.tags.length > 3 && (
+                            <span className="px-2 py-1 bg-gruvbox-dark-bg2 text-gruvbox-gray text-xs rounded-full">
+                              +{item.vibeId.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Location and Stats */}
+                      <div className="flex items-center justify-between text-xs text-gruvbox-gray mb-3 pb-3 border-b border-gruvbox-dark-bg2">
+                        {item.vibeId.location && (
+                          <div className="flex items-center gap-1">
+                            <IconMapPin size={12} />
+                            <span className="truncate">{item.vibeId.location}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <IconEye size={12} />
+                            <span>{item.vibeId.views || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <IconMessageCircle size={12} />
+                            <span>{item.vibeId.commentsCount || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gruvbox-dark-bg2 text-gruvbox-dark-fg2 text-sm flex-1 justify-center">
+                          <IconHeart size={14} className="text-gruvbox-red" />
+                          <span>{item.vibeId.likesCount || 0}</span>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShare(`https://oldvibes.vercel.app/vibes/${item.vibeId._id}`);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gruvbox-dark-bg2 text-gruvbox-dark-fg2 hover:bg-gruvbox-blue/20 hover:text-gruvbox-blue transition-colors text-sm flex-1 justify-center"
+                        >
+                          <IconShare size={14} />
+                          <span>Share</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Empty State */}
-          {filteredItems.length === 0 && wishlistItems.length > 0 && (
+                </FadeIn>
+              ))}
+            </div>
+          ) : (
+            /* Empty States */
             <div className="text-center py-16">
-              <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Search size={32} className="text-gray-400" />
+              <div className="w-24 h-24 bg-gruvbox-dark-bg1 rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-gruvbox-gray/20">
+                {wishlistItems.length === 0 ? (
+                  <IconStarFilled size={32} className="text-gruvbox-gray" />
+                ) : (
+                  <IconSearch size={32} className="text-gruvbox-gray" />
+                )}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Không tìm thấy sản phẩm
+              <h3 className="text-xl font-semibold text-gruvbox-dark-fg0 mb-2">
+                {wishlistItems.length === 0
+                  ? "Your wishlist is empty"
+                  : "No items found"}
               </h3>
-              <p className="text-gray-600 mb-6">
-                Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm
+              <p className="text-gruvbox-gray mb-6">
+                {wishlistItems.length === 0
+                  ? "Start exploring to find vintage items you love"
+                  : "Try adjusting your filters or search terms"}
               </p>
-              <button
-                onClick={clearFilters}
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                Xóa bộ lọc
-              </button>
+              {wishlistItems.length === 0 ? (
+                <button
+                  onClick={() => router.push("/")}
+                  className="px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                >
+                  Start Exploring
+                </button>
+              ) : (
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-3 bg-gruvbox-orange text-white font-medium rounded-lg hover:bg-gruvbox-orange/90 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           )}
-
-          {/* Original Empty State */}
-          {wishlistItems.length === 0 && (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Star size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Your wishlist is empty
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Start exploring to find vintage items you love
-              </p>
-            </div>
-          )}
-        </div>
-      </main>
-    </Wrapper>
+        </PageShell>
+      </div>
+    </AuthGuard>
   );
 }

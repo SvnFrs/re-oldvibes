@@ -23,6 +23,8 @@ import recommendationRoutes from "./routes/recommendation.routes";
 import appealRoutes from "./routes/appeal.routes";
 import feedbackReportRoutes from "./routes/feedback-report.routes";
 import bannerRoutes from "./routes/banner.routes";
+import { migrateSupportIndexes } from "./utils/migrate-support-index";
+import supportRoutes from "./routes/support.routes";
 
 import { setupCronJobs } from "./job/cleanup.job";
 
@@ -131,6 +133,8 @@ const connectDB = async () => {
       dbName: process.env.DB_NAME || "oldvibes",
     });
     console.log("✅ Connected to MongoDB");
+    // Run lightweight migration for SupportQuestion indexes
+    await migrateSupportIndexes();
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     process.exit(1);
@@ -157,6 +161,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/appeals", appealRoutes);
+app.use("/api/support", supportRoutes);
 app.use("/api", feedbackReportRoutes);
 app.use("/api/banner", bannerRoutes);
 

@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PageShell, SectionHeader } from "../_components/layout/PageShell";
+import { Card, CardContent, CardHeader, CardTitle } from "../_components/ui/card";
+import { FadeIn } from "../_motion/MotionWrappers";
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -34,40 +37,65 @@ export default function AdminPanel() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="p-8 text-center text-sm text-gruvbox-dark-fg2">
+        Loading...
+      </div>
+    );
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-        <div className="mb-4 flex items-center justify-between">
-          <span className="font-mono text-sm text-gray-500">
-            Signed in as: {user.email} ({user.role})
-          </span>
-          <a
-            href="/admin/profile"
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-          >
-            View Profile
-          </a>
+    <div className="min-h-screen pt-6 pb-16">
+      <PageShell width="xl">
+        <SectionHeader
+          title="Admin Panel"
+          subtitle="Moderate vibes, manage users & staff, ensure platform quality"
+          actions={
+            <a
+              href="/admin/profile"
+              className="text-sm font-medium text-gruvbox-blue hover:text-gruvbox-blue-light transition"
+            >
+              View Profile
+            </a>
+          }
+        />
+        <div className="mb-6 text-xs font-mono text-gruvbox-dark-fg3">
+          Signed in as: {user.email} ({user.role})
         </div>
-        {/* Tabs or sections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h2 className="font-bold mb-2">Staff Management</h2>
-            {user.role === "admin" ? <StaffSection /> : <p>Admin only</p>}
-          </div>
-          <div>
-            <h2 className="font-bold mb-2">User Management</h2>
-            <UserSection />
-          </div>
-          <div>
-            <h2 className="font-bold mb-2">Vibe Moderation</h2>
-            <VibeModerationSection />
-          </div>
+          <FadeIn>
+            <Card interactive>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Staff Management</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-gruvbox-dark-fg2">
+                {user.role === "admin" ? <StaffSection /> : <p>Admin only</p>}
+              </CardContent>
+            </Card>
+          </FadeIn>
+          <FadeIn>
+            <Card interactive>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">User Management</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-gruvbox-dark-fg2">
+                <UserSection />
+              </CardContent>
+            </Card>
+          </FadeIn>
+          <FadeIn>
+            <Card interactive>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Vibe Moderation</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-gruvbox-dark-fg2">
+                <VibeModerationSection />
+              </CardContent>
+            </Card>
+          </FadeIn>
         </div>
-      </div>
+      </PageShell>
     </div>
   );
 }
@@ -75,22 +103,40 @@ export default function AdminPanel() {
 // --- StaffSection, UserSection, VibeModerationSection components below ---
 
 function StaffSection() {
-  // Fetch staff list, add/edit/delete staff
-  // Use /api/admin/staff endpoints
-  // ... implement as needed
-  return <div>Staff management UI here</div>;
+  return (
+    <div className="space-y-2">
+      <p className="text-gruvbox-dark-fg3">
+        Manage staff permissions and roles.
+      </p>
+      <div className="rounded-md border p-3 text-xs bg-gruvbox-dark-bg1">
+        TODO: Staff list table
+      </div>
+    </div>
+  );
 }
 
 function UserSection() {
-  // Fetch user list, ban/unban users
-  // Use /api/admin/users endpoints
-  // ... implement as needed
-  return <div>User management UI here</div>;
+  return (
+    <div className="space-y-2">
+      <p className="text-gruvbox-dark-fg3">
+        Review users and adjust account status.
+      </p>
+      <div className="rounded-md border p-3 text-xs bg-gruvbox-dark-bg1">
+        TODO: User list table
+      </div>
+    </div>
+  );
 }
 
 function VibeModerationSection() {
-  // Fetch pending vibes, approve/reject
-  // Use /api/vibes/pending and /api/vibes/:id/moderate
-  // ... implement as needed
-  return <div>Vibe moderation UI here</div>;
+  return (
+    <div className="space-y-2">
+      <p className="text-gruvbox-dark-fg3">
+        Approve or reject newly submitted vibes.
+      </p>
+      <div className="rounded-md border p-3 text-xs bg-gruvbox-dark-bg1">
+        TODO: Pending vibes queue
+      </div>
+    </div>
+  );
 }

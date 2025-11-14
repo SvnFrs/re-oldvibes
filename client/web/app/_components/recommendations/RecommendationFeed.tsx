@@ -314,7 +314,7 @@ export default function RecommendationFeed({
                 )}
                 
                 {/* Score Badge */}
-                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full bg-white/90 dark:bg-black/90 backdrop-blur-sm flex items-center gap-1`}>
+                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full bg-gruvbox-dark-bg1/90 backdrop-blur-sm flex items-center gap-1 border border-gruvbox-dark-bg2`}>
                   <IconTrendingUp size={14} className={getScoreColor(vibe.score)} />
                   <span className={`text-xs font-bold ${getScoreColor(vibe.score)}`}>
                     {(vibe.score * 100).toFixed(0)}%

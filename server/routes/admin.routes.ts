@@ -29,6 +29,14 @@ import {
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireAdmin, requireStaff } from "../middleware/role.middleware";
 import type { RequestHandler } from "../types/handler.types";
+// Support management
+import {
+  getAdminSupport,
+  createSupport,
+  updateSupport,
+  deleteSupport,
+  getSupportById,
+} from "../controllers/support.controllers";
 
 const router = Router();
 
@@ -500,5 +508,127 @@ router.patch("/appeals/:id/status", authenticateToken, requireStaff, updateAppea
  *       200: { description: Appeal deleted successfully }
  */
 router.delete("/appeals/:id", authenticateToken, requireAdmin, deleteAppeal as any);
+
+// ===== SUPPORT MANAGEMENT ROUTES =====
+
+/**
+ * @swagger
+ * /admin/support:
+ *   get:
+ *     summary: Get support questions (admin)
+ *     tags: [Admin, Support]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema: { type: string }
+ *       - in: query
+ *         name: tags
+ *         schema: { type: string, description: Comma-separated tags }
+ *       - in: query
+ *         name: category
+ *         schema: { type: string }
+ *       - in: query
+ *         name: isPublished
+ *         schema: { type: boolean }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200: { description: List of support questions }
+ */
+router.get("/support", authenticateToken, requireStaff, getAdminSupport as any);
+
+/**
+ * @swagger
+ * /admin/support:
+ *   post:
+ *     summary: Create a support question
+ *     tags: [Admin, Support]
+ *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [question, answer]
+ *             properties:
+ *               question: { type: string }
+ *               answer: { type: string }
+ *               tags: { type: array, items: { type: string } }
+ *               category: { type: string }
+ *               isPublished: { type: boolean }
+ *     responses:
+ *       201: { description: Created }
+ */
+router.post("/support", authenticateToken, requireStaff, createSupport as any);
+
+/**
+ * @swagger
+ * /admin/support/{id}:
+ *   get:
+ *     summary: Get a support question
+ *     tags: [Admin, Support]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: OK }
+ *       404: { description: Not found }
+ */
+router.get("/support/:id", authenticateToken, requireStaff, getSupportById as any);
+
+/**
+ * @swagger
+ * /admin/support/{id}:
+ *   patch:
+ *     summary: Update a support question
+ *     tags: [Admin, Support]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               question: { type: string }
+ *               answer: { type: string }
+ *               tags: { type: array, items: { type: string } }
+ *               category: { type: string }
+ *               isPublished: { type: boolean }
+ *     responses:
+ *       200: { description: Updated }
+ */
+router.patch("/support/:id", authenticateToken, requireStaff, updateSupport as any);
+
+/**
+ * @swagger
+ * /admin/support/{id}:
+ *   delete:
+ *     summary: Delete a support question
+ *     tags: [Admin, Support]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Deleted }
+ */
+router.delete("/support/:id", authenticateToken, requireAdmin, deleteSupport as any);
 
 export default router;

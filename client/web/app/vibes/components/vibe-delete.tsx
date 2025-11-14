@@ -11,324 +11,126 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/app/_components/ui/dialog";
-import { Input } from "@/app/_components/ui/input";
-import { Label } from "@/app/_components/ui/label";
-import { IconTag } from "@tabler/icons-react";
+import {
+  IconTrash,
+  IconAlertTriangle,
+  IconLoader2,
+  IconX,
+} from "@tabler/icons-react";
 import { deleteVibe } from "@/app/_apis/common/vibes";
 
 export function VibeDelete({ data }: { data: any }) {
-  const [tags, setTags] = useState<string[]>(data?.tags || []);
-  const [newTag, setNewTag] = useState("");
-  const [formData, setFormData] = useState({
-    itemName: data?.itemName || "",
-    description: data?.description || "",
-    price: data?.price || "",
-    category: data?.category || "",
-    condition: data?.condition || "",
-    location: data?.location || "",
-  });
-
-  // Update form data when data prop changes
-  useEffect(() => {
-    if (data) {
-      setFormData({
-        itemName: data.itemName || "",
-        description: data.description || "",
-        price: data.price || "",
-        category: data.category || "",
-        condition: data.condition || "",
-        location: data.location || "",
-      });
-      setTags(data.tags || []);
-    }
-  }, [data]);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const categories = [
-    "Electronics",
-    "Fashion",
-    "Books",
-    "Toys",
-    "Home",
-    "Sports",
-    "Beauty",
-    "Other",
-  ];
-
-  const conditions = ["new", "like-new", "good", "fair", "poor"];
-
-  const vietnameseCities = [
-    "Bà Rịa",
-    "Bạc Liêu",
-    "Bắc Giang",
-    "Bắc Ninh",
-    "Bến Tre",
-    "Biên Hòa",
-    "Buôn Ma Thuột",
-    "Cà Mau",
-    "Cam Ranh",
-    "Cần Thơ",
-    "Cao Bằng",
-    "Đà Lạt",
-    "Đà Nẵng",
-    "Điện Biên",
-    "Đông Hà",
-    "Đồng Hới",
-    "Hà Giang",
-    "Hà Nội",
-    "Hải Dương",
-    "Hải Phòng",
-    "Hòa Bình",
-    "Hội An",
-    "Huế",
-    "Hưng Yên",
-    "Lai Châu",
-    "Lạng Sơn",
-    "Lào Cai",
-    "Mỹ Tho",
-    "Nam Định",
-    "Nha Trang",
-    "Phan Rang",
-    "Phan Thiết",
-    "Phú Thọ",
-    "Pleiku",
-    "Quảng Ngãi",
-    "Quảng Ninh",
-    "Quảng Trị",
-    "Quy Nhơn",
-    "Rạch Giá",
-    "Sóc Trăng",
-    "Sơn La",
-    "Tam Kỳ",
-    "Tân An",
-    "Thái Bình",
-    "Thái Nguyên",
-    "Thanh Hóa",
-    "Thành phố Hồ Chí Minh",
-    "Thủ Dầu Một",
-    "Trà Vinh",
-    "Tuyên Quang",
-    "Tuy Hòa",
-    "Vinh",
-    "Vĩnh Phúc",
-    "Vũng Tàu",
-    "Yên Bái",
-  ];
-
-  const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addTag();
-    }
-  };
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsDeleting(true);
+    setError("");
 
     try {
-      // TODO: Implement API call to delete vibe
-      const response = await deleteVibe(data.id);
-      console.log("Response:", response);
-      console.log("Vibe ID:", data.id);
-      window.location.href = "/";
+      await deleteVibe(data.id);
+      window.location.href = "/settings";
     } catch (error) {
       console.error("Error deleting vibe:", error);
-      alert("Failed to delete vibe. Please try again.");
-      window.location.href = "/";
+      setError("Failed to delete vibe. Please try again.");
+      setIsDeleting(false);
     }
   };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="bg-red-700 text-white text-base cursor-pointer h-10 px-4 py-1 rounded-lg">
-          Delete
+        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gruvbox-red to-gruvbox-red-dark text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200">
+          <IconTrash size={18} />
+          <span>Delete</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white">
-        <DialogHeader>
-          <DialogTitle>Delete Vibe</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this vibe?
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[500px] bg-gruvbox-dark-bg1 border-gruvbox-dark-bg3">
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            {/* Vibe Name */}
-            <div className="grid gap-2">
-              <Label htmlFor="vibe-name">Vibe Name</Label>
-              <Input
-                id="vibe-name"
-                name="itemName"
-                value={formData.itemName}
-                onChange={handleInputChange}
-                placeholder="Enter vibe name"
-                required
-                disabled
-              />
-            </div>
-
-            {/* Description */}
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe your vibe..."
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
-                disabled
-              />
-            </div>
-
-            {/* Price */}
-            <div className="grid gap-2">
-              <Label htmlFor="price">Price (VND)</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="Enter price"
-                min="0"
-                step="1000"
-                required
-                disabled
-              />
-            </div>
-
-            {/* Tags */}
-            <div className="grid gap-2">
-              <Label htmlFor="tags">Tags</Label>
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-sm flex items-center gap-1"
-                    >
-                      <IconTag size={14} /> {tag}
-                    </span>
-                  ))}
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-gruvbox-red to-gruvbox-red-dark rounded-full flex items-center justify-center">
+                  <IconAlertTriangle className="w-6 h-6 text-white" />
                 </div>
-              )}
+                <div>
+                  <DialogTitle className="text-gruvbox-dark-fg0">
+                    Delete Vibe
+                  </DialogTitle>
+                  <DialogDescription className="text-gruvbox-gray">
+                    This action cannot be undone
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-6 space-y-4">
+            {/* Vibe Preview */}
+            <div className="bg-gruvbox-dark-bg2 rounded-xl p-4 border border-gruvbox-dark-bg3">
+              <h3 className="font-semibold text-gruvbox-dark-fg0 mb-2">
+                {data.itemName}
+              </h3>
+              <p className="text-sm text-gruvbox-gray line-clamp-2">
+                {data.description}
+              </p>
             </div>
 
-            {/* Media Files */}
-            <div className="grid gap-2">
-              <Label htmlFor="media">Media Files</Label>
-              <Input
-                id="media"
-                name="media"
-                type="file"
-                accept="image/*"
-                multiple
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gruvbox-orange file:text-white hover:file:bg-gruvbox-orange/90"
-                disabled
-              />
+            {/* Warning Message */}
+            <div className="bg-gruvbox-red/10 border border-gruvbox-red/30 rounded-xl p-4">
+              <div className="flex gap-3">
+                <IconAlertTriangle className="w-5 h-5 text-gruvbox-red flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-gruvbox-dark-fg2">
+                  <p className="font-semibold text-gruvbox-red mb-2">
+                    Warning: This will permanently delete:
+                  </p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>The vibe and all its media files</li>
+                    <li>All comments and interactions</li>
+                    <li>View history and statistics</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            {/* Category */}
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-                disabled
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Condition */}
-            <div className="grid gap-2">
-              <Label htmlFor="condition">Condition</Label>
-              <select
-                id="condition"
-                name="condition"
-                value={formData.condition}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-                disabled
-              >
-                <option value="">Select condition</option>
-                {conditions.map((condition) => (
-                  <option key={condition} value={condition}>
-                    {condition.charAt(0).toUpperCase() + condition.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Location */}
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-                disabled
-              >
-                <option value="">Select a city</option>
-                {vietnameseCities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-gruvbox-red/10 border border-gruvbox-red/30 rounded-xl p-4 animate-in slide-in-from-top-2 duration-200">
+                <p className="text-gruvbox-red text-sm flex items-center gap-2">
+                  <IconAlertTriangle size={16} />
+                  {error}
+                </p>
+              </div>
+            )}
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="gap-2">
             <DialogClose asChild>
               <button
                 type="button"
-                className="bg-gray-500 text-white text-base cursor-pointer px-4 py-2 rounded-lg hover:bg-gray-600"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg0 rounded-xl font-medium hover:bg-gruvbox-dark-bg3 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
             </DialogClose>
             <button
               type="submit"
-              className="bg-red-700 text-white text-base cursor-pointer px-4 py-2 rounded-lg hover:bg-gruvbox-orange/90"
+              disabled={isDeleting}
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-gruvbox-red to-gruvbox-red-dark text-white rounded-xl font-medium hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <IconLoader2 className="animate-spin h-5 w-5" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <IconTrash className="w-5 h-5" />
+                  <span>Delete Vibe</span>
+                </>
+              )}
             </button>
           </DialogFooter>
         </form>

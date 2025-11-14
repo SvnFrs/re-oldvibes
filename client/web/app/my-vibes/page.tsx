@@ -98,13 +98,13 @@ export default function MyVibesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-gruvbox-green-dark/20 text-gruvbox-green-dark border-gruvbox-green";
       case "pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return "bg-gruvbox-yellow-dark/20 text-gruvbox-yellow-dark border-gruvbox-yellow";
       case "rejected":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-gruvbox-red-dark/20 text-gruvbox-red-dark border-gruvbox-red";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gruvbox-dark-bg2 text-gruvbox-dark-fg2 border-gruvbox-dark-bg3";
     }
   };
 
@@ -119,7 +119,8 @@ export default function MyVibesPage() {
     return (
       <AuthGuard requireAuth={true}>
         <Wrapper>
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                  return (
+          <div className="min-h-screen bg-gruvbox-dark-bg0 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gruvbox-orange mx-auto mb-4"></div>
               <p className="text-gray-600">Loading your vibes...</p>
@@ -133,16 +134,16 @@ export default function MyVibesPage() {
   return (
     <AuthGuard requireAuth={true}>
       <Wrapper>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gruvbox-dark-bg0">
           {/* Header */}
-          <div className="bg-white border-b px-6 py-6">
+          <div className="bg-gruvbox-dark-bg1 border-b border-gruvbox-dark-bg2 px-6 py-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-gruvbox-orange mb-2">
                     My Vibes
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-gruvbox-dark-fg2">
                     Manage and update your listed items
                   </p>
                 </div>
@@ -161,7 +162,7 @@ export default function MyVibesPage() {
           <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Error Message */}
             {error && (
-              <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <div className="mb-6 bg-gruvbox-red-dark/20 border border-gruvbox-red text-gruvbox-red-dark px-4 py-3 rounded-lg flex items-center gap-2">
                 <IconAlertCircle size={20} />
                 <span>{error}</span>
               </div>
@@ -169,12 +170,12 @@ export default function MyVibesPage() {
 
             {/* Vibes List */}
             {vibes.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <IconPhoto size={64} className="mx-auto mb-4 text-gray-300" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              <div className="bg-gruvbox-dark-bg1 rounded-lg shadow p-12 text-center border border-gruvbox-dark-bg2">
+                <IconPhoto size={64} className="mx-auto mb-4 text-gruvbox-dark-bg3" />
+                <h3 className="text-xl font-semibold text-gruvbox-dark-fg0 mb-2">
                   No vibes found
                 </h3>
-                <p className="text-gray-500 mb-6">
+                <p className="text-gruvbox-dark-fg2 mb-6">
                   You haven&apos;t created any vibes yet.
                 </p>
                 <Link
@@ -215,7 +216,7 @@ export default function MyVibesPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                      <div className="w-full h-48 bg-gruvbox-dark-bg2 flex items-center justify-center">
                         <IconPhoto size={48} className="text-gray-400" />
                       </div>
                     )}
@@ -224,7 +225,7 @@ export default function MyVibesPage() {
                     <div className="p-4">
                       {/* Header */}
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-bold text-lg text-gray-800 line-clamp-2 flex-1">
+                        <h3 className="font-bold text-lg text-gruvbox-dark-fg0 line-clamp-2 flex-1">
                           {vibe.itemName}
                         </h3>
                         <span className="text-gruvbox-orange font-bold text-lg ml-2">
@@ -283,7 +284,7 @@ export default function MyVibesPage() {
                           {vibe.tags.slice(0, 3).map((tag, index) => (
                             <span
                               key={index}
-                              className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs"
+                              className="bg-gruvbox-dark-bg2 text-gruvbox-dark-fg1 px-2 py-0.5 rounded text-xs"
                             >
                               #{tag}
                             </span>
@@ -300,7 +301,7 @@ export default function MyVibesPage() {
                       <div className="flex gap-2 pt-3 border-t">
                         <Link
                           href={`/vibes/${vibe._id}`}
-                          className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                          className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg0 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gruvbox-dark-bg3 transition"
                         >
                           <IconEye size={16} />
                           View

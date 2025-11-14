@@ -15,7 +15,10 @@ import {
 } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
-import Wrapper from "../_sections/wrapper";
+import Wrapper from "../_sections/wrapper"; // legacy wrapper retained for gradual migration
+import { PageShell, SectionHeader } from "../_components/layout/PageShell";
+import { Card, CardContent } from "../_components/ui/card";
+import { FadeIn } from "../_motion/MotionWrappers";
 import { useAuth } from "../_contexts/AuthContext";
 import { getVibes } from "../_apis/common/vibes";
 import Cookies from "js-cookie";
@@ -747,46 +750,42 @@ export default function FeedPage() {
   }, []);
 
   return (
-    <Wrapper>
-      <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
-        <div className="max-w-2xl mx-auto px-4 py-6 md:py-8">
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 mb-2">
-              Community Feed
-            </h1>
-            <p className="text-gruvbox-light-fg3 dark:text-gruvbox-dark-fg3">
-              Discover and interact with the latest vibes from our community
-            </p>
-          </div>
-
-          {loading ? (
-            <div className="space-y-6">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg1 rounded-xl p-6 animate-pulse border border-gruvbox-light-bg1 dark:border-gruvbox-dark-bg2"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-1/3 mb-2"></div>
-                      <div className="h-3 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-1/4"></div>
+    <div className="pt-4 pb-10 bg-gruvbox-dark-bg0 min-h-screen">
+      <PageShell width="md">
+        <SectionHeader
+          title="Community Feed"
+          subtitle="Discover and interact with the latest vibes from our community"
+        />
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-1/3" />
+                      <div className="h-3 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-1/4" />
                     </div>
                   </div>
-                  <div className="h-6 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-2/3 mb-4"></div>
-                  <div className="h-48 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {vibes.map((vibe: any) => (
-                <FeedVibeCard key={vibe.id} vibe={vibe} />
-              ))}
-              {vibes.length === 0 && (
-                <div className="text-center py-12">
+                  <div className="h-6 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-3/4" />
+                  <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-full" />
+                  <div className="h-4 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded w-2/3" />
+                  <div className="h-48 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {vibes.map((vibe: any) => (
+              <FadeIn key={vibe.id}>
+                <FeedVibeCard vibe={vibe} />
+              </FadeIn>
+            ))}
+            {vibes.length === 0 && (
+              <Card className="text-center py-12">
+                <CardContent>
                   <p className="text-gruvbox-gray text-lg">
                     No vibes available at the moment.
                   </p>
@@ -796,12 +795,12 @@ export default function FeedPage() {
                   >
                     Browse Marketplace
                   </Link>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </Wrapper>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </PageShell>
+    </div>
   );
 }

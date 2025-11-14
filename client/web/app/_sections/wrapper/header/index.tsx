@@ -65,10 +65,10 @@ export default function Header() {
               Feedback
             </Link>
             <Link
-              href="/settings"
+              href="/support"
               className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
             >
-              Settings
+              Support / FAQ
             </Link>
 
             <div className="ml-4 flex items-center space-x-2">

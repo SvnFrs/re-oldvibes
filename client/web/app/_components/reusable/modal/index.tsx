@@ -46,7 +46,7 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
             <motion.div
               ref={ref}
               className={cn(
-                "bg-white p-6 rounded-xl shadow-xl overflow-y-auto max-h-[90vh] hide-scrollbar",
+                "bg-gruvbox-dark-bg1 p-6 rounded-xl shadow-xl overflow-y-auto max-h-[90vh] hide-scrollbar border border-gruvbox-dark-bg2",
                 className,
               )}
               initial={{ opacity: 0, scale: 0.95 }}
