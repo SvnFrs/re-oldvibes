@@ -66,7 +66,9 @@ export default function Header() {
             </Link>
 
             <div className="ml-4 flex items-center space-x-2">
-              {user && (
+              {isLoading ? (
+                <div className="w-24 h-9 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg animate-pulse"></div>
+              ) : user ? (
                 <Link
                   href="/upload"
                   className="flex items-center justify-center px-3 py-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
@@ -86,31 +88,35 @@ export default function Header() {
                   </svg>
                   Upload
                 </Link>
-              )}
+              ) : null}
               <ChatIcon />
               <UserMenu />
             </div>
           </nav>
           <div className="md:hidden flex items-center space-x-2">
-            <Link
-              href="/upload"
-              className="flex items-center justify-center p-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
-              title="Upload Vibe"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {isLoading ? (
+              <div className="w-9 h-9 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg animate-pulse"></div>
+            ) : user ? (
+              <Link
+                href="/upload"
+                className="flex items-center justify-center p-2 bg-gruvbox-yellow text-gruvbox-dark-bg0 rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                title="Upload Vibe"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </Link>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </Link>
+            ) : null}
             <ChatIcon />
             <UserMenu />
           </div>

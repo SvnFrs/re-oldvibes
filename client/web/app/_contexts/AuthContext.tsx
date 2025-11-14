@@ -21,6 +21,8 @@ interface User {
   isVerified: boolean;
   profilePicture?: string;
   bio?: string;
+  createdAt?: string;
+  updatedAt?: string;
   // Ban status fields
   isTempBanned?: boolean;
   tempBanReason?: string;
@@ -164,10 +166,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const refreshUser = async () => {
-    // Chỉ refresh khi cần thiết
-    if (!hasCheckedAuth.current) {
-      await checkAuthStatus();
-    }
+    // Always refresh user data from server
+    await checkAuthStatus();
   };
 
   const value: AuthContextType = {

@@ -19,6 +19,13 @@ import {
   getVibeDetailAdmin,
   banUserForBadComment,
 } from "../controllers/admin.controllers";
+// Appeal management
+import {
+  getAllAppeals,
+  updateAppealStatus,
+  deleteAppeal,
+  getAppealStats,
+} from "../controllers/appeal.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireAdmin, requireStaff } from "../middleware/role.middleware";
 import type { RequestHandler } from "../types/handler.types";
@@ -256,20 +263,10 @@ router.get(
  * /admin/users/{userId}/bad-behavior-history:
  *   get:
  *     summary: Get user's bad behavior history
-=======
-// ===== NEW ADMIN FEATURES ROUTES =====
-
-/**
- * @swagger
- * /admin/vibes/{vibeId}/comments:
- *   get:
- *     summary: Get comments by vibe (admin)
->>>>>>> 852189475b73dcb265fb6cd9a10e503248fcc03c
  *     tags: [Admin]
  *     security: [{ cookieAuth: [] }]
  *     parameters:
  *       - in: path
-<<<<<<< HEAD
  *         name: userId
  *         required: true
  *         schema: { type: string }
@@ -420,5 +417,88 @@ router.get("/vibes/:vibeId", authenticateToken, requireStaff, getVibeDetailAdmin
  *       404: { description: User or comment not found }
  */
 router.post("/users/ban-for-comment", authenticateToken, requireStaff, banUserForBadComment);
+
+// ===== APPEAL MANAGEMENT ROUTES =====
+
+/**
+ * @swagger
+ * /admin/appeals:
+ *   get:
+ *     summary: Get all appeals
+ *     tags: [Admin, Appeals]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [pending, reviewed, resolved, rejected] }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [ban_appeal, general_inquiry, bug_report, other] }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200: { description: List of appeals }
+ */
+router.get("/appeals", authenticateToken, requireStaff, getAllAppeals as any);
+
+/**
+ * @swagger
+ * /admin/appeals/stats:
+ *   get:
+ *     summary: Get appeal statistics
+ *     tags: [Admin, Appeals]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200: { description: Appeal statistics }
+ */
+router.get("/appeals/stats", authenticateToken, requireStaff, getAppealStats as any);
+
+/**
+ * @swagger
+ * /admin/appeals/{id}/status:
+ *   patch:
+ *     summary: Update appeal status
+ *     tags: [Admin, Appeals]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [pending, reviewed, resolved, rejected] }
+ *               adminResponse: { type: string }
+ *     responses:
+ *       200: { description: Appeal status updated }
+ */
+router.patch("/appeals/:id/status", authenticateToken, requireStaff, updateAppealStatus as any);
+
+/**
+ * @swagger
+ * /admin/appeals/{id}:
+ *   delete:
+ *     summary: Delete an appeal
+ *     tags: [Admin, Appeals]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Appeal deleted successfully }
+ */
+router.delete("/appeals/:id", authenticateToken, requireAdmin, deleteAppeal as any);
 
 export default router;

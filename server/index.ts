@@ -20,6 +20,7 @@ import chatRoutes from "./routes/chat.routes";
 import adminRoutes from "./routes/admin.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import recommendationRoutes from "./routes/recommendation.routes";
+import appealRoutes from "./routes/appeal.routes";
 
 import { setupCronJobs } from "./job/cleanup.job";
 
@@ -150,6 +151,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/appeals", appealRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);

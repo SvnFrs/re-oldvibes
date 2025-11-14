@@ -19,6 +19,16 @@ export default function UserMenu() {
   const { user, logout, isLoading, isBanned } = useAuth();
   const router = useRouter();
 
+  // Show loading skeleton while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex items-center space-x-4">
+        <div className="w-16 h-9 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg animate-pulse"></div>
+        <div className="w-20 h-9 bg-gruvbox-light-bg2 dark:bg-gruvbox-dark-bg2 rounded-lg animate-pulse"></div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="flex items-center space-x-4">
