@@ -76,13 +76,13 @@ export class SocketService {
         try {
           const hasAccess = await this.chatService.validateConversationAccess(
             conversationId,
-            user.userId,
+            user.userId
           );
 
           if (hasAccess) {
             socket.join(`conversation:${conversationId}`);
             console.log(
-              `User ${user.username} joined conversation ${conversationId}`,
+              `User ${user.username} joined conversation ${conversationId}`
             );
           } else {
             socket.emit("error", {
@@ -102,7 +102,7 @@ export class SocketService {
       socket.on("leaveConversation", (conversationId: string) => {
         socket.leave(`conversation:${conversationId}`);
         console.log(
-          `User ${user.username} left conversation ${conversationId}`,
+          `User ${user.username} left conversation ${conversationId}`
         );
       });
 
@@ -116,7 +116,7 @@ export class SocketService {
             // Validate conversation access
             const hasAccess = await this.chatService.validateConversationAccess(
               conversationId,
-              user.userId,
+              user.userId
             );
 
             if (!hasAccess) {
@@ -131,7 +131,7 @@ export class SocketService {
             const message = await this.chatService.sendMessage(
               conversationId,
               user.userId,
-              messageData,
+              messageData
             );
 
             // Emit to conversation room
@@ -140,7 +140,7 @@ export class SocketService {
               .emit("newMessage", message);
 
             console.log(
-              `Message sent in conversation ${conversationId} by ${user.username}`,
+              `Message sent in conversation ${conversationId} by ${user.username}`
             );
           } catch (error) {
             socket.emit("error", {
@@ -149,7 +149,7 @@ export class SocketService {
             });
             console.error("Send message error:", error);
           }
-        },
+        }
       );
 
       // Mark message as read
@@ -159,7 +159,7 @@ export class SocketService {
           try {
             await this.chatService.markMessageAsRead(
               data.messageId,
-              user.userId,
+              user.userId
             );
 
             // Notify conversation participants
@@ -175,7 +175,7 @@ export class SocketService {
               code: "MARK_READ_ERROR",
             });
           }
-        },
+        }
       );
 
       // Update offer status
@@ -189,7 +189,7 @@ export class SocketService {
             const updatedMessage = await this.chatService.updateOfferStatus(
               data.messageId,
               data.status,
-              user.userId,
+              user.userId
             );
 
             // Notify conversation participants
@@ -206,7 +206,7 @@ export class SocketService {
               code: "OFFER_UPDATE_ERROR",
             });
           }
-        },
+        }
       );
 
       // Update message
@@ -217,7 +217,7 @@ export class SocketService {
             const updatedMessage = await this.chatService.updateMessage(
               data.messageId,
               user.userId,
-              data.content,
+              data.content
             );
 
             // Notify conversation participants
@@ -230,7 +230,7 @@ export class SocketService {
               code: "UPDATE_MESSAGE_ERROR",
             });
           }
-        },
+        }
       );
 
       // Delete message
@@ -253,13 +253,16 @@ export class SocketService {
               code: "DELETE_MESSAGE_ERROR",
             });
           }
-        },
+        }
       );
 
       // Delete conversation
       socket.on("deleteConversation", async (conversationId: string) => {
         try {
-          await this.chatService.deleteConversation(conversationId, user.userId);
+          await this.chatService.deleteConversation(
+            conversationId,
+            user.userId
+          );
 
           // Notify conversation participants
           this.io

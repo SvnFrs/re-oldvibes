@@ -14,7 +14,13 @@ import {
   IconCheck,
   IconX,
   IconRefresh,
+  IconReport,
+  IconEdit,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
+import Link from "next/link";
+import { CircleEllipsis, Flag, Info } from "lucide-react";
 
 // API endpoint
 const API = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
@@ -33,9 +39,9 @@ function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center ">
       <div
-        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative"
+        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative !min-w-5xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -82,6 +88,21 @@ const tabs = [
     label: "Comment Moderation",
     icon: <IconMessageCircle size={20} />,
   },
+  {
+    id: "feedbacks",
+    label: "Feedbacks",
+    icon: <Info size={20} />,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <Flag size={20} />,
+  },
+  {
+    id: "banners",
+    label: "Banner Management",
+    icon: <IconPhoto size={20} />,
+  },
 ];
 
 // --- Main Admin Panel ---
@@ -94,6 +115,7 @@ type User = {
   isActive?: boolean;
   isEmailVerified?: boolean;
   createdAt?: string;
+  deletedAt?: string;
 };
 
 export default function AdminPanel() {
@@ -137,9 +159,12 @@ export default function AdminPanel() {
           <span className="text-2xl font-bold text-gruvbox-orange font-mono">
             Old Vibes Admin Panel
           </span>
-          <span className="ml-4 text-sm text-gray-500 font-mono">
+          <Link
+            href="/admin/profile"
+            className="ml-4 text-sm text-gray-500 font-mono"
+          >
             {user.email} ({user.role})
-          </span>
+          </Link>
         </div>
         <button
           className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-4 py-2 rounded transition"
@@ -186,6 +211,9 @@ export default function AdminPanel() {
           {tab === "show-vibes" && <ShowVibesSection />}
           {tab === "vibes" && <VibeModerationSection />}
           {tab === "comments" && <CommentModerationSection />}
+          {tab === "feedbacks" && <FeedbackSection />}
+          {tab === "reports" && <ReportSection />}
+          {tab === "banners" && <BannerSection />}
         </main>
       </div>
     </div>
@@ -373,10 +401,27 @@ function StaffSection({ isAdmin }: { isAdmin: boolean }) {
 // --- USER MANAGEMENT ---
 function UserSection() {
   const [users, setUsers] = useState<User[]>([]);
+  const [admin, setAdmin] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Auth check
+  useEffect(() => {
+    fetch(API + "/auth/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.user || !["admin", "staff"].includes(data.user.role)) {
+          window.location.href = "/admin/signin";
+        } else {
+          setAdmin(data.user);
+          console.log("admin", data.user);
+        }
+      })
+      .catch(() => (window.location.href = "/admin/signin"))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Fetch users
   const fetchUsers = () => {
@@ -387,15 +432,23 @@ function UserSection() {
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
   };
-  useEffect(fetchUsers, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Ban/unban
-  const handleBan = async (id: string, banned: boolean) => {
+  const handleBan = async (
+    id: string,
+    banned: boolean,
+    checkDeleted: string | undefined
+  ) => {
     if (
       !window.confirm(
         banned
-          ? "Unban this user?"
-          : "Ban this user? They will not be able to login.",
+          ? checkDeleted
+            ? "Restore this user?"
+            : "Unban this user?"
+          : "Ban this user? They will not be able to login."
       )
     )
       return;
@@ -411,9 +464,10 @@ function UserSection() {
   // Filtered users
   const filtered = users.filter(
     (u) =>
-      u.email.includes(search) ||
-      u.username.includes(search) ||
-      u.name?.toLowerCase().includes(search.toLowerCase()),
+      u.email !== admin?.email &&
+      (u.email.includes(search) ||
+        u.username.includes(search) ||
+        u.name?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -435,61 +489,72 @@ function UserSection() {
         <table className="w-full border text-sm">
           <thead>
             <tr className="bg-gruvbox-light-bg1">
-              <th className="p-2">Name</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Email Verified</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th className="py-2 w-56">Name</th>
+              <th className="py-2 w-48">Username</th>
+              <th className="py-2 w-56">Email</th>
+              <th className="py-2 w-12">Role</th>
+              <th className="py-2 w-14">Status</th>
+              <th className="py-2 w-14">Email Verified</th>
+              <th className="py-2 w-32">Created</th>
+              <th className="py-2 w-44">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="border-t">
-                <td className="p-2">{u.name}</td>
-                <td>{u.username}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>
+                <td className="py-2 w-56 text-center">{u.name}</td>
+                <td className="py-2 w-48 text-center">{u.username}</td>
+                <td className="py-2 w-56 text-center">{u.email}</td>
+                <td className="py-2 w-12 text-center">{u.role}</td>
+                <td className="py-2 w-14 text-center">
                   {u.isActive ? (
                     <span className="text-green-600">Active</span>
                   ) : (
-                    <span className="text-red-600">Banned</span>
+                    <span className="text-red-500">
+                      {u.deletedAt ? "Deleted" : "Banned"}
+                    </span>
                   )}
                 </td>
-                <td>
+                <td className="py-2 w-14 text-center">
                   {u.isEmailVerified ? (
                     <IconCheck size={16} className="text-green-600 inline" />
                   ) : (
                     <IconX size={16} className="text-red-600 inline" />
                   )}
                 </td>
-                <td>
+                <td className="py-2 w-32 text-center">
                   {u.createdAt
                     ? new Date(u.createdAt).toLocaleDateString()
                     : ""}
                 </td>
-                <td>
-                  <button
-                    className={`px-2 py-1 rounded text-xs font-bold ${
-                      u.isActive
-                        ? "bg-red-100 text-red-600 hover:bg-red-200"
-                        : "bg-green-100 text-green-600 hover:bg-green-200"
-                    }`}
-                    onClick={() => handleBan(u.id, !u.isActive)}
-                  >
-                    {u.isActive ? (
-                      <>
-                        <IconBan size={14} className="inline" /> Ban
-                      </>
-                    ) : (
-                      <>
-                        <IconRefresh size={14} className="inline" /> Unban
-                      </>
-                    )}
-                  </button>
+                <td className="py-2 w-44 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        u.isActive
+                          ? "bg-red-100 text-red-600 hover:bg-red-200"
+                          : "bg-green-100 text-green-600 hover:bg-green-200"
+                      }`}
+                      onClick={() => handleBan(u.id, !u.isActive, u.deletedAt)}
+                    >
+                      {u.isActive ? (
+                        <>
+                          <IconBan size={14} className="inline" /> Ban
+                        </>
+                      ) : (
+                        <>
+                          <IconRefresh size={14} className="inline" />{" "}
+                          {u.deletedAt ? "Restore" : "Unban"}
+                        </>
+                      )}
+                    </button>
+                    <Link
+                      href={`/admin/panel/user/${u.id}`}
+                      className="text-gruvbox-orange hover:underline text-sm"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -553,7 +618,7 @@ function VibeModerationSection() {
       limit: "50",
       offset: "0",
     });
-    
+
     fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setVibes(d.vibes || []))
@@ -570,29 +635,30 @@ function VibeModerationSection() {
   const moderate = async (
     id: string,
     action: "approve" | "reject",
-    notes = "",
+    notes = ""
   ) => {
     try {
-    await fetch(API + `/vibes/${id}/moderate`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, notes }),
-    });
-    fetchVibes();
-    setSuccess(`Vibe ${action}d`);
-    setModalOpen(false);
-    setTimeout(() => setSuccess(""), 2000);
+      await fetch(API + `/vibes/${id}/moderate`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, notes }),
+      });
+      fetchVibes();
+      setSuccess(`Vibe ${action}d`);
+      setModalOpen(false);
+      setTimeout(() => setSuccess(""), 2000);
     } catch (err) {
       setError("Failed to moderate vibe");
     }
   };
 
   // Filter vibes by search term
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -652,19 +718,26 @@ function VibeModerationSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-bold text-lg">{v.itemName}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      v.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      v.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        v.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : v.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : v.status === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : v.status === "sold"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {v.status.toUpperCase()}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
                     <div>
-                      <span className="font-bold">User:</span> {v.user?.username}
+                      <span className="font-bold">User:</span>{" "}
+                      {v.user?.username}
                     </div>
                     <div>
                       <span className="font-bold">Price:</span> ${v.price}
@@ -673,7 +746,8 @@ function VibeModerationSection() {
                       <span className="font-bold">Category:</span> {v.category}
                     </div>
                     <div>
-                      <span className="font-bold">Condition:</span> {v.condition}
+                      <span className="font-bold">Condition:</span>{" "}
+                      {v.condition}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-xs text-gray-500 mb-2">
@@ -682,14 +756,18 @@ function VibeModerationSection() {
                     <div>💬 {v.commentsCount || 0} comments</div>
                   </div>
                   <div className="text-sm text-gray-700">
-                    <span className="font-bold">Description:</span> {v.description}
+                    <span className="font-bold">Description:</span>{" "}
+                    {v.description}
                   </div>
                   {v.tags && v.tags.length > 0 && (
                     <div className="mt-2">
                       <span className="font-bold text-sm">Tags:</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {v.tags.map((tag, i) => (
-                          <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                          <span
+                            key={i}
+                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                          >
                             {tag}
                           </span>
                         ))}
@@ -697,7 +775,8 @@ function VibeModerationSection() {
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
-                    Posted: {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
+                    Posted:{" "}
+                    {v.createdAt ? new Date(v.createdAt).toLocaleString() : ""}
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -710,7 +789,7 @@ function VibeModerationSection() {
                   >
                     View Details
                   </button>
-                  {v.status === 'pending' && (
+                  {v.status === "pending" && (
                     <>
                       <button
                         className="text-green-600 hover:bg-green-50 px-2 py-1 rounded text-xs"
@@ -782,7 +861,7 @@ function VibeModerationSection() {
                     controls
                     className="w-20 h-20 object-cover rounded border"
                   />
-                ),
+                )
               )}
             </div>
             <div className="flex gap-2 mt-4">
@@ -839,7 +918,7 @@ function ShowVibesSection() {
       limit: itemsPerPage.toString(),
       offset: offset.toString(),
     });
-    
+
     fetch(API + `/admin/vibes?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
@@ -859,10 +938,11 @@ function ShowVibesSection() {
   }, [statusFilter, sortBy]);
 
   // Filter vibes by search term
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // View vibe details
@@ -938,34 +1018,52 @@ function ShowVibesSection() {
           {/* Vibe Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {filteredVibes.map((v) => (
-              <div key={v.id} className="border rounded p-4 bg-white hover:shadow-md transition-shadow">
+              <div
+                key={v.id}
+                className="border rounded p-4 bg-white hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-lg truncate">{v.itemName}</h3>
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    v.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    v.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    v.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-bold ${
+                      v.status === "approved"
+                        ? "bg-green-100 text-green-800"
+                        : v.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : v.status === "rejected"
+                        ? "bg-red-100 text-red-800"
+                        : v.status === "sold"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {v.status.toUpperCase()}
                   </span>
                 </div>
-                
+
                 <div className="text-sm text-gray-600 mb-2">
-                  <div><span className="font-bold">User:</span> {v.user?.username}</div>
-                  <div><span className="font-bold">Price:</span> ${v.price}</div>
-                  <div><span className="font-bold">Category:</span> {v.category}</div>
+                  <div>
+                    <span className="font-bold">User:</span> {v.user?.username}
+                  </div>
+                  <div>
+                    <span className="font-bold">Price:</span> ${v.price}
+                  </div>
+                  <div>
+                    <span className="font-bold">Category:</span> {v.category}
+                  </div>
                 </div>
-                
+
                 <div className="text-xs text-gray-500 mb-3">
-                  <div>👀 {v.views || 0} views • 👍 {v.likesCount || 0} likes • 💬 {v.commentsCount || 0} comments</div>
+                  <div>
+                    👀 {v.views || 0} views • 👍 {v.likesCount || 0} likes • 💬{" "}
+                    {v.commentsCount || 0} comments
+                  </div>
                 </div>
-                
+
                 <div className="text-sm text-gray-700 mb-3 line-clamp-2">
                   {v.description}
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     className="flex-1 bg-gruvbox-orange text-white px-3 py-2 rounded text-sm font-semibold hover:bg-gruvbox-yellow transition"
@@ -1012,33 +1110,47 @@ function ShowVibesSection() {
         {selectedVibe && (
           <div className="max-h-96 overflow-y-auto">
             <div className="mb-4">
-              <h3 className="text-xl font-bold mb-2">{selectedVibe.itemName}</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {selectedVibe.itemName}
+              </h3>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                  selectedVibe.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  selectedVibe.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  selectedVibe.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                  selectedVibe.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedVibe.status === "approved"
+                      ? "bg-green-100 text-green-800"
+                      : selectedVibe.status === "pending"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : selectedVibe.status === "rejected"
+                      ? "bg-red-100 text-red-800"
+                      : selectedVibe.status === "sold"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
                   {selectedVibe.status.toUpperCase()}
                 </span>
-                <span className="text-lg font-bold text-gruvbox-orange">${selectedVibe.price}</span>
+                <span className="text-lg font-bold text-gruvbox-orange">
+                  ${selectedVibe.price}
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
-                <span className="font-bold">User:</span> {selectedVibe.user?.username}
+                <span className="font-bold">User:</span>{" "}
+                {selectedVibe.user?.username}
               </div>
               <div>
-                <span className="font-bold">Category:</span> {selectedVibe.category}
+                <span className="font-bold">Category:</span>{" "}
+                {selectedVibe.category}
               </div>
               <div>
-                <span className="font-bold">Condition:</span> {selectedVibe.condition}
+                <span className="font-bold">Condition:</span>{" "}
+                {selectedVibe.condition}
               </div>
               <div>
-                <span className="font-bold">Location:</span> {selectedVibe.location}
+                <span className="font-bold">Location:</span>{" "}
+                {selectedVibe.location}
               </div>
             </div>
 
@@ -1052,7 +1164,10 @@ function ShowVibesSection() {
                 <span className="font-bold text-sm">Tags:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {selectedVibe.tags.map((tag, i) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                    <span
+                      key={i}
+                      className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -1067,17 +1182,25 @@ function ShowVibesSection() {
             </div>
 
             <div className="text-xs text-gray-500">
-              <div>Created: {selectedVibe.createdAt ? new Date(selectedVibe.createdAt).toLocaleString() : ""}</div>
-              <div>Updated: {selectedVibe.updatedAt ? new Date(selectedVibe.updatedAt).toLocaleString() : ""}</div>
+              <div>
+                Created:{" "}
+                {selectedVibe.createdAt
+                  ? new Date(selectedVibe.createdAt).toLocaleString()
+                  : ""}
+              </div>
+              <div>
+                Updated:{" "}
+                {selectedVibe.updatedAt
+                  ? new Date(selectedVibe.updatedAt).toLocaleString()
+                  : ""}
+              </div>
             </div>
           </div>
         )}
       </Modal>
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
-          {error}
-        </div>
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
       )}
       {success && (
         <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
@@ -1104,7 +1227,6 @@ type Comment = {
   createdAt: string;
   isActive: boolean;
 };
-
 
 function CommentModerationSection() {
   const [vibes, setVibes] = useState<Vibe[]>([]);
@@ -1140,7 +1262,7 @@ function CommentModerationSection() {
         sortBy,
         search: searchTerm,
       });
-      
+
       const res = await fetch(
         `${API}/admin/vibes/${vibeId}/comments?${params}`,
         { credentials: "include" }
@@ -1155,7 +1277,7 @@ function CommentModerationSection() {
   // Ban user for bad comment
   const banUserForComment = async (userId: string, commentId: string) => {
     if (!window.confirm("Ban this user for inappropriate comment?")) return;
-    
+
     try {
       const res = await fetch(API + "/admin/users/ban-for-comment", {
         method: "POST",
@@ -1167,7 +1289,7 @@ function CommentModerationSection() {
           reason: "Inappropriate content detected",
         }),
       });
-      
+
       if (res.ok) {
         setSuccess("User banned successfully");
         if (selectedVibe) fetchComments(selectedVibe.id);
@@ -1190,9 +1312,10 @@ function CommentModerationSection() {
     }
   }, [selectedVibe, searchTerm, sortBy]);
 
-  const filteredVibes = vibes.filter((v) =>
-    v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVibes = vibes.filter(
+    (v) =>
+      v.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -1227,7 +1350,7 @@ function CommentModerationSection() {
             <option value="likes">Most Liked</option>
           </select>
         </div>
-        
+
         {loading ? (
           <div>Loading vibes...</div>
         ) : (
@@ -1261,16 +1384,13 @@ function CommentModerationSection() {
           <h3 className="font-bold mb-4">
             Comments for "{selectedVibe.itemName}" ({comments.length})
           </h3>
-          
+
           {comments.length === 0 ? (
             <div className="text-gray-500">No comments found.</div>
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border rounded p-4 bg-white"
-                >
+                <div key={comment.id} className="border rounded p-4 bg-white">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -1310,15 +1430,1397 @@ function CommentModerationSection() {
       )}
 
       {error && (
-        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">
-          {error}
-        </div>
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
       )}
       {success && (
         <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
           {success}
         </div>
       )}
+    </div>
+  );
+}
+
+// --- FEEDBACK SECTION ---
+type Feedback = {
+  id: string;
+  userId:
+    | string
+    | {
+        _id: string;
+        username?: string;
+        name?: string;
+        profilePicture?: string;
+      };
+  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackDescription: string;
+  feedbackImages: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+type UserInfo = {
+  id: string;
+  username: string;
+  name: string;
+  profilePicture?: string;
+};
+
+function FeedbackSection() {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, UserInfo>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
+    null
+  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch user information by userId
+  const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
+    // Check if we already have this user's info
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+
+    try {
+      const res = await fetch(API + `/users/${userId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        const userInfo: UserInfo = {
+          id: data.profile.id,
+          username: data.profile.username || "Unknown",
+          name: data.profile.name || "Unknown",
+          profilePicture: data.profile.profilePicture,
+        };
+        setUserInfoMap((prev) => ({ ...prev, [userId]: userInfo }));
+        return userInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    }
+    return null;
+  };
+
+  // Fetch feedbacks
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      limit: "50",
+      offset: "0",
+    });
+
+    if (typeFilter !== "all") {
+      params.append("feedbackType", typeFilter);
+    }
+
+    try {
+      const res = await fetch(API + `/feedback?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.feedbacks) {
+        setFeedbacks(data.feedbacks);
+        // Fetch user info for all feedbacks
+        const userIds = new Set<string>();
+        data.feedbacks.forEach((f: Feedback) => {
+          if (typeof f.userId === "string") {
+            userIds.add(f.userId);
+          } else if (f.userId && typeof f.userId === "object") {
+            userIds.add(f.userId._id);
+          }
+        });
+        // Fetch user info for all unique user IDs
+        await Promise.all(
+          Array.from(userIds).map((userId) => fetchUserInfo(userId))
+        );
+      } else {
+        setFeedbacks([]);
+      }
+    } catch (err) {
+      setFeedbacks([]);
+      setError("Failed to fetch feedbacks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [typeFilter]);
+
+  // View feedback details
+  const viewFeedbackDetails = async (feedbackId: string) => {
+    try {
+      const res = await fetch(API + `/feedback/${feedbackId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.feedback) {
+        // Fetch user info if not populated
+        if (typeof data.feedback.userId === "string") {
+          await fetchUserInfo(data.feedback.userId);
+        }
+        setSelectedFeedback(data.feedback);
+        setModalOpen(true);
+      } else {
+        setError("Failed to fetch feedback details");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
+  // Get user info from feedback
+  const getUserInfo = (feedback: Feedback): UserInfo => {
+    if (typeof feedback.userId === "object" && feedback.userId !== null) {
+      return {
+        id: feedback.userId._id,
+        username: feedback.userId.username || "Unknown",
+        name: feedback.userId.name || "Unknown",
+        profilePicture: feedback.userId.profilePicture,
+      };
+    }
+    // If userId is a string, try to get from userInfoMap
+    const userId = feedback.userId as string;
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+    return {
+      id: userId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Filter feedbacks by search term
+  const filteredFeedbacks = feedbacks.filter((f) => {
+    const userInfo = getUserInfo(f);
+    return (
+      f.feedbackDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.feedbackType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // Sort feedbacks
+  const sortedFeedbacks = [...filteredFeedbacks].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Feedback Management</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={fetchFeedbacks}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search feedbacks by description, type, or user..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="bug">Bug</option>
+          <option value="feature">Feature</option>
+          <option value="suggestion">Suggestion</option>
+          <option value="other">Other</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : sortedFeedbacks.length === 0 ? (
+        <div className="text-gray-500">No feedbacks found.</div>
+      ) : (
+        <div className="space-y-4">
+          {sortedFeedbacks.map((feedback) => {
+            const userInfo = getUserInfo(feedback);
+            return (
+              <div key={feedback.id} className="border rounded p-4 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-lg">
+                        Feedback #{feedback.id.slice(-8)}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          feedback.feedbackType === "bug"
+                            ? "bg-red-100 text-red-800"
+                            : feedback.feedbackType === "feature"
+                            ? "bg-blue-100 text-blue-800"
+                            : feedback.feedbackType === "suggestion"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {feedback.feedbackType.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                      <div>
+                        <span className="font-bold">User:</span>{" "}
+                        {userInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Name:</span> {userInfo.name}
+                      </div>
+                      <div>
+                        <span className="font-bold">User ID:</span>{" "}
+                        {userInfo.id.slice(-8)}
+                      </div>
+                      <div>
+                        <span className="font-bold">Images:</span>{" "}
+                        {feedback.feedbackImages?.length || 0}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-bold">Description:</span>{" "}
+                      {feedback.feedbackDescription}
+                    </div>
+                    {feedback.feedbackImages &&
+                      feedback.feedbackImages.length > 0 && (
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          {feedback.feedbackImages.map((img, i) => (
+                            <Image
+                              key={i}
+                              src={img}
+                              alt={`Feedback image ${i + 1}`}
+                              width={80}
+                              height={80}
+                              className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(img, "_blank")}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    <div className="text-xs text-gray-500 mt-2">
+                      Created: {new Date(feedback.createdAt).toLocaleString()} |
+                      Updated: {new Date(feedback.updatedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      className="text-gruvbox-blue hover:underline text-sm"
+                      onClick={() => viewFeedbackDetails(feedback.id)}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Feedback Details Modal */}
+      <Modal
+        open={modalOpen && !!selectedFeedback}
+        onClose={() => setModalOpen(false)}
+        title="Feedback Details"
+      >
+        {selectedFeedback && (
+          <div className="max-h-[80vh] overflow-y-auto ">
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xl font-bold">
+                  Feedback #{selectedFeedback.id.slice(-8)}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedFeedback.feedbackType === "bug"
+                      ? "bg-red-100 text-red-800"
+                      : selectedFeedback.feedbackType === "feature"
+                      ? "bg-blue-100 text-blue-800"
+                      : selectedFeedback.feedbackType === "suggestion"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {selectedFeedback.feedbackType.toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="font-bold">User ID:</span>{" "}
+                {getUserInfo(selectedFeedback).id}
+              </div>
+              <div>
+                <span className="font-bold">Username:</span>{" "}
+                {getUserInfo(selectedFeedback).username}
+              </div>
+              <div>
+                <span className="font-bold">Name:</span>{" "}
+                {getUserInfo(selectedFeedback).name}
+              </div>
+              <div>
+                <span className="font-bold">Images:</span>{" "}
+                {selectedFeedback.feedbackImages?.length || 0}
+              </div>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Description:</span>
+              <p className="mt-1 text-gray-700">
+                {selectedFeedback.feedbackDescription}
+              </p>
+            </div>
+
+            {selectedFeedback.feedbackImages &&
+              selectedFeedback.feedbackImages.length > 0 && (
+                <div className="mb-4">
+                  <span className="font-bold text-sm">Images:</span>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {selectedFeedback.feedbackImages.map((img, i) => (
+                      <Image
+                        key={i}
+                        src={img}
+                        alt={`Feedback image ${i + 1}`}
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(img, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            <div className="text-xs text-gray-500">
+              <div>
+                Created: {new Date(selectedFeedback.createdAt).toLocaleString()}
+              </div>
+              <div>
+                Updated: {new Date(selectedFeedback.updatedAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- REPORT SECTION ---
+type Report = {
+  id: string;
+  userId:
+    | string
+    | {
+        _id: string;
+        username?: string;
+        name?: string;
+        profilePicture?: string;
+      };
+  vibeId:
+    | string
+    | {
+        _id: string;
+        itemName?: string;
+        description?: string;
+        mediaFiles?: MediaFile[];
+        userId?: string | { _id: string; username?: string; name?: string };
+      };
+  reportType: "spam" | "inappropriate" | "abusive" | "other";
+  reportDescription: string;
+  reportImages: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+type VibeInfo = {
+  id: string;
+  itemName: string;
+  description: string;
+  mediaFiles: MediaFile[];
+  userId?: string | { _id: string; username?: string; name?: string };
+};
+
+function ReportSection() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [userInfoMap, setUserInfoMap] = useState<Record<string, UserInfo>>({});
+  const [vibeInfoMap, setVibeInfoMap] = useState<Record<string, VibeInfo>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch user information by userId
+  const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
+    // Check if we already have this user's info
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+
+    try {
+      const res = await fetch(API + `/users/${userId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        const userInfo: UserInfo = {
+          id: data.profile.id,
+          username: data.profile.username || "Unknown",
+          name: data.profile.name || "Unknown",
+          profilePicture: data.profile.profilePicture,
+        };
+        setUserInfoMap((prev) => ({ ...prev, [userId]: userInfo }));
+        return userInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    }
+    return null;
+  };
+
+  // Fetch vibe information by vibeId
+  const fetchVibeInfo = async (vibeId: string): Promise<VibeInfo | null> => {
+    // Check if we already have this vibe's info
+    if (vibeInfoMap[vibeId]) {
+      return vibeInfoMap[vibeId];
+    }
+
+    try {
+      const res = await fetch(API + `/vibes/${vibeId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.vibe) {
+        const vibeInfo: VibeInfo = {
+          id: data.vibe.id,
+          itemName: data.vibe.itemName || "Unknown",
+          description: data.vibe.description || "No description",
+          mediaFiles: data.vibe.mediaFiles || [],
+          userId: data.vibe.userId || data.vibe.user?._id || data.vibe.user?.id,
+        };
+        setVibeInfoMap((prev) => ({ ...prev, [vibeId]: vibeInfo }));
+
+        // Fetch vibe owner's user info if userId is a string
+        if (vibeInfo.userId && typeof vibeInfo.userId === "string") {
+          await fetchUserInfo(vibeInfo.userId);
+        }
+
+        return vibeInfo;
+      }
+    } catch (err) {
+      console.error("Failed to fetch vibe info:", err);
+    }
+    return null;
+  };
+
+  // Fetch reports
+  const fetchReports = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      limit: "50",
+      offset: "0",
+    });
+
+    if (typeFilter !== "all") {
+      params.append("reportType", typeFilter);
+    }
+
+    try {
+      const res = await fetch(API + `/report?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.reports) {
+        setReports(data.reports);
+        // Fetch user and vibe info for all reports
+        const userIds = new Set<string>();
+        const vibeIds = new Set<string>();
+        data.reports.forEach((r: Report) => {
+          if (typeof r.userId === "string") {
+            userIds.add(r.userId);
+          } else if (r.userId && typeof r.userId === "object") {
+            userIds.add(r.userId._id);
+          }
+          if (typeof r.vibeId === "string") {
+            vibeIds.add(r.vibeId);
+          } else if (r.vibeId && typeof r.vibeId === "object") {
+            vibeIds.add(r.vibeId._id);
+          }
+        });
+        // Fetch user and vibe info for all unique IDs
+        const vibeInfos = await Promise.all(
+          Array.from(vibeIds).map((vibeId) => fetchVibeInfo(vibeId))
+        );
+
+        // Extract vibe owner user IDs and fetch their info
+        vibeInfos.forEach((vibeInfo) => {
+          if (vibeInfo && vibeInfo.userId) {
+            const vibeOwnerId =
+              typeof vibeInfo.userId === "string"
+                ? vibeInfo.userId
+                : vibeInfo.userId._id;
+            if (vibeOwnerId) {
+              userIds.add(vibeOwnerId);
+            }
+          }
+        });
+
+        // Fetch all user info (reporters + vibe owners)
+        await Promise.all(
+          Array.from(userIds).map((userId) => fetchUserInfo(userId))
+        );
+      } else {
+        setReports([]);
+      }
+    } catch (err) {
+      setReports([]);
+      setError("Failed to fetch reports");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, [typeFilter]);
+
+  // View report details
+  const viewReportDetails = async (reportId: string) => {
+    try {
+      const res = await fetch(API + `/report/${reportId}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.report) {
+        // Fetch user and vibe info if not populated
+        if (typeof data.report.userId === "string") {
+          await fetchUserInfo(data.report.userId);
+        }
+        if (typeof data.report.vibeId === "string") {
+          const vibeInfo = await fetchVibeInfo(data.report.vibeId);
+          // Fetch vibe owner's user info if available
+          if (vibeInfo && vibeInfo.userId) {
+            const vibeOwnerId =
+              typeof vibeInfo.userId === "string"
+                ? vibeInfo.userId
+                : vibeInfo.userId._id;
+            if (vibeOwnerId) {
+              await fetchUserInfo(vibeOwnerId);
+            }
+          }
+        }
+        setSelectedReport(data.report);
+        setModalOpen(true);
+      } else {
+        setError("Failed to fetch report details");
+      }
+    } catch (err) {
+      setError("Network error");
+    }
+  };
+
+  // Get user info from report
+  const getUserInfo = (report: Report): UserInfo => {
+    if (typeof report.userId === "object" && report.userId !== null) {
+      return {
+        id: report.userId._id,
+        username: report.userId.username || "Unknown",
+        name: report.userId.name || "Unknown",
+        profilePicture: report.userId.profilePicture,
+      };
+    }
+    // If userId is a string, try to get from userInfoMap
+    const userId = report.userId as string;
+    if (userInfoMap[userId]) {
+      return userInfoMap[userId];
+    }
+    return {
+      id: userId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Get vibe info from report
+  const getVibeInfo = (report: Report): VibeInfo => {
+    if (typeof report.vibeId === "object" && report.vibeId !== null) {
+      return {
+        id: report.vibeId._id,
+        itemName: report.vibeId.itemName || "Unknown",
+        description: report.vibeId.description || "No description",
+        mediaFiles: report.vibeId.mediaFiles || [],
+        userId: report.vibeId.userId,
+      };
+    }
+    // If vibeId is a string, try to get from vibeInfoMap
+    const vibeId = report.vibeId as string;
+    if (vibeInfoMap[vibeId]) {
+      return vibeInfoMap[vibeId];
+    }
+    return {
+      id: vibeId,
+      itemName: "Loading...",
+      description: "Loading...",
+      mediaFiles: [],
+    };
+  };
+
+  // Get vibe owner info (the user who posted the vibe)
+  const getVibeOwnerInfo = (report: Report): UserInfo => {
+    const vibeInfo = getVibeInfo(report);
+    if (!vibeInfo.userId) {
+      return {
+        id: "Unknown",
+        username: "Unknown",
+        name: "Unknown",
+        profilePicture: undefined,
+      };
+    }
+
+    const vibeOwnerId =
+      typeof vibeInfo.userId === "string"
+        ? vibeInfo.userId
+        : vibeInfo.userId._id;
+
+    if (userInfoMap[vibeOwnerId]) {
+      return userInfoMap[vibeOwnerId];
+    }
+
+    // If userId is an object with username/name, use it
+    if (typeof vibeInfo.userId === "object" && vibeInfo.userId !== null) {
+      return {
+        id: vibeInfo.userId._id,
+        username: vibeInfo.userId.username || "Unknown",
+        name: vibeInfo.userId.name || "Unknown",
+        profilePicture: undefined,
+      };
+    }
+
+    return {
+      id: vibeOwnerId,
+      username: "Loading...",
+      name: "Loading...",
+      profilePicture: undefined,
+    };
+  };
+
+  // Filter reports by search term
+  const filteredReports = reports.filter((r) => {
+    const userInfo = getUserInfo(r);
+    const vibeInfo = getVibeInfo(r);
+    const vibeOwnerInfo = getVibeOwnerInfo(r);
+    return (
+      r.reportDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.reportType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeOwnerInfo.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeOwnerInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vibeInfo.itemName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // Sort reports
+  const sortedReports = [...filteredReports].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Report Management</h2>
+        <button
+          className="flex items-center gap-2 text-gruvbox-orange hover:underline"
+          onClick={fetchReports}
+        >
+          <IconRefresh size={16} /> Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input
+          className="flex-1 min-w-64 border rounded px-3 py-1 text-sm"
+          placeholder="Search reports by description, type, user, or vibe..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="spam">Spam</option>
+          <option value="inappropriate">Inappropriate</option>
+          <option value="abusive">Abusive</option>
+          <option value="other">Other</option>
+        </select>
+        <select
+          className="border rounded px-3 py-1 text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div>Loading...</div>
+      ) : sortedReports.length === 0 ? (
+        <div className="text-gray-500">No reports found.</div>
+      ) : (
+        <div className="space-y-4">
+          {sortedReports.map((report) => {
+            const userInfo = getUserInfo(report);
+            const vibeInfo = getVibeInfo(report);
+            const vibeOwnerInfo = getVibeOwnerInfo(report);
+            return (
+              <div key={report.id} className="border rounded p-4 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-lg">
+                        Report #{report.id.slice(-8)}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${
+                          report.reportType === "spam"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : report.reportType === "inappropriate"
+                            ? "bg-orange-100 text-orange-800"
+                            : report.reportType === "abusive"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {report.reportType.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                      <div>
+                        <span className="font-bold">Reported By:</span>{" "}
+                        {userInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Report to:</span>{" "}
+                        {vibeOwnerInfo.username}
+                      </div>
+                      <div>
+                        <span className="font-bold">Vibe:</span>{" "}
+                        {vibeInfo.itemName}
+                      </div>
+                      <div>
+                        <span className="font-bold">Vibe ID:</span>{" "}
+                        {vibeInfo.id.slice(-8)}
+                      </div>
+                      <div>
+                        <span className="font-bold">Images:</span>{" "}
+                        {report.reportImages?.length || 0}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-bold">Description:</span>{" "}
+                      {report.reportDescription}
+                    </div>
+                    {report.reportImages && report.reportImages.length > 0 && (
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {report.reportImages.map((img, i) => (
+                          <Image
+                            key={i}
+                            src={img}
+                            alt={`Report image ${i + 1}`}
+                            width={80}
+                            height={80}
+                            className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(img, "_blank")}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 mt-2">
+                      Created: {new Date(report.createdAt).toLocaleString()} |
+                      Updated: {new Date(report.updatedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      className="text-gruvbox-blue hover:underline text-sm"
+                      onClick={() => viewReportDetails(report.id)}
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Report Details Modal */}
+      <Modal
+        open={modalOpen && !!selectedReport}
+        onClose={() => setModalOpen(false)}
+        title="Report Details"
+      >
+        {selectedReport && (
+          <div className="max-h-96 overflow-y-auto">
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xl font-bold">
+                  Report #{selectedReport.id.slice(-8)}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded text-xs font-bold ${
+                    selectedReport.reportType === "spam"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : selectedReport.reportType === "inappropriate"
+                      ? "bg-orange-100 text-orange-800"
+                      : selectedReport.reportType === "abusive"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {selectedReport.reportType.toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="font-bold">Reported By (User ID):</span>{" "}
+                {getUserInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Reported By (Username):</span>{" "}
+                {getUserInfo(selectedReport).username}
+              </div>
+              <div>
+                <span className="font-bold">Reported By (Name):</span>{" "}
+                {getUserInfo(selectedReport).name}
+              </div>
+              <div>
+                <span className="font-bold">Report to (User ID):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Report to (Username):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).username}
+              </div>
+              <div>
+                <span className="font-bold">Report to (Name):</span>{" "}
+                {getVibeOwnerInfo(selectedReport).name}
+              </div>
+              <div>
+                <span className="font-bold">Vibe ID:</span>{" "}
+                {getVibeInfo(selectedReport).id}
+              </div>
+              <div>
+                <span className="font-bold">Vibe Name:</span>{" "}
+                {getVibeInfo(selectedReport).itemName}
+              </div>
+              <div>
+                <span className="font-bold">Images:</span>{" "}
+                {selectedReport.reportImages?.length || 0}
+              </div>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Vibe Description:</span>
+              <p className="mt-1 text-gray-700">
+                {getVibeInfo(selectedReport).description}
+              </p>
+            </div>
+
+            <div className="text-sm mb-4">
+              <span className="font-bold">Report Description:</span>
+              <p className="mt-1 text-gray-700">
+                {selectedReport.reportDescription}
+              </p>
+            </div>
+
+            {selectedReport.reportImages &&
+              selectedReport.reportImages.length > 0 && (
+                <div className="mb-4">
+                  <span className="font-bold text-sm">Report Images:</span>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {selectedReport.reportImages.map((img, i) => (
+                      <Image
+                        key={i}
+                        src={img}
+                        alt={`Report image ${i + 1}`}
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(img, "_blank")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            <div className="text-xs text-gray-500">
+              <div>
+                Created: {new Date(selectedReport.createdAt).toLocaleString()}
+              </div>
+              <div>
+                Updated: {new Date(selectedReport.updatedAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {error && (
+        <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>
+      )}
+      {success && (
+        <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- BANNER SECTION ---
+type BannerItem = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type BannerInputForm = {
+  title: string;
+  description?: string;
+  imageUrl: string;
+  displayOrder?: number;
+  isActive?: boolean;
+  startDate?: Date | string;
+  endDate?: Date | string;
+};
+
+function BannerSection() {
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [selectedBanner, setSelectedBanner] = useState<BannerItem | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [form, setForm] = useState<BannerInputForm>({
+    title: "",
+    description: "",
+    imageUrl: "",
+    displayOrder: 0,
+    isActive: true,
+  });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+
+  const fetchBanners = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (isActiveFilter !== undefined) {
+        params.append("isActive", isActiveFilter.toString());
+      }
+      if (searchTerm) {
+        params.append("search", searchTerm);
+      }
+      params.append("limit", "50");
+      params.append("offset", "0");
+
+      const res = await fetch(`${API}/banner?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBanners(data.banners || []);
+      } else {
+        setError(data.message || "Failed to fetch banners");
+        setBanners([]);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch banners");
+      setBanners([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBanners();
+  }, [isActiveFilter]);
+
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    if (!form.title) {
+      setError("Title is required");
+      return;
+    }
+    if (!imageFile) {
+      setError("Image file is required");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("title", form.title);
+      if (form.description) {
+        formData.append("description", form.description);
+      }
+      formData.append("isActive", form.isActive ? "true" : "false");
+      if (form.startDate) {
+        formData.append("startDate", new Date(form.startDate).toISOString());
+      }
+      if (form.endDate) {
+        formData.append("endDate", new Date(form.endDate).toISOString());
+      }
+
+      const res = await fetch(`${API}/banner`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner created successfully!");
+        setModalOpen(false);
+        setForm({ title: "", description: "", imageUrl: "", displayOrder: 0, isActive: true });
+        setImageFile(null);
+        setImagePreview("");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to create banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to create banner");
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBanner) return;
+    setError("");
+    setSuccess("");
+    try {
+      const formData = new FormData();
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+      if (form.title) {
+        formData.append("title", form.title);
+      }
+      if (form.description !== undefined) {
+        formData.append("description", form.description || "");
+      }
+      if (form.isActive !== undefined) {
+        formData.append("isActive", form.isActive ? "true" : "false");
+      }
+      if (form.startDate) {
+        formData.append("startDate", new Date(form.startDate).toISOString());
+      }
+      if (form.endDate) {
+        formData.append("endDate", new Date(form.endDate).toISOString());
+      }
+
+      const res = await fetch(`${API}/banner/${selectedBanner.id}`, {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner updated successfully!");
+        setModalOpen(false);
+        setIsEditing(false);
+        setSelectedBanner(null);
+        setImageFile(null);
+        setImagePreview("");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to update banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update banner");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this banner?")) return;
+    setError("");
+    try {
+      const res = await fetch(`${API}/banner/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess("Banner deleted successfully!");
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to delete banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to delete banner");
+    }
+  };
+
+  const handleToggleActive = async (banner: BannerItem) => {
+    setError("");
+    try {
+      const res = await fetch(`${API}/banner/${banner.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !banner.isActive }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(`Banner ${banner.isActive ? "deactivated" : "activated"} successfully!`);
+        fetchBanners();
+      } else {
+        setError(data.message || "Failed to update banner");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update banner");
+    }
+  };
+
+  const openEditModal = (banner: BannerItem) => {
+    setSelectedBanner(banner);
+    setForm({
+      title: banner.title,
+      description: banner.description || "",
+      imageUrl: banner.imageUrl,
+      displayOrder: banner.displayOrder,
+      isActive: banner.isActive,
+      startDate: banner.startDate,
+      endDate: banner.endDate,
+    });
+    setImageFile(null);
+    setImagePreview(banner.imageUrl);
+    setIsEditing(true);
+    setModalOpen(true);
+  };
+
+  const openCreateModal = () => {
+    setSelectedBanner(null);
+    setForm({ title: "", description: "", imageUrl: "", displayOrder: 0, isActive: true });
+    setImageFile(null);
+    setImagePreview("");
+    setIsEditing(false);
+    setModalOpen(true);
+  };
+
+  const filteredBanners = banners.filter((banner) => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      banner.title.toLowerCase().includes(search) ||
+      (banner.description && banner.description.toLowerCase().includes(search))
+    );
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Banner Management</h2>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 text-gruvbox-orange hover:underline" onClick={fetchBanners}>
+            <IconRefresh size={16} /> Refresh
+          </button>
+          <button className="flex items-center gap-2 bg-gruvbox-orange text-white px-4 py-2 rounded hover:bg-orange-600" onClick={openCreateModal}>
+            <IconPlus size={16} /> Add Banner
+          </button>
+        </div>
+      </div>
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <input className="flex-1 min-w-64 border rounded px-3 py-1 text-sm" placeholder="Search banners by title or description..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <select className="border rounded px-3 py-1 text-sm" value={isActiveFilter === undefined ? "all" : isActiveFilter ? "active" : "inactive"} onChange={(e) => { if (e.target.value === "all") setIsActiveFilter(undefined); else setIsActiveFilter(e.target.value === "active"); }}>
+          <option value="all">All Banners</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+      </div>
+      {loading ? <div>Loading...</div> : filteredBanners.length === 0 ? <div className="text-gray-500">No banners found.</div> : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredBanners.map((banner) => (
+            <div key={banner.id} className={`border rounded p-4 bg-white ${!banner.isActive ? "opacity-60" : ""}`}>
+              <div className="relative mb-3">
+                <Image src={banner.imageUrl} alt={banner.title} width={400} height={200} className="w-full h-40 object-cover rounded" />
+                {!banner.isActive && <div className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">Inactive</div>}
+              </div>
+              <h3 className="font-bold text-lg mb-1">{banner.title}</h3>
+              {banner.description && <p className="text-sm text-gray-600 mb-2 line-clamp-2">{banner.description}</p>}
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                {banner.linkUrl && <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Link</a>}
+              </div>
+              <div className="flex gap-2">
+                <button className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700" onClick={() => openEditModal(banner)}>
+                  <IconEdit size={14} /> Edit
+                </button>
+                <button className="flex items-center justify-center gap-1 bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700" onClick={() => handleToggleActive(banner)} title={banner.isActive ? "Deactivate" : "Activate"}>
+                  {banner.isActive ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+                </button>
+                <button className="flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700" onClick={() => handleDelete(banner.id)}>
+                  <IconTrash size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); }} title={isEditing ? "Edit Banner" : "Create Banner"}>
+        <form onSubmit={isEditing ? handleUpdate : handleCreate}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold mb-1">Title *</label>
+              <input type="text" className="w-full border rounded px-3 py-2" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Description</label>
+              <textarea className="w-full border rounded px-3 py-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} rows={3} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Banner Image *</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full border rounded px-3 py-2"
+                onChange={handleImageChange}
+                required={!isEditing}
+              />
+              {(imagePreview || (isEditing && form.imageUrl)) && (
+                <div className="mt-2">
+                  <Image
+                    src={imagePreview || form.imageUrl}
+                    alt="Preview"
+                    width={400}
+                    height={200}
+                    className="w-full h-40 object-cover rounded"
+                    onError={() => setError("Failed to load image")}
+                  />
+                </div>
+              )}
+              {isEditing && !imageFile && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty to keep current image, or upload a new one to replace it.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">Active</label>
+              <select className="w-full border rounded px-3 py-2" value={form.isActive ? "true" : "false"} onChange={(e) => setForm({ ...form, isActive: e.target.value === "true" })}>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+              {form.isActive && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Display order will be automatically assigned based on active banners count.
+                </p>
+              )}
+              {!form.isActive && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Inactive banners will not be displayed and don't have a display order.
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold mb-1">Start Date (optional)</label>
+                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.startDate ? new Date(form.startDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, startDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">End Date (optional)</label>
+                <input type="datetime-local" className="w-full border rounded px-3 py-2" value={form.endDate ? new Date(form.endDate).toISOString().slice(0, 16) : ""} onChange={(e) => setForm({ ...form, endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" className="flex-1 bg-gruvbox-orange text-white py-2 rounded font-bold">{isEditing ? "Update" : "Create"} Banner</button>
+              <button type="button" className="flex-1 bg-gray-600 text-white py-2 rounded font-bold" onClick={() => { setModalOpen(false); setIsEditing(false); setSelectedBanner(null); setImageFile(null); setImagePreview(""); }}>Cancel</button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+      {error && <div className="mt-4 text-red-600 bg-red-100 p-2 rounded">{error}</div>}
+      {success && <div className="mt-4 text-green-600 bg-green-100 p-2 rounded">{success}</div>}
     </div>
   );
 }

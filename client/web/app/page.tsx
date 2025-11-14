@@ -26,6 +26,7 @@ import { getVibesWithWishlist } from "./_apis/common/wishlist";
 import { useAuth } from "./_contexts/AuthContext";
 import { log } from "console";
 import Cookies from "js-cookie";
+import BannerCarousel from "./_components/banner/BannerCarousel";
 
 // Vibe Card Component
 function VibeCard({ vibe }: { vibe: any }) {
@@ -274,6 +275,13 @@ export default function HomePage() {
           </form>
         </div>
       </section>
+
+      {/* Active Banners Carousel */}
+      <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 px-4">
+        <div className="max-w-7xl mx-auto">
+          <BannerCarousel />
+        </div>
+      </div>
       <div className="bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg2 border-b border-gruvbox-gray sticky top-0 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* Categories */}

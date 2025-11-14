@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   // Environment variables
   env: {
     NEXT_PUBLIC_API_ENDPOINT: process.env.NEXT_PUBLIC_API_ENDPOINT,
+    NEXT_CLOUD_API_IMAGE: process.env.NEXT_CLOUD_API_IMAGE,
   },
   allowedDevOrigins: ["*"],
 

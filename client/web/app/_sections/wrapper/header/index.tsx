@@ -59,6 +59,12 @@ export default function Header() {
               About
             </Link>
             <Link
+              href="/feedback"
+              className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
+            >
+              Feedback
+            </Link>
+            <Link
               href="/settings"
               className="text-gruvbox-light-fg0 dark:text-gruvbox-dark-fg0 hover:text-gruvbox-orange transition-colors font-medium"
             >

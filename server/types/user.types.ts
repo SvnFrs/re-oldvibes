@@ -33,10 +33,15 @@ export interface UserResponse {
   followersCount: number;
   followingCount: number;
   isVerified: boolean;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface UpdateUserInput {
   name?: string;
+  username?: string;
+  email?: string;
   bio?: string;
   profilePicture?: string;
 }

@@ -12,7 +12,7 @@ export class UserModel {
   async create(userData: RegisterInput): Promise<IUser> {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-    
+
     const user = new User({
       ...userData,
       password: hashedPassword,
@@ -47,10 +47,10 @@ export class UserModel {
   async getByIdWithPassword(id: string): Promise<IUser | null> {
     return await User.findById(id);
   }
-  
+
   async validatePassword(
     email: string,
-    password: string,
+    password: string
   ): Promise<IUser | null> {
     const user = await User.findOne({ email, isActive: true });
     if (!user || !user.password) return null;
@@ -59,7 +59,10 @@ export class UserModel {
     return isValid ? user : null;
   }
 
-  async linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null> {
+  async linkGoogleAccount(
+    userId: string,
+    googleId: string
+  ): Promise<IUser | null> {
     return await User.findByIdAndUpdate(
       userId,
       {
@@ -76,12 +79,12 @@ export class UserModel {
     updateData: UpdateUserInput & {
       isEmailVerified?: boolean;
       isVerified?: boolean;
-    },
+    }
   ): Promise<IUser | null> {
     return await User.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     ).select("-password");
   }
 
@@ -150,9 +153,34 @@ export class UserModel {
     };
   }
 
+  async getUserProfileById(userId: string): Promise<UserResponse | null> {
+    const user = await User.findById(userId)
+      .select("-password")
+      .populate("followers", "username")
+      .populate("following", "username");
+
+    if (!user) return null;
+
+    return {
+      id: user._id!.toString(),
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      role: user.role,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      followersCount: user.followers.length,
+      followingCount: user.following.length,
+      isVerified: user.isVerified,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
   async searchUsers(
     query: string,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<UserResponse[]> {
     const users = await User.find({
       $or: [
@@ -253,12 +281,12 @@ export class UserModel {
     staffId: string,
     updateData: Partial<
       Pick<IUser, "name" | "email" | "username" | "bio" | "profilePicture">
-    >,
+    >
   ): Promise<IUser | null> {
     return await User.findOneAndUpdate(
       { _id: staffId, role: "staff", isActive: true },
       { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     ).select("-password");
   }
 
@@ -266,7 +294,7 @@ export class UserModel {
   async deleteStaff(staffId: string): Promise<boolean> {
     const result = await User.findOneAndUpdate(
       { _id: staffId, role: "staff", isActive: true },
-      { isActive: false, updatedAt: new Date() },
+      { isActive: false, updatedAt: new Date() }
     );
     return !!result;
   }
@@ -274,7 +302,7 @@ export class UserModel {
   // List all staff (admin only)
   async listStaff(): Promise<IUser[]> {
     return await User.find({ role: "staff", isActive: true }).select(
-      "-password",
+      "-password"
     );
   }
 
@@ -316,12 +344,29 @@ export class UserModel {
       .limit(limit);
   }
 
-  async updatePassword(userId: string, hashedPassword: string): Promise<boolean> {
+  async updatePassword(
+    userId: string,
+    hashedPassword: string
+  ): Promise<boolean> {
     const result = await User.findByIdAndUpdate(
       userId,
-      { 
+      {
         password: hashedPassword,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+    return !!result;
+  }
+
+  // Soft delete user account
+  async softDeleteAccount(userId: string): Promise<boolean> {
+    const result = await User.findByIdAndUpdate(
+      userId,
+      {
+        isActive: false,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
       },
       { new: true }
     );

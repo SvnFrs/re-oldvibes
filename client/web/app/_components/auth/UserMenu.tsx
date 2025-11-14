@@ -10,6 +10,8 @@ import {
   IconChevronDown,
   IconAlertTriangle,
   IconBan,
+  IconMessageCircle,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
 import { ShoppingBasket } from "lucide-react";
@@ -76,14 +78,14 @@ export default function UserMenu() {
               {badBehaviorCount}
             </div>
           )}
-          
+
           {/* Ban Badge */}
           {isBanned && (
             <div className="absolute -top-1 -right-1 bg-gruvbox-red-light dark:bg-gruvbox-red-dark text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gruvbox-light-bg0 dark:border-gruvbox-dark-bg0 z-10">
               !
             </div>
           )}
-          
+
           <div className="w-8 h-8 bg-gruvbox-orange rounded-full flex items-center justify-center">
             {user.profilePicture ? (
               <img
@@ -123,7 +125,10 @@ export default function UserMenu() {
               {hasViolations && (
                 <div className="mx-2 mt-2 p-2 bg-gruvbox-yellow-light/10 dark:bg-gruvbox-yellow-dark/10 border border-gruvbox-yellow-light dark:border-gruvbox-yellow-dark rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
-                    <IconAlertTriangle size={14} className="text-gruvbox-yellow-light dark:text-gruvbox-yellow-dark flex-shrink-0" />
+                    <IconAlertTriangle
+                      size={14}
+                      className="text-gruvbox-yellow-light dark:text-gruvbox-yellow-dark flex-shrink-0"
+                    />
                     <span className="text-xs font-bold text-gruvbox-yellow-light dark:text-gruvbox-yellow-dark">
                       Warning: {badBehaviorCount}/3 Strikes
                     </span>
@@ -138,7 +143,10 @@ export default function UserMenu() {
               {isBanned && (
                 <div className="mx-2 mt-2 p-2 bg-gruvbox-red-light/10 dark:bg-gruvbox-red-dark/10 border border-gruvbox-red-light dark:border-gruvbox-red-dark rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
-                    <IconBan size={14} className="text-gruvbox-red-light dark:text-gruvbox-red-dark flex-shrink-0" />
+                    <IconBan
+                      size={14}
+                      className="text-gruvbox-red-light dark:text-gruvbox-red-dark flex-shrink-0"
+                    />
                     <span className="text-xs font-bold text-gruvbox-red-light dark:text-gruvbox-red-dark">
                       Account Banned
                     </span>
@@ -156,14 +164,14 @@ export default function UserMenu() {
                 </div>
               )}
 
-              <Link
+              {/* <Link
                 href="/profile"
                 className="flex items-center px-4 py-2 text-sm text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <IconUser className="w-4 h-4 mr-3" />
                 Profile
-              </Link>
+              </Link> */}
 
               <Link
                 href="/settings"
@@ -172,6 +180,15 @@ export default function UserMenu() {
               >
                 <IconSettings className="w-4 h-4 mr-3" />
                 Settings
+              </Link>
+
+              <Link
+                href="/feedback"
+                className="flex items-center px-4 py-2 text-sm text-gruvbox-light-fg1 dark:text-gruvbox-dark-fg1 hover:bg-gruvbox-light-bg2 dark:hover:bg-gruvbox-dark-bg2 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <IconInfoCircle className="w-4 h-4 mr-3" />
+                Feedback
               </Link>
 
               <button

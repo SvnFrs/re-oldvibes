@@ -1,0 +1,394 @@
+@startuml Create Staff
+title Sequence Diagram: Create Staff
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "User Model" as UserModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Fill staff form\n(email, password, name, username)
+Frontend -> Router: POST /api/admin/staff\n{email, password, name, username}
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid, user authenticated
+Router -> Role: requireAdmin()
+Role -> Role: Check user role = "admin"
+Role -> Router: Role check passed
+Router -> Controller: addStaff(req, res)
+Controller -> Controller: Validate required fields
+Controller -> UserModel: getByEmail(email)
+UserModel -> DB: Query User by email
+DB -> UserModel: Result
+UserModel -> Controller: Email exists? (No)
+Controller -> UserModel: getByUsername(username)
+UserModel -> DB: Query User by username
+DB -> UserModel: Result
+UserModel -> Controller: Username exists? (No)
+Controller -> UserModel: createStaff({email, password, name, username, role: "staff"})
+UserModel -> UserModel: Hash password with bcrypt
+UserModel -> DB: Save new User document
+DB -> UserModel: Saved user
+UserModel -> Controller: Staff created
+Controller -> Frontend: 201 Created\n{message, staff}
+Frontend -> Admin: Show success message
+@enduml
+
+@startuml Show Staff
+title Sequence Diagram: Show Staff List
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "User Model" as UserModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Navigate to Staff Management
+Frontend -> Router: GET /api/admin/staff\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid, user authenticated
+Router -> Role: requireAdmin()
+Role -> Role: Check user role = "admin"
+Role -> Router: Role check passed
+Router -> Controller: listStaff(req, res)
+Controller -> UserModel: listStaff()
+UserModel -> DB: Find User\n{role: "staff", isActive: true}\nSelect: -password
+DB -> UserModel: Staff array
+UserModel -> Controller: Staff list
+Controller -> Controller: Map staff data\n(id, email, name, username, role)
+Controller -> Frontend: 200 OK\n{staff: [...]}
+Frontend -> Frontend: Set staff state
+Frontend -> Admin: Display staff table
+@enduml
+
+@startuml Show Vibe List (Admin)
+title Sequence Diagram: Show Vibe List (Admin)
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "Vibe Model" as VibeModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Navigate to Show Vibes tab
+Frontend -> Frontend: Build query params\n(status, sortBy, limit, offset)
+Frontend -> Router: GET /api/admin/vibes?\nstatus=all&sortBy=newest&limit=20&offset=0\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getAllVibesAdmin(req, res)
+Controller -> Controller: Extract query params\n(status, limit, offset, sortBy)
+Controller -> VibeModel: getAllVibesAdmin(filters)
+VibeModel -> VibeModel: Build query\n(apply status filter, sort criteria)
+VibeModel -> DB: Count total vibes\nFind vibes with pagination\nPopulate userId
+DB -> VibeModel: Vibes array + total count
+VibeModel -> VibeModel: Format vibe responses
+VibeModel -> Controller: {data, pagination, totalCount}
+Controller -> Frontend: 200 OK\n{vibes, pagination, totalCount}
+Frontend -> Frontend: Set vibes state\nSet totalPages
+Frontend -> Admin: Display vibe grid with cards
+@enduml
+
+@startuml Show Vibe Detail (Admin)
+title Sequence Diagram: Show Vibe Detail (Admin)
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "Vibe Model" as VibeModel
+participant "Comment Model" as CommentModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Click "View Details" on vibe card
+Frontend -> Router: GET /api/admin/vibes/{vibeId}\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getVibeDetailAdmin(req, res)
+Controller -> Controller: Extract vibeId from params
+Controller -> Controller: Validate vibeId
+Controller -> VibeModel: getById(vibeId)
+VibeModel -> DB: Find Vibe by ID\nPopulate userId
+DB -> VibeModel: Vibe document
+VibeModel -> Controller: Vibe object
+alt Vibe not found
+    Controller -> Frontend: 404 Not Found\n{message: "Vibe not found"}
+else Vibe found
+    Controller -> CommentModel: getCommentsByVibe({vibeId, limit: 10, offset: 0, sortBy: "newest"})
+    CommentModel -> DB: Find Comments\n{vibeId, parentComment: null, isActive: true}\nPopulate userId\nSort by createdAt desc\nLimit 10
+    DB -> CommentModel: Comments array + total
+    CommentModel -> Controller: {comments, total}
+    Controller -> Frontend: 200 OK\n{vibe, comments, commentsCount}
+    Frontend -> Frontend: Set selectedVibe\nOpen modal
+    Frontend -> Admin: Display vibe detail modal\n(with comments)
+end
+@enduml
+
+@startuml Filter Vibe (Admin)
+title Sequence Diagram: Filter Vibe (Admin)
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "Vibe Model" as VibeModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Apply filters\n(name, category, minPrice, maxPrice, condition, status)
+Frontend -> Frontend: Build query params
+Frontend -> Router: GET /api/admin/vibes/filter?\nname=...&category=...&minPrice=...&maxPrice=...\n&condition=...&status=...&limit=20&offset=0\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getVibesWithFilters(req, res)
+Controller -> Controller: Extract query params
+Controller -> Controller: Build filters object
+Controller -> VibeModel: getVibesWithFilters(filters)
+VibeModel -> VibeModel: Build MongoDB query\n(name regex, category, condition,\nprice range, status)
+VibeModel -> DB: Count documents matching query
+DB -> VibeModel: Total count
+VibeModel -> DB: Find vibes\nApply query\nPopulate userId\nSort by createdAt desc\nSkip offset, Limit limit
+DB -> VibeModel: Vibes array
+VibeModel -> VibeModel: Format vibe responses
+VibeModel -> Controller: {data, pagination}
+Controller -> Frontend: 200 OK\n{vibes, pagination, filters}
+Frontend -> Frontend: Filter vibes by searchTerm\n(if client-side search)
+Frontend -> Admin: Display filtered vibe grid
+@enduml
+
+@startuml Create Comment
+title Sequence Diagram: Create Comment
+
+actor User
+participant "Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Validation Middleware" as Validation
+participant "Comment Controller" as Controller
+participant "User Model" as UserModel
+participant "Vibe Model" as VibeModel
+participant "Moderation Service" as Moderation
+participant "Comment Model" as CommentModel
+database "MongoDB" as DB
+
+User -> Frontend: Type comment content\nClick submit
+Frontend -> Router: POST /api/vibes/{vibeId}/comments\n{content, parentCommentId?}\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid, user authenticated
+Router -> Role: requireUser()
+Role -> Role: Check user role
+Role -> Router: Role check passed
+Router -> Validation: validateCommentCreation()
+Validation -> Validation: Validate content (required, maxLength)
+Validation -> Router: Validation passed
+Router -> Controller: createComment(req, res)
+Controller -> Controller: Extract vibeId, userId, commentData
+Controller -> UserModel: Find user by userId
+UserModel -> DB: Find User by ID
+DB -> UserModel: User document
+UserModel -> Controller: User object
+alt User is temp banned
+    Controller -> Frontend: 403 Forbidden\n{message: "Temporarily banned", reason, badBehaviorCount}
+    Frontend -> User: Show ban message
+else User not temp banned
+    Controller -> VibeModel: getById(vibeId)
+    VibeModel -> DB: Find Vibe by ID
+    DB -> VibeModel: Vibe document
+    VibeModel -> Controller: Vibe object
+    alt Vibe not found or not approved
+        Controller -> Frontend: 404 Not Found\n{message: "Vibe not available"}
+        Frontend -> User: Show error message
+    else Vibe found and approved
+        Controller -> Moderation: moderateComment(content, vibe.itemName)
+        Moderation -> Moderation: Call Gemini AI\nCheck for violations
+        Moderation -> Controller: {isClean, reason?, categories?, confidence}
+        alt Comment violates guidelines
+            Controller -> Controller: Increment badBehaviorCount\nAdd to badBehaviorHistory
+            alt badBehaviorCount >= 3
+                Controller -> Controller: Set isTempBanned = true\nSet tempBanReason, tempBanAt
+            end
+            Controller -> UserModel: Save user with updated bad behavior
+            UserModel -> DB: Update User document
+            DB -> UserModel: Updated
+            Controller -> Frontend: 400 Bad Request\n{message: "Comment violates guidelines",\nreason, categories, badBehaviorCount, warning}
+            Frontend -> User: Show moderation warning
+        else Comment is clean
+            alt parentCommentId provided
+                Controller -> CommentModel: getById(parentCommentId)
+                CommentModel -> DB: Find Comment by ID
+                DB -> CommentModel: Parent comment
+                CommentModel -> Controller: Parent comment
+                alt Parent comment not found
+                    Controller -> Frontend: 404 Not Found\n{message: "Parent comment not found"}
+                    Frontend -> User: Show error
+                else Parent comment found
+                    Controller -> CommentModel: create(userId, vibeId, commentData)
+                    CommentModel -> DB: Save new Comment document
+                    DB -> CommentModel: Saved comment
+                    CommentModel -> DB: Update Vibe commentsCount (+1)
+                    CommentModel -> DB: Update parent Comment repliesCount (+1)
+                    DB -> CommentModel: Updated
+                    CommentModel -> Controller: New comment
+                    Controller -> Frontend: 201 Created\n{message, comment, moderationInfo}
+                    Frontend -> User: Show comment in list
+                end
+            else No parent comment
+                Controller -> CommentModel: create(userId, vibeId, commentData)
+                CommentModel -> DB: Save new Comment document
+                DB -> CommentModel: Saved comment
+                CommentModel -> DB: Update Vibe commentsCount (+1)
+                DB -> CommentModel: Updated
+                CommentModel -> Controller: New comment
+                Controller -> Frontend: 201 Created\n{message, comment, moderationInfo}
+                Frontend -> User: Show comment in list
+            end
+        end
+    end
+end
+@enduml
+
+@startuml Comment Filter by Vibe
+title Sequence Diagram: Comment Filter by Vibe (Admin)
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "Comment Model" as CommentModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Select vibe to view comments\n(or apply search/filter)
+Frontend -> Frontend: Build query params\n(vibeId, limit, offset, sortBy, search)
+Frontend -> Router: GET /api/admin/vibes/{vibeId}/comments?\nlimit=20&offset=0&sortBy=newest&search=...\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getCommentsByVibe(req, res)
+Controller -> Controller: Extract vibeId from params
+Controller -> Controller: Extract query params\n(limit, offset, sortBy, search)
+Controller -> Controller: Validate vibeId
+alt vibeId missing
+    Controller -> Frontend: 400 Bad Request\n{message: "Vibe ID is required"}
+    Frontend -> Admin: Show error message
+else vibeId valid
+    Controller -> Controller: Build filters object
+    Controller -> CommentModel: getCommentsByVibe(filters)
+    CommentModel -> CommentModel: Build sort criteria\n(newest/oldest/likes)
+    CommentModel -> CommentModel: Build query\n{vibeId, parentComment: null, isActive: true}
+    alt search provided
+        CommentModel -> CommentModel: Add content regex search to query
+    end
+    CommentModel -> DB: Count Comments matching query
+    DB -> CommentModel: Total count
+    CommentModel -> DB: Find Comments\nApply query\nPopulate userId\nApply sort\nSkip offset, Limit limit
+    DB -> CommentModel: Comments array
+    CommentModel -> CommentModel: Format comment responses
+    CommentModel -> Controller: {comments, total, hasMore}
+    Controller -> Frontend: 200 OK\n{comments, pagination: {total, limit, offset, hasMore}}
+    Frontend -> Frontend: Set comments state
+    Frontend -> Admin: Display filtered comments list
+end
+@enduml
+
+@startuml Show Comment List (Admin)
+title Sequence Diagram: Show Comment List (Admin)
+
+actor Admin
+participant "Admin Frontend" as Frontend
+participant "Express Router" as Router
+participant "Auth Middleware" as Auth
+participant "Role Middleware" as Role
+participant "Admin Controller" as Controller
+participant "Vibe Model" as VibeModel
+participant "Comment Model" as CommentModel
+database "MongoDB" as DB
+
+Admin -> Frontend: Navigate to Comment Moderation tab
+Frontend -> Frontend: Initialize component\nSet loading = true
+
+== Step 1: Fetch Vibes for Selection ==
+Frontend -> Router: GET /api/admin/vibes?limit=100\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getAllVibesAdmin(req, res)
+Controller -> Controller: Extract query params
+Controller -> VibeModel: getAllVibesAdmin(filters)
+VibeModel -> DB: Find vibes\nPopulate userId\nLimit 100
+DB -> VibeModel: Vibes array
+VibeModel -> Controller: {data, pagination, totalCount}
+Controller -> Frontend: 200 OK\n{vibes}
+Frontend -> Frontend: Set vibes state\nSet loading = false
+Frontend -> Admin: Display vibe dropdown selector
+
+== Step 2: Select Vibe and Fetch Comments ==
+Admin -> Frontend: Select vibe from dropdown\n(or change search/sort options)
+Frontend -> Frontend: Set selectedVibe\nBuild query params\n(limit, offset, sortBy, search)
+Frontend -> Router: GET /api/admin/vibes/{vibeId}/comments?\nlimit=50&offset=0&sortBy=newest&search=...\n(credentials: include)
+Router -> Auth: authenticateToken()
+Auth -> Auth: Verify JWT token
+Auth -> Router: Token valid
+Router -> Role: requireStaff()
+Role -> Role: Check user role = "admin" OR "staff"
+Role -> Router: Role check passed
+Router -> Controller: getCommentsByVibe(req, res)
+Controller -> Controller: Extract vibeId from params
+Controller -> Controller: Extract query params\n(limit, offset, sortBy, search)
+Controller -> Controller: Validate vibeId
+alt vibeId missing
+    Controller -> Frontend: 400 Bad Request\n{message: "Vibe ID is required"}
+    Frontend -> Admin: Show error message
+else vibeId valid
+    Controller -> Controller: Build filters object
+    Controller -> CommentModel: getCommentsByVibe(filters)
+    CommentModel -> CommentModel: Build sort criteria\n(newest/oldest/likes)
+    CommentModel -> CommentModel: Build query\n{vibeId, parentComment: null, isActive: true}
+    alt search provided
+        CommentModel -> CommentModel: Add content regex search to query
+    end
+    CommentModel -> DB: Count Comments matching query
+    DB -> CommentModel: Total count
+    CommentModel -> DB: Find Comments\nApply query\nPopulate userId\nApply sort\nSkip offset, Limit limit
+    DB -> CommentModel: Comments array
+    CommentModel -> CommentModel: Format comment responses\n(Include user info, likes, replies count)
+    CommentModel -> Controller: {comments, total, hasMore}
+    Controller -> Frontend: 200 OK\n{comments, pagination: {total, limit, offset, hasMore}}
+    Frontend -> Frontend: Set comments state\nUpdate selectedVibe
+    Frontend -> Admin: Display comment list\nShow vibe name and comment count\nDisplay comment cards with:\n- User info\n- Comment content\n- Timestamp\n- Likes count\n- Vibe name\n- Ban button (if needed)
+end
+@enduml
+

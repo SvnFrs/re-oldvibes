@@ -1,0 +1,478 @@
+@startuml Vibe Management (Admin)
+title Class Diagram: Vibe Management for Admin
+
+package "Admin Controllers" {
+  class AdminController {
+    +getAllVibesAdmin(req, res): Promise<void>
+    +getVibeDetailAdmin(req, res): Promise<void>
+    +getVibesWithFilters(req, res): Promise<void>
+    --
+    -vibeModel: VibeModel
+  }
+}
+
+package "Vibe Model" {
+  class VibeModel {
+    +getAllVibesAdmin(filters): Promise<{data, pagination, totalCount}>
+    +getVibesWithFilters(filters): Promise<PaginatedResponse<VibeResponse>>
+    +getById(vibeId, userId?): Promise<VibeResponse | null>
+    +formatVibeResponse(vibe, userId?): VibeResponse
+    --
+    -buildQuery(filters): any
+    -buildSortCriteria(sortBy): any
+  }
+}
+
+package "Routes" {
+  class AdminRoutes {
+    +GET /admin/vibes
+    +GET /admin/vibes/:vibeId
+    +GET /admin/vibes/filter
+    --
+    +authenticateToken()
+    +requireStaff()
+  }
+}
+
+package "Middleware" {
+  class AuthMiddleware {
+    +authenticateToken(req, res, next): void
+    -verifyToken(token): JWTPayload
+  }
+  
+  class RoleMiddleware {
+    +requireStaff(req, res, next): Promise<void>
+    +requireAdmin(req, res, next): Promise<void>
+    -checkRole(user, allowedRoles): boolean
+  }
+}
+
+package "Types" {
+  class VibeResponse {
+    +id: string
+    +userId: string
+    +user: UserInfo
+    +itemName: string
+    +description: string
+    +price: number
+    +status: VibeStatus
+    +category: string
+    +condition: string
+    +location: string
+    +tags: string[]
+    +mediaFiles: string[]
+    +likesCount: number
+    +commentsCount: number
+    +views: number
+    +isLiked?: boolean
+    +createdAt: Date
+    +updatedAt: Date
+  }
+  
+  class VibeFilters {
+    +name?: string
+    +category?: string
+    +minPrice?: number
+    +maxPrice?: number
+    +condition?: string
+    +status?: string
+    +limit: number
+    +offset: number
+    +sortBy?: string
+  }
+  
+  enum VibeStatus {
+    pending
+    approved
+    rejected
+    sold
+    archived
+  }
+}
+
+package "Schema" {
+  class VibeSchema {
+    +_id: ObjectId
+    +userId: ObjectId
+    +itemName: string
+    +description: string
+    +price: number
+    +status: VibeStatus
+    +category: string
+    +condition: string
+    +location: string
+    +tags: string[]
+    +mediaFiles: string[]
+    +likes: ObjectId[]
+    +commentsCount: number
+    +views: number
+    +expiresAt?: Date
+    +createdAt: Date
+    +updatedAt: Date
+  }
+}
+
+' Relationships
+AdminRoutes --> AuthMiddleware : uses
+AdminRoutes --> RoleMiddleware : uses
+AdminRoutes --> AdminController : routes to
+
+AdminController --> VibeModel : uses
+
+VibeModel --> VibeSchema : queries
+VibeModel --> VibeResponse : returns
+VibeModel --> VibeFilters : accepts
+
+AdminController --> VibeResponse : returns
+AdminController --> VibeFilters : accepts
+
+VibeResponse --> VibeStatus : uses
+VibeFilters --> VibeStatus : uses
+
+VibeSchema --> VibeStatus : uses
+
+note right of AdminController
+  Admin endpoints:
+  - getAllVibesAdmin: List all vibes
+    with pagination and filters
+  - getVibeDetailAdmin: Get single vibe
+    with comments
+  - getVibesWithFilters: Advanced filtering
+    by name, category, price, etc.
+end note
+
+note right of VibeModel
+  Methods handle:
+  - Status filtering
+  - Price range queries
+  - Category/condition filters
+  - Sorting (newest, oldest, price, likes, views)
+  - Pagination
+  - Response formatting
+end note
+
+@enduml
+
+@startuml Comment Management (Admin)
+title Class Diagram: Comment Management for Admin
+
+package "Admin Controllers" {
+  class AdminController {
+    +getCommentsByVibe(req, res): Promise<void>
+    +banUserForBadComment(req, res): Promise<void>
+    --
+    -commentModel: CommentModel
+    -userModel: UserModel
+    -detectBadComment(content): Promise<boolean>
+  }
+}
+
+package "Comment Model" {
+  class CommentModel {
+    +getCommentsByVibe(filters): Promise<{comments, total, hasMore}>
+    +getById(commentId): Promise<CommentResponse | null>
+    +formatCommentResponse(comment): CommentResponse
+    --
+    -buildQuery(filters): any
+    -buildSortCriteria(sortBy): any
+  }
+}
+
+package "User Model" {
+  class UserModel {
+    +banUser(userId): Promise<boolean>
+    +getRole(userId): Promise<string | null>
+  }
+}
+
+package "Routes" {
+  class AdminRoutes {
+    +GET /admin/vibes/:vibeId/comments
+    +POST /admin/users/ban-for-comment
+    --
+    +authenticateToken()
+    +requireStaff()
+  }
+}
+
+package "Middleware" {
+  class AuthMiddleware {
+    +authenticateToken(req, res, next): void
+    -verifyToken(token): JWTPayload
+  }
+  
+  class RoleMiddleware {
+    +requireStaff(req, res, next): Promise<void>
+    -checkRole(user, allowedRoles): boolean
+  }
+}
+
+package "Types" {
+  class CommentResponse {
+    +id: string
+    +vibeId: string
+    +userId: string
+    +user: UserInfo
+    +content: string
+    +parentCommentId?: string
+    +likesCount: number
+    +repliesCount: number
+    +isLiked?: boolean
+    +isActive: boolean
+    +createdAt: Date
+    +updatedAt: Date
+  }
+  
+  class CommentFilters {
+    +vibeId: string
+    +limit?: number
+    +offset?: number
+    +sortBy?: "newest" | "oldest" | "likes"
+    +search?: string
+  }
+  
+  class BanRequest {
+    +userId: string
+    +commentId: string
+    +reason?: string
+  }
+}
+
+package "Schema" {
+  class CommentSchema {
+    +_id: ObjectId
+    +vibeId: ObjectId
+    +userId: ObjectId
+    +content: string
+    +parentComment?: ObjectId
+    +likes: ObjectId[]
+    +repliesCount: number
+    +isActive: boolean
+    +createdAt: Date
+    +updatedAt: Date
+  }
+  
+  class UserSchema {
+    +_id: ObjectId
+    +role: UserRole
+    +isActive: boolean
+    +badBehaviorCount: number
+    +isTempBanned: boolean
+  }
+  
+  enum UserRole {
+    admin
+    staff
+    user
+  }
+}
+
+' Relationships
+AdminRoutes --> AuthMiddleware : uses
+AdminRoutes --> RoleMiddleware : uses
+AdminRoutes --> AdminController : routes to
+
+AdminController --> CommentModel : uses
+AdminController --> UserModel : uses
+
+CommentModel --> CommentSchema : queries
+CommentModel --> CommentResponse : returns
+CommentModel --> CommentFilters : accepts
+
+UserModel --> UserSchema : queries
+
+AdminController --> CommentResponse : returns
+AdminController --> CommentFilters : accepts
+AdminController --> BanRequest : accepts
+
+CommentResponse --> CommentFilters : uses
+CommentSchema --> UserSchema : references
+
+note right of AdminController
+  Admin comment management:
+  - getCommentsByVibe: View all comments
+    for a specific vibe with search/sort
+  - banUserForBadComment: Ban user for
+    inappropriate comment detected by AI
+end note
+
+note right of CommentModel
+  Handles:
+  - Filtering by vibe ID
+  - Search by content
+  - Sorting (newest, oldest, likes)
+  - Pagination
+  - Top-level comments only
+    (parentComment: null)
+end note
+
+note right of AdminController::detectBadComment
+  AI Detection Keywords:
+  - spam, scam, fake
+  - hate, abuse, harassment
+  - inappropriate, offensive
+  - vulgar, threat
+end note
+
+@enduml
+
+@startuml Staff Management
+title Class Diagram: Staff Management
+
+package "Admin Controllers" {
+  class AdminController {
+    +addStaff(req, res): Promise<void>
+    +editStaff(req, res): Promise<void>
+    +deleteStaff(req, res): Promise<void>
+    +listStaff(req, res): Promise<void>
+    --
+    -userModel: UserModel
+    -validateStaffData(data): boolean
+  }
+}
+
+package "User Model" {
+  class UserModel {
+    +createStaff(staffData): Promise<IUser>
+    +updateStaff(staffId, updateData): Promise<IUser | null>
+    +deleteStaff(staffId): Promise<boolean>
+    +listStaff(): Promise<IUser[]>
+    +getByEmail(email): Promise<IUser | null>
+    +getByUsername(username): Promise<IUser | null>
+    --
+    -hashPassword(password): Promise<string>
+  }
+}
+
+package "Routes" {
+  class AdminRoutes {
+    +POST /admin/staff
+    +PUT /admin/staff/:staffId
+    +DELETE /admin/staff/:staffId
+    +GET /admin/staff
+    --
+    +authenticateToken()
+    +requireAdmin()
+  }
+}
+
+package "Middleware" {
+  class AuthMiddleware {
+    +authenticateToken(req, res, next): void
+    -verifyToken(token): JWTPayload
+  }
+  
+  class RoleMiddleware {
+    +requireAdmin(req, res, next): Promise<void>
+    -checkRole(user, allowedRoles): boolean
+  }
+}
+
+package "Types" {
+  class StaffCreateInput {
+    +email: string
+    +password: string
+    +name: string
+    +username: string
+    +role: "staff"
+  }
+  
+  class StaffUpdateInput {
+    +email?: string
+    +name?: string
+    +username?: string
+    +bio?: string
+    +profilePicture?: string
+  }
+  
+  class StaffResponse {
+    +id: string
+    +email: string
+    +name: string
+    +username: string
+    +role: "staff"
+    +isActive: boolean
+    +isEmailVerified: boolean
+    +createdAt: Date
+    +updatedAt: Date
+  }
+}
+
+package "Schema" {
+  class UserSchema {
+    +_id: ObjectId
+    +email: string
+    +password: string (hashed)
+    +username: string
+    +name: string
+    +role: UserRole
+    +bio?: string
+    +profilePicture?: string
+    +isActive: boolean
+    +isEmailVerified: boolean
+    +badBehaviorCount: number
+    +isTempBanned: boolean
+    +createdAt: Date
+    +updatedAt: Date
+  }
+  
+  enum UserRole {
+    admin
+    staff
+    user
+  }
+}
+
+' Relationships
+AdminRoutes --> AuthMiddleware : uses
+AdminRoutes --> RoleMiddleware : uses
+AdminRoutes --> AdminController : routes to
+
+AdminController --> UserModel : uses
+
+UserModel --> UserSchema : queries/updates
+UserModel --> StaffCreateInput : accepts
+UserModel --> StaffUpdateInput : accepts
+
+AdminController --> StaffCreateInput : accepts
+AdminController --> StaffUpdateInput : accepts
+AdminController --> StaffResponse : returns
+
+StaffCreateInput --> UserRole : uses
+StaffUpdateInput --> UserRole : uses
+StaffResponse --> UserRole : uses
+
+UserSchema --> UserRole : uses
+
+note right of AdminController
+  Staff CRUD operations:
+  - addStaff: Create new staff member
+    (requires unique email/username)
+  - editStaff: Update staff info
+    (admin only)
+  - deleteStaff: Soft delete staff
+    (sets isActive = false)
+  - listStaff: Get all active staff
+end note
+
+note right of UserModel
+  Staff-specific methods:
+  - createStaff: Creates staff with
+    hashed password, auto-verified email
+  - updateStaff: Updates staff profile
+    (excludes password, role)
+  - deleteStaff: Soft delete
+    (isActive = false)
+  - listStaff: Returns active staff only
+end note
+
+note right of AdminRoutes
+  All staff routes require:
+  1. Authentication (JWT token)
+  2. Admin role (not staff)
+  
+  Only admin can manage staff.
+end note
+
+@enduml
+

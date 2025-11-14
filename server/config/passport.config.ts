@@ -29,13 +29,22 @@ passport.use(
         let user = await userModel.getByGoogleId(id);
         
         if (user) {
+          // Check if account is deleted
+          if (user.deletedAt) {
+            return done(new Error("This account has been deleted"), undefined);
+          }
           return done(null, user);
         }
 
-        // Check if user exists with this email
-        const existingUser = await userModel.getByEmail(email);
+        // Check if user exists with this email (including deleted accounts)
+        const { User } = await import("../schema/user.schema");
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
         
         if (existingUser) {
+          // Check if account is deleted
+          if (existingUser.deletedAt) {
+            return done(new Error("This account has been deleted"), undefined);
+          }
           // Link Google account to existing user
           await userModel.linkGoogleAccount(existingUser._id!.toString(), id);
           return done(null, existingUser);

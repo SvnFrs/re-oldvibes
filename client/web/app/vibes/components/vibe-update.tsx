@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogClose,
@@ -13,13 +13,92 @@ import {
 } from "@/app/_components/ui/dialog";
 import { Input } from "@/app/_components/ui/input";
 import { Label } from "@/app/_components/ui/label";
-import { IconTag } from "@tabler/icons-react";
+import {
+  IconTag,
+  IconUpload,
+  IconX,
+  IconPhoto,
+  IconVideo,
+  IconCurrencyDollar,
+} from "@tabler/icons-react";
+import Image from "next/image";
 import { updateVibe } from "../../_apis/common/vibes";
+import LocationPicker from "../../_components/upload/LocationPicker";
+import { useAuth } from "../../_contexts/AuthContext";
+import { uploadVibeMediaToBackend } from "../../_apis/common/upload";
+
+const CATEGORIES = [
+  "Electronics",
+  "Fashion",
+  "Books",
+  "Toys",
+  "Home",
+  "Sports",
+  "Beauty",
+  "Other",
+];
+
+const CONDITIONS = [
+  { value: "new", label: "New" },
+  { value: "like-new", label: "Like New" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+// Media Preview Component
+function MediaPreview({
+  url,
+  type,
+  onRemove,
+  isExisting = false,
+}: {
+  url: string;
+  type: "image" | "video";
+  onRemove: () => void;
+  isExisting?: boolean;
+}) {
+  const isValidUrl = url && url.trim() !== "";
+
+  return (
+    <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gruvbox-gray/20">
+      {isValidUrl ? (
+        type === "image" ? (
+          <Image src={url} alt="Preview" fill className="object-cover" />
+        ) : (
+          <video src={url} className="w-full h-full object-cover" />
+        )
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <IconPhoto className="w-6 h-6 text-gruvbox-gray" />
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onRemove();
+        }}
+        className="absolute top-1 right-1 w-6 h-6 bg-gruvbox-red text-white rounded-full flex items-center justify-center hover:bg-gruvbox-red/80 transition-colors z-10"
+      >
+        <IconX className="w-4 h-4" />
+      </button>
+      {isExisting && isValidUrl && (
+        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-1 py-0.5">
+          Existing
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function VibeUpdate({ data }: { data: any }) {
+  const { user } = useAuth();
   const [tags, setTags] = useState<string[]>(data?.tags || []);
   const [newTag, setNewTag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     itemName: data?.itemName || "",
     description: data?.description || "",
@@ -29,18 +108,37 @@ export function VibeUpdate({ data }: { data: any }) {
     location: data?.location || "",
   });
 
+  // Existing media files from the vibe
+  const [existingMedia, setExistingMedia] = useState<
+    { type: "image" | "video"; url: string; _id?: string }[]
+  >([]);
+  // Original media files to track what was removed
+  const [originalMedia, setOriginalMedia] = useState<
+    { type: "image" | "video"; url: string; _id?: string }[]
+  >([]);
+  // New media files to upload
+  const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
+  const [newMediaPreviews, setNewMediaPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Update form data when data prop changes
   useEffect(() => {
     if (data) {
       setFormData({
         itemName: data.itemName || "",
         description: data.description || "",
-        price: data.price || "",
+        price: data.price?.toString() || "",
         category: data.category || "",
         condition: data.condition || "",
         location: data.location || "",
       });
       setTags(data.tags || []);
+      const mediaFiles = data.mediaFiles || [];
+      setExistingMedia(mediaFiles);
+      setOriginalMedia(mediaFiles); // Store original to track deletions
+      setNewMediaFiles([]);
+      setNewMediaPreviews([]);
+      setError("");
     }
   }, [data]);
 
@@ -55,77 +153,6 @@ export function VibeUpdate({ data }: { data: any }) {
       [name]: value,
     }));
   };
-
-  const categories = [
-    "Electronics",
-    "Fashion",
-    "Books",
-    "Toys",
-    "Home",
-    "Sports",
-    "Beauty",
-    "Other",
-  ];
-
-  const conditions = ["new", "like-new", "good", "fair", "poor"];
-
-  const vietnameseCities = [
-    "Bà Rịa",
-    "Bạc Liêu",
-    "Bắc Giang",
-    "Bắc Ninh",
-    "Bến Tre",
-    "Biên Hòa",
-    "Buôn Ma Thuột",
-    "Cà Mau",
-    "Cam Ranh",
-    "Cần Thơ",
-    "Cao Bằng",
-    "Đà Lạt",
-    "Đà Nẵng",
-    "Điện Biên",
-    "Đông Hà",
-    "Đồng Hới",
-    "Hà Giang",
-    "Hà Nội",
-    "Hải Dương",
-    "Hải Phòng",
-    "Hòa Bình",
-    "Hội An",
-    "Huế",
-    "Hưng Yên",
-    "Lai Châu",
-    "Lạng Sơn",
-    "Lào Cai",
-    "Mỹ Tho",
-    "Nam Định",
-    "Nha Trang",
-    "Phan Rang",
-    "Phan Thiết",
-    "Phú Thọ",
-    "Pleiku",
-    "Quảng Ngãi",
-    "Quảng Ninh",
-    "Quảng Trị",
-    "Quy Nhơn",
-    "Rạch Giá",
-    "Sóc Trăng",
-    "Sơn La",
-    "Tam Kỳ",
-    "Tân An",
-    "Thái Bình",
-    "Thái Nguyên",
-    "Thanh Hóa",
-    "Thành phố Hồ Chí Minh",
-    "Thủ Dầu Một",
-    "Trà Vinh",
-    "Tuyên Quang",
-    "Tuy Hòa",
-    "Vinh",
-    "Vĩnh Phúc",
-    "Vũng Tàu",
-    "Yên Bái",
-  ];
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -145,24 +172,146 @@ export function VibeUpdate({ data }: { data: any }) {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    // Validate file types and sizes
+    const validFiles = files.filter((file) => {
+      const isValidType =
+        file.type.startsWith("image/") || file.type.startsWith("video/");
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB max
+
+      if (!isValidType) {
+        setError(`File ${file.name} is not a valid image or video`);
+        return false;
+      }
+
+      if (!isValidSize) {
+        setError(`File ${file.name} is too large (max 10MB)`);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (validFiles.length + existingMedia.length + newMediaFiles.length > 5) {
+      setError("Maximum 5 files allowed");
+      return;
+    }
+
+    // Create previews for new files
+    validFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setNewMediaPreviews((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    setNewMediaFiles((prev) => [...prev, ...validFiles]);
+    setError("");
+  };
+
+  const handleRemoveExistingMedia = (index: number) => {
+    setExistingMedia((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveNewMedia = (index: number) => {
+    setNewMediaFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewMediaPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (!data) return;
+
+    // Validate form
+    if (!formData.itemName.trim()) {
+      setError("Item name is required");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setError("Description is required");
+      return;
+    }
+
+    if (!formData.price || Number(formData.price) <= 0) {
+      setError("Price must be greater than 0");
+      return;
+    }
 
     setIsSubmitting(true);
 
-    const updateData = {
-      ...formData,
-      tags,
-      price: Number(formData.price),
-    };
-
     try {
-      const response = await updateVibe(data.id, data.userId, updateData);
+      const vibeId = data.id || data._id || "";
+      if (!vibeId) {
+        setError("Vibe ID is required");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Upload new media files to backend (AWS S3) if any
+      const newMediaFilesToUpload = newMediaFiles.filter((file) =>
+        file instanceof File
+      );
+      
+      if (newMediaFilesToUpload.length > 0) {
+        try {
+          await uploadVibeMediaToBackend(vibeId, newMediaFilesToUpload);
+        } catch (uploadError) {
+          setError(`Failed to upload media: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Calculate which media files were removed
+      const remainingMediaIds = existingMedia
+        .map((media) => media._id)
+        .filter((id) => id !== undefined);
+      const removedMediaIds = originalMedia
+        .filter((media) => media._id && !remainingMediaIds.includes(media._id))
+        .map((media) => media._id)
+        .filter((id): id is string => id !== undefined);
+
+      // Prepare remaining existing media (to keep) - these will be preserved
+      const mediaFilesToKeep = existingMedia.map((media) => ({
+        type: media.type,
+        url: media.url,
+        _id: media._id,
+      }));
+
+      const updateData = {
+        ...formData,
+        tags,
+        price: Number(formData.price),
+        // Include remaining media files (existing media that are kept)
+        mediaFiles: mediaFilesToKeep,
+        // Include IDs of media files to remove
+        ...(removedMediaIds.length > 0 && {
+          removedMediaIds: removedMediaIds,
+        }),
+      };
+
+      // Update vibe basic info (media files already uploaded via separate endpoint)
+      const userId = data.userId || user?.id || "";
+
+      if (!userId) {
+        setError("User ID is required");
+        setIsSubmitting(false);
+        return;
+      }
+
+      await updateVibe(vibeId, userId, updateData);
+
       // Optionally close the dialog or refresh the page
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating vibe:", error);
-      alert("Failed to update vibe. Please try again.");
+      setError(error.message || "Failed to update vibe. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,7 +324,7 @@ export function VibeUpdate({ data }: { data: any }) {
           Edit
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Edit Vibe</DialogTitle>
@@ -183,16 +332,23 @@ export function VibeUpdate({ data }: { data: any }) {
               Update your vibe details. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
           <div className="grid gap-4 py-4">
-            {/* Vibe Name */}
+            {/* Item Name */}
             <div className="grid gap-2">
-              <Label htmlFor="vibe-name">Vibe Name</Label>
+              <Label htmlFor="itemName">Item Name</Label>
               <Input
-                id="vibe-name"
+                id="itemName"
                 name="itemName"
                 value={formData.itemName}
                 onChange={handleInputChange}
-                placeholder="Enter vibe name"
+                placeholder="Enter item name"
                 required
               />
             </div>
@@ -205,8 +361,8 @@ export function VibeUpdate({ data }: { data: any }) {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Describe your vibe..."
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Describe your item..."
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               />
             </div>
@@ -214,16 +370,73 @@ export function VibeUpdate({ data }: { data: any }) {
             {/* Price */}
             <div className="grid gap-2">
               <Label htmlFor="price">Price (VND)</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="Enter price"
-                min="0"
-                step="1000"
-                required
+              <div className="relative">
+                <IconCurrencyDollar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="Enter price"
+                  min="0"
+                  step="1000"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Category and Condition Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="condition">Condition</Label>
+                <select
+                  id="condition"
+                  name="condition"
+                  value={formData.condition}
+                  onChange={handleInputChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  required
+                >
+                  <option value="">Select condition</option>
+                  {CONDITIONS.map((condition) => (
+                    <option key={condition.value} value={condition.value}>
+                      {condition.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="grid gap-2">
+              <Label htmlFor="location">Location</Label>
+              <LocationPicker
+                value={formData.location}
+                onChange={(location) =>
+                  setFormData((prev) => ({ ...prev, location }))
+                }
+                placeholder="Select a city"
               />
             </div>
 
@@ -268,76 +481,73 @@ export function VibeUpdate({ data }: { data: any }) {
             </div>
 
             {/* Media Files */}
-            {/* <div className="grid gap-2">
-              <Label htmlFor="media">Media Files</Label>
-              <Input
-                id="media"
-                name="media"
+            <div className="grid gap-2">
+              <Label>Media Files (Max 5 total)</Label>
+
+              {/* Existing Media */}
+              {existingMedia.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-sm text-gray-600 mb-2">Existing Media:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {existingMedia.map((media, index) => (
+                      <MediaPreview
+                        key={index}
+                        url={media.url}
+                        type={media.type}
+                        onRemove={() => handleRemoveExistingMedia(index)}
+                        isExisting={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Media Upload */}
+              <input
+                ref={fileInputRef}
                 type="file"
-                accept="image/*"
                 multiple
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gruvbox-orange file:text-white hover:file:bg-gruvbox-orange/90"
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                className="hidden"
               />
-            </div> */}
 
-            {/* Category */}
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gruvbox-orange/50 hover:bg-gruvbox-orange/5 transition-colors"
               >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <IconUpload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">
+                  Click to upload new media or drag and drop
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  PNG, JPG, MP4 up to 10MB each
+                </p>
+              </button>
 
-            {/* Condition */}
-            <div className="grid gap-2">
-              <Label htmlFor="condition">Condition</Label>
-              <select
-                id="condition"
-                name="condition"
-                value={formData.condition}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-              >
-                <option value="">Select condition</option>
-                {conditions.map((condition) => (
-                  <option key={condition} value={condition}>
-                    {condition.charAt(0).toUpperCase() + condition.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Location */}
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-              >
-                <option value="">Select a city</option>
-                {vietnameseCities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
+              {/* New Media Previews */}
+              {newMediaFiles.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600 mb-2">New Media:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {newMediaFiles.map((file, index) => {
+                      const fileType = file.type.startsWith("image/")
+                        ? "image"
+                        : "video";
+                      return (
+                        <MediaPreview
+                          key={index}
+                          url={newMediaPreviews[index] || ""}
+                          type={fileType}
+                          onRemove={() => handleRemoveNewMedia(index)}
+                          isExisting={false}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
