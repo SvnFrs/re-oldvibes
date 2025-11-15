@@ -51,7 +51,21 @@ passport.use(
         }
 
         // Create new user
-        const username = email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 4);
+        // Generate username from email prefix, sanitize invalid characters
+        const emailPrefix = email.split('@')[0];
+        // Replace dots and any other non-alphanumeric characters (except underscore) with underscores
+        const sanitizedPrefix = emailPrefix.replace(/[^a-zA-Z0-9_]/g, '_');
+        // Generate unique username with random suffix
+        let username = sanitizedPrefix + '_' + Math.random().toString(36).substr(2, 4);
+        
+        // Ensure username is unique (in case of collision)
+        let existingUsername = await userModel.getByUsername(username);
+        let attempts = 0;
+        while (existingUsername && attempts < 10) {
+          username = sanitizedPrefix + '_' + Math.random().toString(36).substr(2, 4);
+          existingUsername = await userModel.getByUsername(username);
+          attempts++;
+        }
         
         user = await userModel.createGoogleUser({
           email,
