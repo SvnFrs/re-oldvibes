@@ -68,6 +68,14 @@ export const Footer: React.FC = () => {
             </li>
             <li>
               <Link
+                href="/feedback"
+                className="hover:text-gruvbox-orange transition-colors"
+              >
+                Feedback
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/report"
                 className="hover:text-gruvbox-orange transition-colors"
               >

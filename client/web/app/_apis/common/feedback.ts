@@ -95,6 +95,26 @@ class FeedbackAPI {
     });
   }
 
+  async getMyFeedbacks(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<FeedbackListResponse> {
+    const searchParams = new URLSearchParams();
+
+    if (typeof params?.limit === "number") {
+      searchParams.set("limit", params.limit.toString());
+    }
+
+    if (typeof params?.offset === "number") {
+      searchParams.set("offset", params.offset.toString());
+    }
+
+    const queryString =
+      searchParams.toString().length > 0 ? `?${searchParams.toString()}` : "";
+
+    return this.request<FeedbackListResponse>(`/feedback/me${queryString}`);
+  }
+
   async getFeedbacks(params?: {
     userId?: string;
     feedbackType?: FeedbackInput["feedbackType"];
@@ -216,6 +236,28 @@ class ReportAPI {
       method: "POST",
       body: formData,
     });
+  }
+
+  async getMyReports(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ reports: ReportItem[]; count: number }> {
+    const searchParams = new URLSearchParams();
+
+    if (typeof params?.limit === "number") {
+      searchParams.set("limit", params.limit.toString());
+    }
+
+    if (typeof params?.offset === "number") {
+      searchParams.set("offset", params.offset.toString());
+    }
+
+    const queryString =
+      searchParams.toString().length > 0 ? `?${searchParams.toString()}` : "";
+
+    return this.request<{ reports: ReportItem[]; count: number }>(
+      `/report/me${queryString}`
+    );
   }
 
   async getReports(params?: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconUpload,
@@ -10,13 +10,16 @@ import {
   IconCheck,
   IconFlag,
   IconLoader2,
+  IconEye,
+  IconRefresh,
 } from "@tabler/icons-react";
 import Image from "next/image";
-import { ReportInput, reportAPI } from "../_apis/common/feedback";
+import { ReportInput, reportAPI, type ReportItem } from "../_apis/common/feedback";
 import { getVibeById } from "../_apis/common/vibes";
 import AuthGuard from "../_components/auth/AuthGuard";
 import { PageShell } from "../_components/layout/PageShell";
 import { useAuth } from "../_contexts/AuthContext";
+import Link from "next/link";
 
 
 const REPORT_TYPES = [
@@ -25,6 +28,28 @@ const REPORT_TYPES = [
   { value: "abusive", label: "Abusive Content" },
   { value: "other", label: "Other" },
 ] as const;
+
+const REPORT_TYPE_META: Record<
+  ReportInput["reportType"],
+  { label: string; badgeClass: string }
+> = {
+  spam: {
+    label: "Spam",
+    badgeClass: "bg-gruvbox-red/10 text-gruvbox-red",
+  },
+  inappropriate: {
+    label: "Inappropriate Content",
+    badgeClass: "bg-gruvbox-orange/10 text-gruvbox-orange",
+  },
+  abusive: {
+    label: "Abusive Content",
+    badgeClass: "bg-gruvbox-red/10 text-gruvbox-red",
+  },
+  other: {
+    label: "Other",
+    badgeClass: "bg-gruvbox-yellow/10 text-gruvbox-yellow",
+  },
+};
 
 // Image Preview Component
 function ImagePreview({
@@ -71,7 +96,7 @@ export default function ReportPage() {
 
   // Vibe data state
   const [vibe, setVibe] = useState<any>(null);
-  const [loadingVibe, setLoadingVibe] = useState(true);
+  const [loadingVibe, setLoadingVibe] = useState(!!vibeId);
 
   // Form state
   const [formData, setFormData] = useState<ReportInput>({
@@ -85,6 +110,60 @@ export default function ReportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  
+  // Reports list state
+  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [reportListError, setReportListError] = useState("");
+  const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedReportVibe, setSelectedReportVibe] = useState<any>(null);
+  const [isLoadingVibeDetail, setIsLoadingVibeDetail] = useState(false);
+
+  const formatDateTime = (dateValue: string | Date) => {
+    if (!dateValue) return "";
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(dateValue));
+  };
+
+  const truncateDescription = (description: string, length = 160) => {
+    if (!description) return "";
+    return description.length > length
+      ? `${description.slice(0, length - 3)}...`
+      : description;
+  };
+
+  const fetchReports = useCallback(async () => {
+    if (!user?.id) {
+      setReports([]);
+      setIsLoadingReports(false);
+      return;
+    }
+
+    setIsLoadingReports(true);
+    setReportListError("");
+
+    try {
+      const response = await reportAPI.getMyReports();
+      const normalizedReports =
+        response.reports?.map((report) => ({
+          ...report,
+          reportImages: report.reportImages || [],
+        })) || [];
+      setReports(normalizedReports);
+    } catch (fetchError: any) {
+      setReportListError(
+        fetchError?.message || "Failed to load submitted reports"
+      );
+    } finally {
+      setIsLoadingReports(false);
+    }
+  }, [user?.id]);
 
   // Fetch vibe data
   useEffect(() => {
@@ -191,6 +270,7 @@ export default function ReportPage() {
 
       // Send report with image files (backend will upload to AWS S3)
       await reportAPI.createReport(reportData, imageFiles);
+      await fetchReports();
 
       // Success
       setSuccess(true);
@@ -207,6 +287,33 @@ export default function ReportPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleOpenDetail = async (report: ReportItem) => {
+    setSelectedReport(report);
+    setIsDetailOpen(true);
+    setIsLoadingVibeDetail(true);
+    setSelectedReportVibe(null);
+
+    try {
+      const vibeData = await getVibeById(report.vibeId);
+      setSelectedReportVibe(vibeData.vibe);
+    } catch (err: any) {
+      console.error("Failed to fetch vibe details:", err);
+      // Don't close modal, just show without vibe details
+    } finally {
+      setIsLoadingVibeDetail(false);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+    setSelectedReport(null);
+    setSelectedReportVibe(null);
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   if (loadingVibe) {
     return (
@@ -259,6 +366,283 @@ export default function ReportPage() {
                 </div>
               </div>
             </div>
+          </PageShell>
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  // If no vibeId provided, show list of user's reports
+  if (!vibeId) {
+    return (
+      <AuthGuard requireAuth={true}>
+        <div className="min-h-screen bg-gruvbox-dark-bg0 py-8">
+          <PageShell width="lg">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-12 h-12 bg-gruvbox-red/20 rounded-xl flex items-center justify-center">
+                      <IconFlag className="w-6 h-6 text-gruvbox-red" />
+                    </div>
+                    <h1 className="text-3xl font-bold text-gruvbox-dark-fg0">
+                      My Reports
+                    </h1>
+                  </div>
+                  <p className="text-gruvbox-dark-fg2">
+                    View all your submitted reports
+                  </p>
+                </div>
+                <button
+                  onClick={fetchReports}
+                  className="px-4 py-2 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-lg hover:bg-gruvbox-gray/10 transition-colors flex items-center space-x-2"
+                >
+                  <IconRefresh className="w-4 h-4" />
+                  <span>Refresh</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Reports List */}
+            {isLoadingReports ? (
+              <div className="text-center py-12">
+                <IconLoader2 className="w-8 h-8 text-gruvbox-orange animate-spin mx-auto mb-4" />
+                <p className="text-gruvbox-gray">Loading your reports...</p>
+              </div>
+            ) : reportListError ? (
+              <div className="bg-gruvbox-red/10 border border-gruvbox-red/20 rounded-lg p-6 text-center">
+                <IconAlertCircle className="w-12 h-12 text-gruvbox-red mx-auto mb-4" />
+                <p className="text-gruvbox-red mb-4">{reportListError}</p>
+                <button
+                  onClick={fetchReports}
+                  className="px-4 py-2 bg-gruvbox-red text-white rounded-lg hover:bg-gruvbox-red/90 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="bg-gruvbox-dark-bg1 rounded-lg p-12 text-center border border-gruvbox-gray/20">
+                <IconFlag className="w-16 h-16 text-gruvbox-gray mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold text-gruvbox-dark-fg1 mb-2">
+                  No Reports Yet
+                </h3>
+                <p className="text-gruvbox-gray mb-6">
+                  You haven't submitted any reports yet.
+                </p>
+                <Link
+                  href="/feed"
+                  className="inline-block px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                >
+                  Browse Vibes
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="bg-gruvbox-dark-bg1 rounded-lg p-6 border border-gruvbox-gray/20 hover:border-gruvbox-yellow/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${REPORT_TYPE_META[report.reportType].badgeClass}`}
+                          >
+                            {REPORT_TYPE_META[report.reportType].label}
+                          </span>
+                          <span className="text-xs text-gruvbox-gray">
+                            {formatDateTime(report.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-gruvbox-dark-fg1 text-sm mb-2">
+                          <span className="font-medium">Vibe ID:</span>{" "}
+                          {report.vibeId}
+                        </p>
+                        <p className="text-gruvbox-dark-fg2 text-sm">
+                          {truncateDescription(report.reportDescription)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleOpenDetail(report)}
+                        className="ml-4 p-2 bg-gruvbox-yellow/10 rounded-lg hover:bg-gruvbox-yellow/20 transition-colors"
+                      >
+                        <IconEye className="w-5 h-5 text-gruvbox-yellow" />
+                      </button>
+                    </div>
+                    {report.reportImages && report.reportImages.length > 0 && (
+                      <div className="flex items-center space-x-2 text-xs text-gruvbox-gray">
+                        <IconPhoto className="w-4 h-4" />
+                        <span>{report.reportImages.length} image(s) attached</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Detail Modal */}
+            {isDetailOpen && selectedReport && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-gruvbox-dark-bg1 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gruvbox-gray/20">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-2">
+                          Report Details
+                        </h2>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${REPORT_TYPE_META[selectedReport.reportType].badgeClass}`}
+                          >
+                            {REPORT_TYPE_META[selectedReport.reportType].label}
+                          </span>
+                          <span className="text-sm text-gruvbox-gray">
+                            {formatDateTime(selectedReport.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleCloseDetail}
+                        className="p-2 hover:bg-gruvbox-gray/10 rounded-lg transition-colors"
+                      >
+                        <IconX className="w-6 h-6 text-gruvbox-gray" />
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="space-y-4">
+                      {/* Reported Vibe Information */}
+                      <div className="bg-gruvbox-dark-bg0 rounded-lg p-4 border border-gruvbox-gray/20">
+                        <h3 className="text-sm font-medium text-gruvbox-gray mb-3">
+                          Reported Vibe
+                        </h3>
+                        {isLoadingVibeDetail ? (
+                          <div className="flex items-center justify-center py-4">
+                            <IconLoader2 className="w-6 h-6 text-gruvbox-orange animate-spin" />
+                            <span className="ml-2 text-sm text-gruvbox-gray">Loading vibe details...</span>
+                          </div>
+                        ) : selectedReportVibe ? (
+                          <div className="space-y-3">
+                            {/* Vibe Image */}
+                            {selectedReportVibe.mediaFiles && selectedReportVibe.mediaFiles.length > 0 && (
+                              <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                                <Image
+                                  src={selectedReportVibe.mediaFiles[0].url}
+                                  alt={selectedReportVibe.itemName}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
+                            {/* Vibe Name */}
+                            <div>
+                              <p className="font-semibold text-lg text-gruvbox-dark-fg0">
+                                {selectedReportVibe.itemName}
+                              </p>
+                              <p className="text-sm text-gruvbox-yellow font-medium">
+                                ${selectedReportVibe.price}
+                              </p>
+                            </div>
+                            {/* Vibe Description */}
+                            {selectedReportVibe.description && (
+                              <div>
+                                <p className="text-sm text-gruvbox-dark-fg2 line-clamp-3">
+                                  {selectedReportVibe.description}
+                                </p>
+                              </div>
+                            )}
+                            {/* Author Info */}
+                            <div className="flex items-center space-x-2 pt-2 border-t border-gruvbox-gray/10">
+                              {selectedReportVibe.user?.profilePicture && (
+                                <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                                  <Image
+                                    src={selectedReportVibe.user.profilePicture}
+                                    alt={selectedReportVibe.user.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gruvbox-dark-fg1">
+                                  {selectedReportVibe.user?.name || "Unknown User"}
+                                </p>
+                                {selectedReportVibe.user?.username && (
+                                  <p className="text-xs text-gruvbox-gray">
+                                    @{selectedReportVibe.user.username}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gruvbox-gray">
+                                  {formatDateTime(selectedReportVibe.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <IconAlertCircle className="w-6 h-6 text-gruvbox-gray mx-auto mb-2" />
+                            <p className="text-sm text-gruvbox-gray">
+                              Vibe details unavailable
+                            </p>
+                            <p className="text-xs text-gruvbox-gray mt-1">
+                              ID: {selectedReport.vibeId}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Report Description */}
+                      <div>
+                        <h3 className="text-sm font-medium text-gruvbox-gray mb-1">
+                          Your Report
+                        </h3>
+                        <p className="text-gruvbox-dark-fg1 whitespace-pre-wrap">
+                          {selectedReport.reportDescription}
+                        </p>
+                      </div>
+
+                      {selectedReport.reportImages && selectedReport.reportImages.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gruvbox-gray mb-2">
+                            Attached Images
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            {selectedReport.reportImages.map((imageUrl, idx) => (
+                              <div
+                                key={idx}
+                                className="relative aspect-square rounded-lg overflow-hidden"
+                              >
+                                <Image
+                                  src={imageUrl}
+                                  alt={`Report image ${idx + 1}`}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-6 border-t border-gruvbox-gray/20">
+                      <button
+                        onClick={handleCloseDetail}
+                        className="w-full px-6 py-3 bg-gruvbox-yellow text-gruvbox-dark-bg0 font-medium rounded-lg hover:bg-gruvbox-yellow/90 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </PageShell>
         </div>
       </AuthGuard>

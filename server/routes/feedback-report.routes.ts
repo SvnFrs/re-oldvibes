@@ -4,10 +4,12 @@ import {
   getFeedbacks,
   getFeedbackById,
   getUserFeedbacks,
+  getMyFeedbacks,
   createReport,
   getReports,
   getReportById,
   getUserReports,
+  getMyReports,
 } from "../controllers/feedback-report.controllers";
 import { authenticateToken } from "../middleware/auth.middleware";
 import { requireUser, requireStaff } from "../middleware/role.middleware";
@@ -113,6 +115,50 @@ router.post(
   requireUser as RequestHandler,
   uploadFeedbackImages.array("images", 5),
   createFeedback as RequestHandler
+);
+
+/**
+ * @swagger
+ * /feedback/me:
+ *   get:
+ *     summary: Get authenticated user's own feedbacks
+ *     tags: [Feedback]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Maximum number of feedbacks to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of feedbacks to skip
+ *     responses:
+ *       200:
+ *         description: List of user's own feedbacks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 feedbacks:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/FeedbackResponse'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Authentication required
+ */
+router.get(
+  "/feedback/me",
+  authenticateToken,
+  requireUser as RequestHandler,
+  getMyFeedbacks as RequestHandler
 );
 
 /**
@@ -268,6 +314,50 @@ router.post(
   requireUser as RequestHandler,
   uploadReportImages.array("images", 5),
   createReport as RequestHandler
+);
+
+/**
+ * @swagger
+ * /report/me:
+ *   get:
+ *     summary: Get authenticated user's own reports
+ *     tags: [Report]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Maximum number of reports to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of reports to skip
+ *     responses:
+ *       200:
+ *         description: List of user's own reports
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 reports:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ReportResponse'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Authentication required
+ */
+router.get(
+  "/report/me",
+  authenticateToken,
+  requireUser as RequestHandler,
+  getMyReports as RequestHandler
 );
 
 /**

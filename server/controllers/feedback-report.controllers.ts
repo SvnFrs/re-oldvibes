@@ -11,6 +11,50 @@ const feedbackReportModel = new FeedbackReportModel();
 // ========== FEEDBACK CONTROLLERS ==========
 
 /**
+ * Get authenticated user's own feedbacks
+ * GET /feedback/me
+ */
+export const getMyFeedbacks = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { limit: limitParam, offset: offsetParam } = req.query;
+
+    const filters: {
+      userId: string;
+      limit?: number;
+      offset?: number;
+    } = { userId };
+
+    if (limitParam) {
+      const limit = parseInt(limitParam as string, 10);
+      if (!isNaN(limit) && limit > 0) {
+        filters.limit = limit;
+      }
+    }
+
+    if (offsetParam) {
+      const offset = parseInt(offsetParam as string, 10);
+      if (!isNaN(offset) && offset >= 0) {
+        filters.offset = offset;
+      }
+    }
+
+    const feedbacks = await feedbackReportModel.getFeedbacks(filters);
+
+    res.json({
+      feedbacks,
+      count: feedbacks.length,
+    });
+  } catch (error) {
+    console.error("Get my feedbacks error:", error);
+    res.status(500).json({ message: "Error fetching your feedbacks", error });
+  }
+};
+
+/**
  * Get feedbacks by user ID (user-level access)
  * GET /feedback/user/:id
  */
@@ -231,6 +275,50 @@ export const getFeedbackById = async (
 };
 
 // ========== REPORT CONTROLLERS ==========
+
+/**
+ * Get authenticated user's own reports
+ * GET /report/me
+ */
+export const getMyReports = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { limit: limitParam, offset: offsetParam } = req.query;
+
+    const filters: {
+      userId: string;
+      limit?: number;
+      offset?: number;
+    } = { userId };
+
+    if (limitParam) {
+      const limit = parseInt(limitParam as string, 10);
+      if (!isNaN(limit) && limit > 0) {
+        filters.limit = limit;
+      }
+    }
+
+    if (offsetParam) {
+      const offset = parseInt(offsetParam as string, 10);
+      if (!isNaN(offset) && offset >= 0) {
+        filters.offset = offset;
+      }
+    }
+
+    const reports = await feedbackReportModel.getReports(filters);
+
+    res.json({
+      reports,
+      count: reports.length,
+    });
+  } catch (error) {
+    console.error("Get my reports error:", error);
+    res.status(500).json({ message: "Error fetching your reports", error });
+  }
+};
 
 /**
  * Get reports by user ID (user-level access)
