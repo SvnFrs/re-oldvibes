@@ -55,6 +55,10 @@ export default function MyVibesList() {
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const token = Cookies.get("tokenSession");
 
+  const isVibeAccessible = (status: string) => {
+    return status === "approved" || status === "rejected";
+  };
+
   const fetchVibes = async () => {
     if (!user?.id || !token) {
       setError("Authentication required");
@@ -229,34 +233,73 @@ export default function MyVibesList() {
             <div className="flex gap-4 p-4">
               {/* Media Preview */}
               <div className="flex-shrink-0">
-                <Link href={`/vibes/${vibe.id}`}>
-                  {vibe.mediaFiles && vibe.mediaFiles.length > 0 ? (
-                    <div className="relative w-28 h-28 bg-gruvbox-dark-bg3 rounded-xl overflow-hidden">
-                      {vibe.mediaFiles[0].type === "image" ? (
+
+                {vibe.status === "pending" ? (
+                  // Non-clickable preview for pending vibes
+                  <div className="relative w-28 h-28 bg-gruvbox-dark-bg3 rounded-xl overflow-hidden opacity-60">
+                    {vibe.mediaFiles && vibe.mediaFiles.length > 0 ? (
+                      vibe.mediaFiles[0].type === "image" ? (
                         <Image
                           src={vibe.mediaFiles[0].url}
                           alt={vibe.itemName}
                           fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          className="object-cover"
                         />
                       ) : (
                         <video
                           src={vibe.mediaFiles[0].url}
                           className="w-full h-full object-cover"
                         />
-                      )}
-                      {vibe.mediaFiles.length > 1 && (
-                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-lg text-xs font-medium">
-                          +{vibe.mediaFiles.length - 1}
-                        </div>
-                      )}
+                      )
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <IconPhoto size={32} className="text-gruvbox-gray" />
+                      </div>
+                    )}
+                    {/* Pending overlay */}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="text-center">
+                        <IconAlertCircle size={24} className="text-gruvbox-yellow mx-auto mb-1" />
+                        <span className="text-xs text-white font-medium">Under Review</span>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="w-28 h-28 bg-gruvbox-dark-bg3 rounded-xl flex items-center justify-center">
-                      <IconPhoto size={32} className="text-gruvbox-gray" />
-                    </div>
-                  )}
-                </Link>
+                    {vibe.mediaFiles && vibe.mediaFiles.length > 1 && (
+                      <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-lg text-xs font-medium">
+                        +{vibe.mediaFiles.length - 1}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+
+                  <Link href={`/vibes/${vibe.id}`}>
+                    {vibe.mediaFiles && vibe.mediaFiles.length > 0 ? (
+                      <div className="relative w-28 h-28 bg-gruvbox-dark-bg3 rounded-xl overflow-hidden">
+                        {vibe.mediaFiles[0].type === "image" ? (
+                          <Image
+                            src={vibe.mediaFiles[0].url}
+                            alt={vibe.itemName}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <video
+                            src={vibe.mediaFiles[0].url}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {vibe.mediaFiles.length > 1 && (
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-lg text-xs font-medium">
+                            +{vibe.mediaFiles.length - 1}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-28 h-28 bg-gruvbox-dark-bg3 rounded-xl flex items-center justify-center">
+                        <IconPhoto size={32} className="text-gruvbox-gray" />
+                      </div>
+                    )}
+                  </Link>
+                )}
               </div>
 
               {/* Content */}
@@ -339,20 +382,40 @@ export default function MyVibesList() {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Link
-                    href={`/vibes/${vibe.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-dark-bg3 text-gruvbox-dark-fg0 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gruvbox-dark-bg4 transition-colors"
-                  >
-                    <IconEye size={16} />
-                    <span>View</span>
-                  </Link>
-                  <button
-                    onClick={() => handleEditClick(vibe)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
-                  >
-                    <IconEdit size={16} />
-                    <span>Edit</span>
-                  </button>
+                  {vibe.status === "pending" ? (
+                    // Pending state - only show edit button
+                    <>
+                      <div className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-yellow/10 text-gruvbox-yellow px-4 py-2 rounded-lg text-sm font-medium border border-gruvbox-yellow/30 cursor-not-allowed">
+                        <IconAlertCircle size={16} />
+                        <span>Pending Review</span>
+                      </div>
+                      <button
+                        onClick={() => handleEditClick(vibe)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-dark-bg3 text-gruvbox-dark-fg0 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gruvbox-dark-bg4 transition-colors"
+                      >
+                        <IconEdit size={16} />
+                        <span>Edit</span>
+                      </button>
+                    </>
+                  ) : (
+                    // Approved/Rejected - show view and edit buttons
+                    <>
+                      <Link
+                        href={`/vibes/${vibe.id}`}
+                        className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-dark-bg3 text-gruvbox-dark-fg0 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gruvbox-dark-bg4 transition-colors"
+                      >
+                        <IconEye size={16} />
+                        <span>View</span>
+                      </Link>
+                      <button
+                        onClick={() => handleEditClick(vibe)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+                      >
+                        <IconEdit size={16} />
+                        <span>Edit</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

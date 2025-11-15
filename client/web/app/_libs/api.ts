@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiResponse, ApiError } from "./types";
 
+// API endpoint
+export const API = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:4000/api";
+
 class ApiClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;

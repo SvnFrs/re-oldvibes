@@ -16,7 +16,7 @@ import {
   uploadVibeMedia,
   getAllVibes,
 } from "../controllers/vibe.controllers";
-import { authenticateToken } from "../middleware/auth.middleware";
+import { authenticateToken, optionalAuth } from "../middleware/auth.middleware";
 import {
   requireAdmin,
   requireStaff,
@@ -28,6 +28,45 @@ import { requireEmailVerification } from "../middleware/emailVerification.middle
 import type { RequestHandler } from "../types/handler.types";
 
 const router = Router();
+
+// Add middleware to check vibe access permissions
+const checkVibeAccess = async (req: any, res: any, next: any) => {
+  try {
+    const { vibeId } = req.params;
+    const userId = req.user?.userId;
+
+    const vibe = await Vibe.findById(vibeId);
+
+    if (!vibe) {
+      return res.status(404).json({ message: "Vibe not found" });
+    }
+
+    // Allow access if:
+    // 1. Vibe is approved (public)
+    // 2. User is the owner (can see their own pending/rejected vibes)
+    // 3. User is staff/admin
+    if (
+      vibe.status === "approved" ||
+      vibe.userId.toString() === userId ||
+      req.user?.role === "staff" ||
+      req.user?.role === "admin"
+    ) {
+      req.vibe = vibe; // Attach vibe to request
+      return next();
+    }
+
+    // Pending/rejected vibes are not accessible to others
+    return res.status(403).json({
+      message: "This vibe is not available for viewing",
+      reason: vibe.status === "pending"
+        ? "pending_review"
+        : "rejected"
+    });
+  } catch (error) {
+    console.error("Error checking vibe access:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 /**
  * @swagger
@@ -220,7 +259,12 @@ router.get("/user/:userId", authenticateToken, getUserVibes);
  *       200: { description: Vibe deleted }
  *       404: { description: Vibe not found }
  */
-router.get("/:vibeId", getVibe);
+ router.get(
+   "/:vibeId",
+   optionalAuth, // Allow both authenticated and unauthenticated access
+   checkVibeAccess,
+   getVibe
+ );
 router.put(
   "/:vibeId/:userId",
   authenticateToken,
