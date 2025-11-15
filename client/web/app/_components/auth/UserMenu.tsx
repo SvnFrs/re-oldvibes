@@ -93,8 +93,8 @@ export default function UserMenu() {
     // },
     {
       icon: IconShoppingBag,
-      label: "My Listings",
-      href: "/my-listings",
+      label: "My Vibes",
+      href: "/my-vibes",
       color: "text-gruvbox-dark-fg1",
     },
     {

@@ -29,6 +29,7 @@ import { getVibes } from "./_apis/common/vibes";
 import { useAuth } from "./_contexts/AuthContext";
 import BannerCarousel from "./_components/banner/BannerCarousel";
 import TrendingVibes from "./_components/recommendations/TrendingVibes";
+import PersonalizedRecommendations from "./_components/recommendations/PersonalizedRecommendations";
 
 // Enhanced Vibe Card Component
 function VibeCard({ vibe }: { vibe: any }) {
@@ -396,6 +397,9 @@ export default function HomePage() {
           <div className="flex-1 min-w-0">
             {/* Categories */}
             <CategoriesSection />
+
+            {/* Personalized Recommendations - Only for logged in users */}
+            <PersonalizedRecommendations limit={6} />
 
             {/* Featured Vibes */}
             <section className="py-8">
