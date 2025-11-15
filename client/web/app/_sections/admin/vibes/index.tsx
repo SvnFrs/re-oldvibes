@@ -65,15 +65,21 @@ function VibeDetailModal({
   onClose,
   onDelete,
   onModerate,
+  onArchive,
+  onUnarchive,
 }: {
   vibe: Vibe | null;
   isOpen: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
   onModerate: (id: string, action: "approve" | "reject") => void;
+  onArchive: (id: string) => void;
+  onUnarchive: (id: string) => void;
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showModerateConfirm, setShowModerateConfirm] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showUnarchiveConfirm, setShowUnarchiveConfirm] = useState(false);
   const [moderateAction, setModerateAction] = useState<"approve" | "reject">("approve");
 
   if (!vibe) return null;
@@ -97,6 +103,24 @@ function VibeDetailModal({
     setShowModerateConfirm(false);
   };
 
+  const handleArchiveClick = () => {
+    setShowArchiveConfirm(true);
+  };
+
+  const handleArchiveConfirm = () => {
+    onArchive(vibe.id);
+    setShowArchiveConfirm(false);
+  };
+
+  const handleUnarchiveClick = () => {
+    setShowUnarchiveConfirm(true);
+  };
+
+  const handleUnarchiveConfirm = () => {
+    onUnarchive(vibe.id);
+    setShowUnarchiveConfirm(false);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -116,7 +140,7 @@ function VibeDetailModal({
 
   return (
     <>
-      <Modal opened={isOpen} onClose={onClose} title="Vibe Details">
+      <Modal opened={isOpen} onClose={onClose} title="Vibe Details" className="!max-w-4xl">
         <div className="space-y-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
           {/* Header with Status */}
           <div className="flex items-center justify-between pb-4 border-b border-gruvbox-dark-bg3">
@@ -307,6 +331,24 @@ function VibeDetailModal({
                 </button>
               </>
             )}
+            {vibe.status === "archived" && (
+              <button
+                onClick={handleUnarchiveClick}
+                className="flex-1 flex items-center justify-center gap-2 bg-gruvbox-blue text-white px-4 py-2.5 rounded-lg hover:bg-gruvbox-blue/90 transition-colors"
+              >
+                <IconRefresh size={18} />
+                Unarchive
+              </button>
+            )}
+            {(vibe.status === "approved" || vibe.status === "pending") && (
+              <button
+                onClick={handleArchiveClick}
+                className="flex items-center justify-center gap-2 bg-gruvbox-dark-bg3 text-gruvbox-dark-fg1 px-4 py-2.5 rounded-lg hover:bg-gruvbox-dark-bg2 transition-colors"
+              >
+                <IconClock size={18} />
+                Archive
+              </button>
+            )}
             <button
               onClick={handleDeleteClick}
               className="flex items-center justify-center gap-2 bg-red-500/20 text-red-400 px-4 py-2.5 rounded-lg hover:bg-red-500/30 transition-colors"
@@ -314,6 +356,7 @@ function VibeDetailModal({
               <IconTrash size={18} />
               Delete
             </button>
+
           </div>
         </div>
       </Modal>
@@ -399,6 +442,72 @@ function VibeDetailModal({
           </div>
         </div>
       </Modal>
+
+      {/* Archive Confirmation Modal */}
+      <Modal
+        opened={showArchiveConfirm}
+        onClose={() => setShowArchiveConfirm(false)}
+        title="Archive Vibe"
+        showCloseButton={false}
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-gruvbox-dark-bg3 rounded-lg">
+              <IconAlertCircle size={24} className="text-gruvbox-dark-fg2" />
+            </div>
+            <p className="text-gruvbox-dark-fg1 flex-1">
+              Are you sure you want to archive "{vibe.itemName}"? The vibe will be hidden from the public feed but can be restored later.
+            </p>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleArchiveConfirm}
+              className="flex-1 bg-gruvbox-dark-bg3 hover:bg-gruvbox-dark-bg2 text-gruvbox-dark-fg0 py-3 rounded-lg font-semibold transition-all"
+            >
+              Archive Vibe
+            </button>
+            <button
+              onClick={() => setShowArchiveConfirm(false)}
+              className="px-6 bg-gruvbox-dark-bg2 text-gruvbox-dark-fg1 py-3 rounded-lg font-semibold hover:bg-gruvbox-dark-bg3 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Unarchive Confirmation Modal */}
+      <Modal
+        opened={showUnarchiveConfirm}
+        onClose={() => setShowUnarchiveConfirm(false)}
+        title="Unarchive Vibe"
+        showCloseButton={false}
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-gruvbox-blue/20 rounded-lg">
+              <IconAlertCircle size={24} className="text-gruvbox-blue" />
+            </div>
+            <p className="text-gruvbox-dark-fg1 flex-1">
+              Are you sure you want to unarchive "{vibe.itemName}"? The vibe will be made public again with a new 24-hour expiry.
+            </p>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleUnarchiveConfirm}
+              className="flex-1 bg-gruvbox-blue hover:bg-gruvbox-blue/90 text-white py-3 rounded-lg font-semibold transition-all"
+            >
+              Unarchive Vibe
+            </button>
+            <button
+              onClick={() => setShowUnarchiveConfirm(false)}
+              className="px-6 bg-gruvbox-dark-bg3 text-gruvbox-dark-fg1 py-3 rounded-lg font-semibold hover:bg-gruvbox-dark-bg2 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
@@ -416,6 +525,14 @@ export default function ShowVibesSection() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 20;
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    sold: 0,
+    archived: 0,
+  });
 
   // Fetch vibes
   const fetchVibes = async (page = 1) => {
@@ -439,6 +556,10 @@ export default function ShowVibesSection() {
         setVibes(data.vibes || []);
         setTotalPages(Math.ceil((data.totalCount || 0) / itemsPerPage));
         setCurrentPage(page);
+        // Use stats from API if available
+        if (data.stats) {
+          setStats(data.stats);
+        }
       } else {
         setError(data.message || "Failed to fetch vibes");
       }
@@ -463,16 +584,19 @@ export default function ShowVibesSection() {
     );
   }, [vibes, searchTerm]);
 
-  // Calculate statistics
-  const stats = useMemo(() => {
+  // Stats are now provided by the API, but keep fallback calculation
+  useEffect(() => {
+    if (vibes.length > 0 && stats.total === 0) {
     const total = vibes.length;
     const pending = vibes.filter((v) => v.status === "pending").length;
     const approved = vibes.filter((v) => v.status === "approved").length;
     const rejected = vibes.filter((v) => v.status === "rejected").length;
     const sold = vibes.filter((v) => v.status === "sold").length;
+    const archived = vibes.filter((v) => v.status === "archived").length;
 
-    return { total, pending, approved, rejected, sold };
-  }, [vibes]);
+    setStats({ total, pending, approved, rejected, sold, archived });
+  }
+}, [vibes, stats.total]);
 
   // View vibe details
   const viewVibeDetails = async (vibeId: string) => {
@@ -536,6 +660,50 @@ export default function ShowVibesSection() {
       }
     } catch (err: any) {
       setError(err.message || `Failed to ${action} vibe`);
+    }
+  };
+
+  // Archive vibe
+  const handleArchive = async (id: string) => {
+    try {
+      const response = await fetch(`${API}/vibes/${id}/archive`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setSuccess("Vibe archived successfully!");
+        setModalOpen(false);
+        fetchVibes(currentPage);
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to archive vibe");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to archive vibe");
+    }
+  };
+
+  // Unarchive vibe
+  const handleUnarchive = async (id: string) => {
+    try {
+      const response = await fetch(`${API}/vibes/${id}/unarchive`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setSuccess("Vibe unarchived successfully!");
+        setModalOpen(false);
+        fetchVibes(currentPage);
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to unarchive vibe");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to unarchive vibe");
     }
   };
 
@@ -621,6 +789,12 @@ export default function ShowVibesSection() {
           label="Sold"
           value={stats.sold}
           color="blue-500"
+        />
+        <StatCard
+          icon={<IconClock size={24} className="text-gruvbox-dark-fg3" />}
+          label="Archived"
+          value={stats.archived}
+          color="gruvbox-dark-bg3"
         />
       </div>
 
@@ -792,6 +966,8 @@ export default function ShowVibesSection() {
         }}
         onDelete={handleDelete}
         onModerate={handleModerate}
+        onArchive={handleArchive}
+        onUnarchive={handleUnarchive}
       />
 
       {/* Success/Error Messages */}

@@ -97,6 +97,53 @@ const tabGroups = {
 
 // Dashboard Component
 function DashboardSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const response = await fetch(`${API}/admin/dashboard/stats`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+        setStats(data.stats);
+        setRecentActivity(data.recentActivity);
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gruvbox-dark-fg2">Loading dashboard...</div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -115,12 +162,20 @@ function DashboardSection() {
             <div className="p-2 bg-gruvbox-blue/20 rounded-lg">
               <IconUsers size={24} className="text-gruvbox-blue-dark" />
             </div>
-            <span className="text-xs text-gruvbox-dark-fg3">This month</span>
+            <span className="text-xs text-gruvbox-dark-fg3">
+              {stats?.totalUsers?.label || "This month"}
+            </span>
           </div>
-          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">1,234</h3>
+          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">
+            {stats?.totalUsers?.count || 0}
+          </h3>
           <p className="text-sm text-gruvbox-dark-fg2">Total Users</p>
-          <div className="mt-2 flex items-center gap-1 text-xs text-green-400">
-            <span>↑ 12%</span>
+          <div className={`mt-2 flex items-center gap-1 text-xs ${
+            (stats?.totalUsers?.growthPercent || 0) >= 0 ? "text-green-400" : "text-red-400"
+          }`}>
+            <span>
+              {(stats?.totalUsers?.growthPercent || 0) >= 0 ? "↑" : "↓"} {Math.abs(stats?.totalUsers?.growthPercent || 0)}%
+            </span>
             <span className="text-gruvbox-dark-fg3">vs last month</span>
           </div>
         </div>
@@ -130,12 +185,20 @@ function DashboardSection() {
             <div className="p-2 bg-gruvbox-orange/20 rounded-lg">
               <IconPhoto size={24} className="text-gruvbox-orange-dark" />
             </div>
-            <span className="text-xs text-gruvbox-dark-fg3">Active</span>
+            <span className="text-xs text-gruvbox-dark-fg3">
+              {stats?.activeVibes?.label || "Active"}
+            </span>
           </div>
-          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">567</h3>
+          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">
+            {stats?.activeVibes?.count || 0}
+          </h3>
           <p className="text-sm text-gruvbox-dark-fg2">Active Vibes</p>
-          <div className="mt-2 flex items-center gap-1 text-xs text-green-400">
-            <span>↑ 8%</span>
+          <div className={`mt-2 flex items-center gap-1 text-xs ${
+            (stats?.activeVibes?.growthPercent || 0) >= 0 ? "text-green-400" : "text-red-400"
+          }`}>
+            <span>
+              {(stats?.activeVibes?.growthPercent || 0) >= 0 ? "↑" : "↓"} {Math.abs(stats?.activeVibes?.growthPercent || 0)}%
+            </span>
             <span className="text-gruvbox-dark-fg3">vs last month</span>
           </div>
         </div>
@@ -145,12 +208,20 @@ function DashboardSection() {
             <div className="p-2 bg-gruvbox-red/20 rounded-lg">
               <IconAlertTriangle size={24} className="text-gruvbox-red-dark" />
             </div>
-            <span className="text-xs text-gruvbox-dark-fg3">Pending</span>
+            <span className="text-xs text-gruvbox-dark-fg3">
+              {stats?.pendingReports?.label || "Pending"}
+            </span>
           </div>
-          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">23</h3>
+          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">
+            {stats?.pendingReports?.count || 0}
+          </h3>
           <p className="text-sm text-gruvbox-dark-fg2">Reports</p>
-          <div className="mt-2 flex items-center gap-1 text-xs text-red-400">
-            <span>↑ 3</span>
+          <div className={`mt-2 flex items-center gap-1 text-xs ${
+            (stats?.pendingReports?.diff || 0) > 0 ? "text-red-400" : "text-green-400"
+          }`}>
+            <span>
+              {(stats?.pendingReports?.diff || 0) >= 0 ? "↑" : "↓"} {Math.abs(stats?.pendingReports?.diff || 0)}
+            </span>
             <span className="text-gruvbox-dark-fg3">needs attention</span>
           </div>
         </div>
@@ -160,9 +231,13 @@ function DashboardSection() {
             <div className="p-2 bg-gruvbox-purple/20 rounded-lg">
               <IconStars size={24} className="text-gruvbox-purple-dark" />
             </div>
-            <span className="text-xs text-gruvbox-dark-fg3">Awaiting review</span>
+            <span className="text-xs text-gruvbox-dark-fg3">
+              {stats?.pendingVibes?.label || "Awaiting review"}
+            </span>
           </div>
-          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">45</h3>
+          <h3 className="text-2xl font-bold text-gruvbox-dark-fg0 mb-1">
+            {stats?.pendingVibes?.count || 0}
+          </h3>
           <p className="text-sm text-gruvbox-dark-fg2">Pending Vibes</p>
           <div className="mt-2 flex items-center gap-1 text-xs text-yellow-400">
             <span>⚠</span>
@@ -178,24 +253,36 @@ function DashboardSection() {
             Recent Activity
           </h3>
           <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 bg-gruvbox-dark-bg2 rounded-lg"
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-yellow flex items-center justify-center text-white font-bold">
-                  U
+            {recentActivity.length > 0 ? (
+              recentActivity.slice(0, 4).map((activity, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 bg-gruvbox-dark-bg2 rounded-lg"
+                >
+                  {activity.user?.profilePicture ? (
+                    <img
+                      src={activity.user.profilePicture}
+                      alt={activity.user.username}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-yellow flex items-center justify-center text-white font-bold">
+                      {activity.user?.username?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gruvbox-dark-fg1">
+                      New user registered
+                    </p>
+                    <p className="text-xs text-gruvbox-dark-fg3">
+                      {activity.user?.email} • {formatTimeAgo(activity.timestamp)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gruvbox-dark-fg1">
-                    New user registered
-                  </p>
-                  <p className="text-xs text-gruvbox-dark-fg3">
-                    user@example.com • 2 minutes ago
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-gruvbox-dark-fg3">No recent activity</p>
+            )}
           </div>
         </div>
 
@@ -322,12 +409,12 @@ export default function AdminPanel() {
       </div>
 
       {/* Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Sidebar */}
         <nav
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-gruvbox-dark-bg1 border-r border-gruvbox-dark-bg2 flex flex-col py-6 px-3 shadow-xl transition-transform duration-300 overflow-y-auto`}
+          } lg:translate-x-0 fixed lg:sticky lg:top-[73px] top-0 left-0 z-40 w-64 bg-gruvbox-dark-bg1 border-r border-gruvbox-dark-bg2 flex flex-col py-6 px-3 shadow-xl lg:shadow-none transition-transform duration-300 overflow-y-auto h-screen lg:h-[calc(100vh-73px)] scrollbar-thin scrollbar-thumb-gruvbox-dark-bg3 scrollbar-track-transparent`}
         >
           {Object.entries(tabGroups).map(([groupKey, groupLabel]) => {
             const groupTabs = tabs.filter((t) => t.group === groupKey);
@@ -386,7 +473,7 @@ export default function AdminPanel() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gruvbox-dark-bg0">
+        <main className="flex-1 overflow-y-auto bg-gruvbox-dark-bg0 scroll-smooth">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             {error && (
               <div className="mb-6 text-gruvbox-red-dark bg-gruvbox-red/10 p-4 rounded-xl border border-gruvbox-red/30 animate-in slide-in-from-top duration-300">

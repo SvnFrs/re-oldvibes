@@ -330,6 +330,109 @@ export class UserModel {
     return !!result;
   }
 
+  // Add bad behavior and apply temp ban or permanent ban
+  async addBadBehavior(
+    userId: string,
+    reason: string,
+    commentId?: string,
+    vibeId?: string
+  ): Promise<{ success: boolean; isTempBanned: boolean; isPermanentlyBanned: boolean; message: string }> {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return { success: false, isTempBanned: false, isPermanentlyBanned: false, message: "User not found" };
+      }
+
+      // Check if user is admin or staff
+      if (user.role === "admin" || user.role === "staff") {
+        return { success: false, isTempBanned: false, isPermanentlyBanned: false, message: "Cannot ban admin/staff" };
+      }
+
+      // Increment bad behavior count
+      user.badBehaviorCount += 1;
+
+      // Add to history
+      user.badBehaviorHistory.push({
+        reason,
+        comment: commentId,
+        vibeId: vibeId as any,
+        timestamp: new Date(),
+      });
+
+      // Check if user should be permanently banned (3+ violations)
+      if (user.badBehaviorCount >= 3) {
+        user.isActive = false;
+        user.isTempBanned = false; // Remove temp ban flag since they're permanently banned
+        await user.save();
+        return {
+          success: true,
+          isTempBanned: false,
+          isPermanentlyBanned: true,
+          message: `User permanently banned after ${user.badBehaviorCount} violations`,
+        };
+      }
+
+      // Apply temp ban for 1st and 2nd violations
+      user.isTempBanned = true;
+      user.tempBanReason = `Repeated violations: ${reason}`;
+      user.tempBanAt = new Date();
+
+      await user.save();
+
+      return {
+        success: true,
+        isTempBanned: true,
+        isPermanentlyBanned: false,
+        message: `User temporarily banned. Violations: ${user.badBehaviorCount}/3`,
+      };
+    } catch (error) {
+      console.error("Error adding bad behavior:", error);
+      return { success: false, isTempBanned: false, isPermanentlyBanned: false, message: "Error processing bad behavior" };
+    }
+  }
+
+  // Remove temporary ban
+  async removeTempBan(userId: string): Promise<boolean> {
+    try {
+      const result = await User.findByIdAndUpdate(
+        userId,
+        {
+          isTempBanned: false,
+          tempBanReason: null,
+          tempBanAt: null,
+          updatedAt: new Date(),
+        },
+        { new: true }
+      );
+      return !!result;
+    } catch (error) {
+      console.error("Error removing temp ban:", error);
+      return false;
+    }
+  }
+
+  // Reset bad behavior count (admin only)
+  async resetBadBehavior(userId: string): Promise<boolean> {
+    try {
+      const result = await User.findByIdAndUpdate(
+        userId,
+        {
+          badBehaviorCount: 0,
+          badBehaviorHistory: [],
+          isTempBanned: false,
+          tempBanReason: null,
+          tempBanAt: null,
+          updatedAt: new Date(),
+        },
+        { new: true }
+      );
+      return !!result;
+    } catch (error) {
+      console.error("Error resetting bad behavior:", error);
+      return false;
+    }
+  }
+
   // Get user role (for permission checks)
   async getRole(userId: string): Promise<string | null> {
     const user = await User.findById(userId).select("role");

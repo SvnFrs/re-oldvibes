@@ -234,9 +234,25 @@ export const getFeedbacks = async (
 
     const feedbacks = await feedbackReportModel.getFeedbacks(filters);
 
+    // Calculate stats
+    const total = feedbacks.length;
+    const bugs = feedbacks.filter((f) => f.feedbackType === "bug").length;
+    const features = feedbacks.filter((f) => f.feedbackType === "feature").length;
+    const suggestions = feedbacks.filter((f) => f.feedbackType === "suggestion").length;
+    const withImages = feedbacks.filter(
+      (f) => f.feedbackImages && f.feedbackImages.length > 0
+    ).length;
+
     res.json({
       feedbacks,
       count: feedbacks.length,
+      stats: {
+        total,
+        bugs,
+        features,
+        suggestions,
+        withImages,
+      },
     });
   } catch (error) {
     console.error("Get feedbacks error:", error);
@@ -359,9 +375,27 @@ export const getUserReports = async (
 
     const reports = await feedbackReportModel.getReports(filters);
 
+    // Calculate stats
+    const total = reports.length;
+    const spam = reports.filter((r) => r.reportType === "spam").length;
+    const inappropriate = reports.filter(
+      (r) => r.reportType === "inappropriate"
+    ).length;
+    const abusive = reports.filter((r) => r.reportType === "abusive").length;
+    const withEvidence = reports.filter(
+      (r) => r.reportImages && r.reportImages.length > 0
+    ).length;
+
     res.json({
       reports,
       count: reports.length,
+      stats: {
+        total,
+        spam,
+        inappropriate,
+        abusive,
+        withEvidence,
+      },
     });
   } catch (error) {
     console.error("Get user reports error:", error);

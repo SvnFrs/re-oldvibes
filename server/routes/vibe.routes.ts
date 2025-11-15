@@ -15,6 +15,9 @@ import {
   moderateVibe,
   uploadVibeMedia,
   getAllVibes,
+  archiveVibe,
+  unarchiveVibe,
+  extendVibeExpiry,
 } from "../controllers/vibe.controllers";
 import { authenticateToken, optionalAuth } from "../middleware/auth.middleware";
 import {
@@ -383,6 +386,73 @@ router.patch(
   authenticateToken,
   requireStaff as RequestHandler,
   moderateVibe
+);
+
+/**
+ * @swagger
+ * /vibes/{vibeId}/archive:
+ *   post:
+ *     summary: Manually archive a vibe
+ *     tags: [Archive Management]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters: [{ $ref: '#/components/parameters/vibeId' }]
+ *     responses:
+ *       200: { description: Vibe archived successfully }
+ *       404: { description: Vibe not found or cannot be archived }
+ *       403: { description: Not authorized }
+ */
+router.post(
+  "/:vibeId/archive",
+  authenticateToken,
+  requireUser as RequestHandler,
+  archiveVibe
+);
+
+/**
+ * @swagger
+ * /vibes/{vibeId}/unarchive:
+ *   post:
+ *     summary: Restore archived vibe (admin only)
+ *     tags: [Archive Management]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters: [{ $ref: '#/components/parameters/vibeId' }]
+ *     responses:
+ *       200: { description: Vibe unarchived and expiry extended }
+ *       404: { description: Vibe not found or not archived }
+ *       403: { description: Admin access required }
+ */
+router.post(
+  "/:vibeId/unarchive",
+  authenticateToken,
+  requireAdmin as RequestHandler,
+  unarchiveVibe
+);
+
+/**
+ * @swagger
+ * /vibes/{vibeId}/extend:
+ *   patch:
+ *     summary: Extend vibe expiry time
+ *     tags: [Archive Management]
+ *     security: [{ cookieAuth: [] }]
+ *     parameters: [{ $ref: '#/components/parameters/vibeId' }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hours: { type: number, minimum: 1, maximum: 168, default: 24, description: Hours to extend (max 1 week) }
+ *     responses:
+ *       200: { description: Vibe expiry extended }
+ *       400: { description: Invalid hours or vibe already expired }
+ *       404: { description: Vibe not found }
+ */
+router.patch(
+  "/:vibeId/extend",
+  authenticateToken,
+  requireUser as RequestHandler,
+  extendVibeExpiry
 );
 
 export default router;

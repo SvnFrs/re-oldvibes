@@ -27,11 +27,12 @@ import {
   IconCheck,
   IconX,
   IconAlertCircle,
+  IconBan,
 } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "../../_contexts/AuthContext";
-import { getVibeById } from "../../_apis/common/vibes";
+import { getVibeById, likeVibe, unlikeVibe } from "../../_apis/common/vibes";
 import {
   getCommentsWithRepliesByVibeId,
   createComment,
@@ -48,6 +49,13 @@ import {
   getVibeByIdWithWishlist,
   removeVibeFromWishlist,
 } from "../../_apis/common/wishlist";
+import {
+  trackView,
+  trackLike,
+  trackWishlist,
+  trackComment,
+  trackShare,
+} from "../../_apis/common/tracking";
 import ContactSellerButton from "../../_components/chat/ContactSellerButton";
 import { ModerationAlert } from "../../_components/moderation/ModerationAlert";
 import { PageShell } from "../../_components/layout/PageShell";
@@ -387,7 +395,7 @@ function CommentCard({
 export default function VibeDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isBanned } = useAuth();
   const [vibe, setVibe] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -398,6 +406,7 @@ export default function VibeDetailPage() {
   const [isWishlist, setIsWishlist] = useState(false);
   const [moderationAlert, setModerationAlert] = useState<any>(null);
   const [replyingToComment, setReplyingToComment] = useState<string | null>(null);
+  const viewStartTime = useRef<number>(Date.now());
 
   const vibeId = params.id as string;
   const userId = Cookies.get("userId");
@@ -437,12 +446,69 @@ export default function VibeDetailPage() {
     if (vibeId) {
       fetchVibeDetails();
       fetchComments();
+
+      // Track view interaction
+      if (isAuthenticated) {
+        viewStartTime.current = Date.now();
+        trackView(vibeId).catch((err) => console.warn("View tracking failed:", err));
+      }
     }
-  }, [vibeId, userId]);
+
+    // Track view duration on unmount
+    return () => {
+      if (isAuthenticated && vibeId) {
+        const duration = Math.floor((Date.now() - viewStartTime.current) / 1000);
+        if (duration > 0) {
+          trackView(vibeId, duration).catch((err) => console.warn("View duration tracking failed:", err));
+        }
+      }
+    };
+  }, [vibeId, userId, isAuthenticated]);
+
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (isBanned) {
+      setModerationAlert({
+        type: "error",
+        message: "You are temporarily banned from interacting with content.",
+        reason: user?.tempBanReason || "Violation of community guidelines",
+      });
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        await unlikeVibe(vibeId);
+        setIsLiked(false);
+        setLikesCount((prev) => Math.max(0, prev - 1));
+      } else {
+        await likeVibe(vibeId);
+        setIsLiked(true);
+        setLikesCount((prev) => prev + 1);
+        // Track like interaction
+        trackLike(vibeId).catch((err) => console.warn("Like tracking failed:", err));
+      }
+    } catch (error) {
+      console.error("Error handling like:", error);
+    }
+  };
 
   const handleWishlist = async () => {
     if (!isAuthenticated) {
       router.push("/auth/login");
+      return;
+    }
+
+    if (isBanned) {
+      setModerationAlert({
+        type: "error",
+        message: "You are temporarily banned from interacting with content.",
+        reason: user?.tempBanReason || "Violation of community guidelines",
+      });
       return;
     }
 
@@ -455,6 +521,8 @@ export default function VibeDetailPage() {
       } else {
         await addVibeToWishlist(vibeId, userId);
         setIsWishlist(true);
+        // Track wishlist interaction
+        trackWishlist(vibeId).catch((err) => console.warn("Wishlist tracking failed:", err));
       }
     } catch (error) {
       console.error("Error handling wishlist:", error);
@@ -468,6 +536,15 @@ export default function VibeDetailPage() {
       return;
     }
 
+    if (isBanned) {
+      setModerationAlert({
+        type: "error",
+        message: "You are temporarily banned from commenting.",
+        reason: user?.tempBanReason || "Violation of community guidelines",
+      });
+      return;
+    }
+
     if (!newComment.trim()) return;
 
     setModerationAlert(null);
@@ -478,6 +555,8 @@ export default function VibeDetailPage() {
       const updatedCommentsResponse = await getCommentsWithRepliesByVibeId(vibeId);
       setComments(updatedCommentsResponse.comments || []);
       setNewComment("");
+      // Track comment interaction
+      trackComment(vibeId).catch((err) => console.warn("Comment tracking failed:", err));
     } catch (error: any) {
       if (error.moderationError) {
         setModerationAlert({
@@ -609,7 +688,11 @@ export default function VibeDetailPage() {
 
                     <button
                       onClick={handleWishlist}
-                      className="ml-4 p-3 hover:bg-gruvbox-dark-bg1 rounded-full transition"
+                      disabled={isBanned}
+                      className={`ml-4 p-3 hover:bg-gruvbox-dark-bg1 rounded-full transition ${
+                        isBanned ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      title={isBanned ? "You are temporarily banned" : "Add to wishlist"}
                     >
                       {isWishlist ? (
                         <IconStarFilled size={28} className="text-gruvbox-yellow" />
@@ -722,24 +805,30 @@ export default function VibeDetailPage() {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setIsLiked(!isLiked)}
+                    onClick={handleLike}
+                    disabled={isBanned}
                     className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition ${
                       isLiked
                         ? "bg-gruvbox-red/10 text-gruvbox-red border border-gruvbox-red/30"
                         : "bg-gruvbox-dark-bg1 text-gruvbox-gray hover:bg-gruvbox-dark-bg2"
-                    }`}
+                    } ${isBanned ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={isBanned ? "You are temporarily banned" : isLiked ? "Unlike" : "Like"}
                   >
                     <IconHeart size={20} fill={isLiked ? "currentColor" : "none"} />
                     {likesCount}
                   </button>
 
                   <button
-                    onClick={() =>
+                    onClick={() => {
                       window.open(
                         `https://www.facebook.com/share.php?u=${window.location.href}`,
                         "_blank"
-                      )
-                    }
+                      );
+                      // Track share interaction
+                      if (isAuthenticated) {
+                        trackShare(vibeId).catch((err) => console.warn("Share tracking failed:", err));
+                      }
+                    }}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gruvbox-dark-bg1 text-gruvbox-gray hover:bg-gruvbox-dark-bg2 rounded-xl font-medium transition"
                   >
                     <IconShare size={20} />
@@ -782,6 +871,17 @@ export default function VibeDetailPage() {
               {/* Comment Form */}
               {isAuthenticated ? (
                 <form onSubmit={handleComment} className="mb-8">
+                  {isBanned && (
+                    <div className="mb-4 p-4 bg-gruvbox-red/10 border border-gruvbox-red/30 rounded-xl flex items-start gap-3">
+                      <IconBan size={20} className="text-gruvbox-red flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-gruvbox-red font-medium">You are temporarily banned</p>
+                        <p className="text-gruvbox-dark-fg2 text-sm mt-1">
+                          {user?.tempBanReason || "Violation of community guidelines"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gruvbox-orange to-gruvbox-yellow flex items-center justify-center flex-shrink-0">
                       <span className="text-sm font-bold text-white">
@@ -792,15 +892,18 @@ export default function VibeDetailPage() {
                       <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Share your thoughts..."
-                        className="w-full p-4 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-xl text-gruvbox-dark-fg0 resize-none focus:ring-2 focus:ring-gruvbox-orange/50 focus:border-transparent"
+                        placeholder={isBanned ? "You are banned from commenting" : "Share your thoughts..."}
+                        disabled={isBanned}
+                        className={`w-full p-4 bg-gruvbox-dark-bg1 border border-gruvbox-gray/20 rounded-xl text-gruvbox-dark-fg0 resize-none focus:ring-2 focus:ring-gruvbox-orange/50 focus:border-transparent ${
+                          isBanned ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                         rows={3}
                         required
                       />
                       <div className="flex justify-end mt-3">
                         <button
                           type="submit"
-                          disabled={commentLoading || !newComment.trim()}
+                          disabled={commentLoading || !newComment.trim() || isBanned}
                           className="flex items-center gap-2 px-6 py-3 bg-gruvbox-orange text-white rounded-lg hover:bg-gruvbox-yellow transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {commentLoading ? (

@@ -2,10 +2,12 @@ import type { Request, Response } from "express";
 import { UserModel } from "../models/user.models";
 import { VibeModel } from "../models/vibe.models";
 import { CommentModel } from "../models/comment.models";
+import { FeedbackReportModel } from "../models/feedback-report.model";
 
 const userModel = new UserModel();
 const vibeModel = new VibeModel();
 const commentModel = new CommentModel();
+const feedbackReportModel = new FeedbackReportModel();
 
 export const addStaff = async (req: Request, res: Response) => {
   try {
@@ -219,6 +221,14 @@ export const listAllUsers = async (req: Request, res: Response) => {
 
     const users = await userModel.listAllUsers(limit, offset);
 
+    // Calculate stats
+    const total = users.filter((u) => u.role !== "admin" && u.role !== "staff").length;
+    const active = users.filter((u) => u.isActive && u.role !== "admin" && u.role !== "staff").length;
+    const banned = users.filter(
+      (u) => !u.isActive && !u.deletedAt && u.role !== "admin" && u.role !== "staff"
+    ).length;
+    const deleted = users.filter((u) => u.deletedAt && u.role !== "admin" && u.role !== "staff").length;
+
     res.json({
       users: users.map((u) => ({
         id: u._id,
@@ -230,10 +240,20 @@ export const listAllUsers = async (req: Request, res: Response) => {
         isEmailVerified: u.isEmailVerified,
         createdAt: u.createdAt,
         deletedAt: u.deletedAt,
+        isTempBanned: u.isTempBanned,
+        tempBanReason: u.tempBanReason,
+        tempBanAt: u.tempBanAt,
+        badBehaviorCount: u.badBehaviorCount,
       })),
       count: users.length,
       limit,
       offset,
+      stats: {
+        total,
+        active,
+        banned,
+        deleted,
+      },
     });
   } catch (error) {
     console.error("List all users error:", error);
@@ -247,32 +267,18 @@ export const listAllUsers = async (req: Request, res: Response) => {
 export const removeTempBan = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { User } = await import("../schema/user.schema");
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
     }
 
-    if (!user.isTempBanned) {
-      return res.status(400).json({ message: "User is not temp banned" });
+    const removed = await userModel.removeTempBan(userId);
+    if (!removed) {
+      return res.status(404).json({ message: "User not found or error removing temp ban" });
     }
-
-    // Remove temp ban
-    user.isTempBanned = false;
-    user.tempBanReason = undefined;
-    user.tempBanAt = undefined;
-    await user.save();
 
     res.json({
       message: "Temp ban removed successfully",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        badBehaviorCount: user.badBehaviorCount,
-        isTempBanned: user.isTempBanned,
-      },
     });
   } catch (error) {
     console.error("Remove temp ban error:", error);
@@ -286,30 +292,18 @@ export const removeTempBan = async (req: Request, res: Response) => {
 export const resetBadBehavior = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { User } = await import("../schema/user.schema");
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
     }
 
-    // Reset bad behavior
-    user.badBehaviorCount = 0;
-    user.isTempBanned = false;
-    user.tempBanReason = undefined;
-    user.tempBanAt = undefined;
-    user.badBehaviorHistory = [];
-    await user.save();
+    const reset = await userModel.resetBadBehavior(userId);
+    if (!reset) {
+      return res.status(404).json({ message: "User not found or error resetting bad behavior" });
+    }
 
     res.json({
       message: "Bad behavior count reset successfully",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        badBehaviorCount: user.badBehaviorCount,
-        isTempBanned: user.isTempBanned,
-      },
     });
   } catch (error) {
     console.error("Reset bad behavior error:", error);
@@ -419,6 +413,15 @@ export const getCommentsByVibe = async (req: Request, res: Response) => {
 
     const result = await commentModel.getCommentsByVibe(filters);
 
+    // Calculate stats
+    const totalComments = result.comments.length;
+    const totalLikes = result.comments.reduce((acc, c) => acc + c.likesCount, 0);
+    const avgLikesPerComment =
+      totalComments > 0
+        ? Math.round((totalLikes / totalComments) * 10) / 10
+        : 0;
+    const activeComments = result.comments.filter((c) => c.isActive).length;
+
     res.json({
       comments: result.comments,
       pagination: {
@@ -426,6 +429,12 @@ export const getCommentsByVibe = async (req: Request, res: Response) => {
         limit: filters.limit,
         offset: filters.offset,
         hasMore: result.hasMore,
+      },
+      stats: {
+        totalComments,
+        totalLikes,
+        avgLikesPerComment,
+        activeComments,
       },
     });
   } catch (error) {
@@ -498,10 +507,27 @@ export const getAllVibesAdmin = async (req: Request, res: Response) => {
 
     const result = await vibeModel.getAllVibesAdmin(filters);
 
+    // Calculate stats
+    const vibes = result.data;
+    const total = vibes.length;
+    const pending = vibes.filter((v: any) => v.status === "pending").length;
+    const approved = vibes.filter((v: any) => v.status === "approved").length;
+    const rejected = vibes.filter((v: any) => v.status === "rejected").length;
+    const sold = vibes.filter((v: any) => v.status === "sold").length;
+    const archived = vibes.filter((v: any) => v.status === "archived").length;
+
     res.json({
       vibes: result.data,
       pagination: result.pagination,
       totalCount: result.totalCount,
+      stats: {
+        total,
+        pending,
+        approved,
+        rejected,
+        sold,
+        archived,
+      },
     });
   } catch (error) {
     console.error("Get all vibes admin error:", error);
@@ -572,24 +598,33 @@ export const banUserForBadComment = async (req: Request, res: Response) => {
       });
     }
 
-    const banned = await userModel.banUser(userId);
-    if (!banned) {
-      return res.status(404).json({
-        message: "User not found or already banned",
+    // Use addBadBehavior which handles temp ban and auto-ban logic
+    const result = await userModel.addBadBehavior(
+      userId,
+      reason || "Inappropriate Language",
+      commentId,
+      comment.vibeId?.toString()
+    );
+
+    if (!result.success) {
+      return res.status(400).json({
+        message: result.message,
       });
     }
 
     console.log(
-      `User ${userId} banned for bad comment ${commentId} by ${
+      `User ${userId} ${result.isPermanentlyBanned ? "permanently banned" : "temporarily banned"} for bad comment ${commentId} by ${
         requester.userId
       }. Reason: ${reason || "AI detected inappropriate content"}`
     );
 
     res.json({
-      message: "User banned successfully for inappropriate comment",
+      message: result.message,
       userId,
       commentId,
       reason: reason || "AI detected inappropriate content",
+      isTempBanned: result.isTempBanned,
+      isPermanentlyBanned: result.isPermanentlyBanned,
     });
   } catch (error) {
     console.error("Ban user for bad comment error:", error);
@@ -614,3 +649,109 @@ async function detectBadComment(content: string): Promise<boolean> {
   const lowerContent = content.toLowerCase();
   return badKeywords.some((keyword) => lowerContent.includes(keyword));
 }
+
+/**
+ * Get dashboard statistics for admin panel
+ * GET /admin/dashboard/stats
+ */
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const { User } = await import("../schema/user.schema");
+    const { Vibe } = await import("../schema/vibe.schema");
+    const { Feedback } = await import("../schema/feedback.schema");
+    const { Report } = await import("../schema/report.schema");
+
+    // Get date range for "this month"
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Total users this month
+    const totalUsersThisMonth = await User.countDocuments({
+      createdAt: { $gte: startOfMonth },
+      role: { $nin: ["admin", "staff"] },
+    });
+
+    const totalUsersLastMonth = await User.countDocuments({
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+      role: { $nin: ["admin", "staff"] },
+    });
+
+    const userGrowthPercent =
+      totalUsersLastMonth > 0
+        ? Math.round(((totalUsersThisMonth - totalUsersLastMonth) / totalUsersLastMonth) * 100)
+        : 0;
+
+    // Active vibes (approved status)
+    const activeVibes = await Vibe.countDocuments({ status: "approved" });
+    const activeVibesLastMonth = await Vibe.countDocuments({
+      status: "approved",
+      createdAt: { $lte: endOfLastMonth },
+    });
+
+    const vibeGrowthPercent =
+      activeVibesLastMonth > 0
+        ? Math.round(((activeVibes - activeVibesLastMonth) / activeVibesLastMonth) * 100)
+        : 0;
+
+    // Pending reports
+    const pendingReports = await Report.countDocuments({});
+    const pendingReportsLastMonth = await Report.countDocuments({
+      createdAt: { $lte: endOfLastMonth },
+    });
+
+    const reportsDiff = pendingReports - pendingReportsLastMonth;
+
+    // Pending vibes (awaiting moderation)
+    const pendingVibes = await Vibe.countDocuments({ status: "pending" });
+
+    // Recent activity (last 10 users registered)
+    const recentUsers = await User.find({
+      role: { $nin: ["admin", "staff"] },
+    })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("_id email username name profilePicture createdAt");
+
+    const recentActivity = recentUsers.map((user) => ({
+      type: "user_registered",
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        profilePicture: user.profilePicture,
+      },
+      timestamp: user.createdAt,
+    }));
+
+    res.json({
+      stats: {
+        totalUsers: {
+          count: totalUsersThisMonth,
+          growthPercent: userGrowthPercent,
+          label: "This month",
+        },
+        activeVibes: {
+          count: activeVibes,
+          growthPercent: vibeGrowthPercent,
+          label: "Active",
+        },
+        pendingReports: {
+          count: pendingReports,
+          diff: reportsDiff,
+          label: "Pending",
+        },
+        pendingVibes: {
+          count: pendingVibes,
+          label: "Awaiting review",
+        },
+      },
+      recentActivity,
+    });
+  } catch (error) {
+    console.error("Get dashboard stats error:", error);
+    res.status(500).json({ message: "Error fetching dashboard stats", error });
+  }
+};
