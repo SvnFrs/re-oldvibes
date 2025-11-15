@@ -7,6 +7,7 @@ import {
   useState,
   ReactNode,
   useRef,
+  useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -61,27 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isAuthenticated = !!user;
   const isBanned = user?.isTempBanned || false;
 
-  useEffect(() => {
-    if (!hasCheckedAuth.current) {
-      hasCheckedAuth.current = true;
-
-      // Try to load user from localStorage first for instant UI update
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error("Failed to parse saved user:", error);
-          localStorage.removeItem("user");
-        }
-      }
-
-      checkAuthStatus();
-    }
-  }, []);
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/auth/me`, {
         credentials: "include",
@@ -106,7 +87,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Stable function
+
+  useEffect(() => {
+    if (!hasCheckedAuth.current) {
+      hasCheckedAuth.current = true;
+
+      // Try to load user from localStorage first for instant UI update
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("Failed to parse saved user:", error);
+          localStorage.removeItem("user");
+        }
+      }
+
+      checkAuthStatus();
+    }
+  }, [checkAuthStatus]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -173,10 +174,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     // Always refresh user data from server
     await checkAuthStatus();
-  };
+  }, []); // Empty deps - checkAuthStatus is stable
 
   const value: AuthContextType = {
     user,

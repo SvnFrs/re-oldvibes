@@ -1,102 +1,102 @@
-# Data Seeding Scripts
+# Seed Data Scripts
 
-This directory contains scripts to quickly populate your database with sample data for testing and development.
+Scripts để tạo dữ liệu mẫu cho database.
 
-## Available Scripts
+## Cấu trúc
 
-### 1. Quick Seed (`quick-seed.ts`)
-A lightweight script that creates minimal test data for quick development and testing.
+- `seed-data.ts` - Script chính để seed dữ liệu đầy đủ (có thể bật crawler qua env)
+- `seed-chotot.ts` - Script chuyên dụng để crawl dữ liệu từ Chợ Tốt
+- `quick-seed.ts` - Script nhanh để tạo dữ liệu test tối thiểu
+- `clean-data.ts` - Script để xóa dữ liệu trong database
+- `utils/chotot-crawler.ts` - Crawler utility để lấy dữ liệu thực từ Chợ Tốt
 
-**Usage:**
+## Các script có sẵn
+
+### Seed Data
 ```bash
-cd server
+# Seed dữ liệu đầy đủ (dữ liệu mẫu)
+bun run seed
+
+# Seed dữ liệu từ Chợ Tốt crawler (KHUYẾN NGHỊ)
+bun run seed:chotot
+
+# Seed dữ liệu nhanh (ít dữ liệu hơn)
 bun run seed:quick
 ```
 
-**Creates:**
-- 5 users (1 admin, 1 staff, 3 regular users)
-- 12 vibes (2 of each category)
-- Random comments and interactions
-- All with password: `123456`
-
-### 2. Full Seed (`seed-data.ts`)
-A comprehensive script that creates extensive sample data for realistic testing.
-
-**Usage:**
+### Clean Data
 ```bash
-cd server
+# Xóa tất cả dữ liệu (users, vibes, comments)
+bun run clean
+
+# Xóa chỉ users
+bun run clean:users
+
+# Xóa chỉ vibes
+bun run clean:vibes
+
+# Xóa chỉ comments
+bun run clean:comments
+```
+
+## Sử dụng Crawler từ Chợ Tốt
+
+### Cách 1: Sử dụng script chuyên dụng (KHUYẾN NGHỊ)
+
+Chạy trực tiếp script `seed-chotot.ts`:
+
+```bash
+bun run seed:chotot
+```
+
+Script này sẽ tự động:
+- Crawl dữ liệu từ Chợ Tốt cho tất cả các categories
+- Sử dụng 5 items mỗi category (có thể config qua env `CRAWL_ITEMS_PER_CATEGORY`)
+- Tự động fallback về dữ liệu mẫu nếu crawler thất bại
+
+### Cách 2: Sử dụng seed-data.ts với biến môi trường
+
+Để sử dụng crawler với `seed-data.ts`, set biến môi trường:
+
+```bash
+# Bật crawler
+export USE_CRAWLER=true
+export CRAWL_ITEMS_PER_CATEGORY=3  # Số items mỗi category (mặc định: 3)
+
+# Chạy seed
 bun run seed
 ```
 
-**Creates:**
-- 20 users (1 admin, 2 staff, 17 regular users)
-- 75+ vibes across all categories
-- 200+ comments with realistic interactions
-- Varied conditions, prices, and locations
-- All with password: `123456`
+Hoặc tạo file `.env` trong thư mục `server/`:
 
-## Test Accounts
+```env
+USE_CRAWLER=true
+CRAWL_ITEMS_PER_CATEGORY=3
+```
 
-After running either script, you can use these test accounts:
+### Tắt crawler (sử dụng dữ liệu mẫu)
 
-### Admin Account
-- **Email:** admin@example.com
-- **Password:** 123456
-- **Role:** admin
+Nếu không set `USE_CRAWLER=true`, script `seed-data.ts` sẽ sử dụng dữ liệu mẫu fallback:
 
-### Staff Account
-- **Email:** staff@example.com
-- **Password:** 123456
-- **Role:** staff
+```bash
+bun run seed
+```
 
-### Regular Users
-- **Email:** user1@example.com, user2@example.com, etc.
-- **Password:** 123456
-- **Role:** user
+## Lưu ý
 
-## Sample Data Includes
+- Crawler có thể mất thời gian do phải crawl từng trang
+- Crawler có delay giữa các request để tránh rate limiting
+- Nếu crawler thất bại, script sẽ tự động fallback về dữ liệu mẫu
+- Hình ảnh từ crawler sẽ được sử dụng trực tiếp từ URL của Chợ Tốt
 
-### Users
-- Vietnamese names and usernames
-- Email addresses
-- Profile bios
-- Verification status
-- Following/followers relationships
+## Cấu trúc dữ liệu
 
-### Vibes
-- Realistic Vietnamese item names and descriptions
-- Prices in VND
-- Categories: Electronics, Fashion, Books, Toys, Home, Sports, Beauty, Other
-- Conditions: new, like-new, good, fair, poor
-- Locations across Vietnam
-- Media files (images from Unsplash)
-- Various statuses (approved, pending, sold, rejected)
-
-### Comments
-- Realistic Vietnamese comments
-- User interactions
-- Like counts and replies
-
-## Environment Setup
-
-Make sure you have:
-1. MongoDB running (local or remote)
-2. Environment variables set up (optional - defaults to local MongoDB)
-3. Bun installed
-
-## Customization
-
-You can modify the scripts to:
-- Add more sample data
-- Change user credentials
-- Adjust item categories and prices
-- Modify comment texts
-- Add more realistic data variations
-
-## Notes
-
-- Scripts will clear existing data before seeding
-- All timestamps are set to recent dates
-- Images use Unsplash placeholder URLs
-- Prices are in Vietnamese Dong (VND)
-- All content is in Vietnamese for realistic testing
+Crawler sẽ lấy các thông tin sau từ Chợ Tốt:
+- Tên sản phẩm
+- Mô tả
+- Giá
+- Category
+- Condition (tình trạng)
+- Location (địa điểm)
+- Tags
+- Hình ảnh (URL)

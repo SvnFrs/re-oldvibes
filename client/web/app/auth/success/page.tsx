@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IconCheck } from "@tabler/icons-react";
 import { useAuth } from "../../_contexts/AuthContext";
@@ -10,10 +10,16 @@ export default function AuthSuccessPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const { refreshUser } = useAuth();
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasProcessed.current) return;
+    
     const handleSuccess = async () => {
       if (token) {
+        hasProcessed.current = true;
+        
         // Store token in localStorage for API client
         localStorage.setItem("auth_token", token);
         
@@ -25,13 +31,15 @@ export default function AuthSuccessPage() {
           router.push("/");
         }, 2000);
       } else {
+        hasProcessed.current = true;
         // No token, redirect to login
         router.push("/auth/login");
       }
     };
 
     handleSuccess();
-  }, [token, refreshUser, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Only depend on token, not refreshUser or router
 
   return (
     <div className="min-h-screen bg-gruvbox-light-bg0 dark:bg-gruvbox-dark-bg0 flex items-center justify-center p-4">
