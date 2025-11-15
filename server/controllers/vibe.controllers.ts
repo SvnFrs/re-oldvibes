@@ -416,3 +416,128 @@ export const uploadVibeMedia = async (
     res.status(500).json({ message: "Error uploading media", error });
   }
 };
+
+// Archive Management endpoints
+export const archiveVibe = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { vibeId } = req.params;
+    const userId = req.user!.userId;
+    const role = req.user!.role;
+
+    if (!vibeId) {
+      res.status(400).json({ message: "Vibe ID is required" });
+      return;
+    }
+
+    const isAdmin = role === "admin" || role === "staff";
+    const archivedVibe = await vibeModel.manualArchiveVibe(
+      vibeId,
+      userId,
+      isAdmin
+    );
+
+    if (!archivedVibe) {
+      res.status(404).json({
+        message: "Vibe not found or cannot be archived",
+      });
+      return;
+    }
+
+    res.json({
+      message: "Vibe archived successfully",
+      vibe: {
+        id: archivedVibe._id,
+        status: archivedVibe.status,
+      },
+    });
+  } catch (error) {
+    console.error("Archive vibe error:", error);
+    res.status(500).json({ message: "Error archiving vibe", error });
+  }
+};
+
+export const unarchiveVibe = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { vibeId } = req.params;
+
+    if (!vibeId) {
+      res.status(400).json({ message: "Vibe ID is required" });
+      return;
+    }
+
+    const unarchivedVibe = await vibeModel.unarchiveVibe(vibeId);
+
+    if (!unarchivedVibe) {
+      res.status(404).json({
+        message: "Vibe not found or not archived",
+      });
+      return;
+    }
+
+    res.json({
+      message: "Vibe unarchived successfully",
+      vibe: {
+        id: unarchivedVibe._id,
+        status: unarchivedVibe.status,
+        expiresAt: unarchivedVibe.expiresAt,
+      },
+    });
+  } catch (error) {
+    console.error("Unarchive vibe error:", error);
+    res.status(500).json({ message: "Error unarchiving vibe", error });
+  }
+};
+
+export const extendVibeExpiry = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { vibeId } = req.params;
+    const userId = req.user!.userId;
+    const { hours = 24 } = req.body;
+
+    if (!vibeId) {
+      res.status(400).json({ message: "Vibe ID is required" });
+      return;
+    }
+
+    // Validate hours
+    if (hours < 1 || hours > 168) {
+      res.status(400).json({
+        message: "Extension hours must be between 1 and 168 (1 week)",
+      });
+      return;
+    }
+
+    const extendedVibe = await vibeModel.extendVibeExpiry(
+      vibeId,
+      userId,
+      hours
+    );
+
+    if (!extendedVibe) {
+      res.status(404).json({
+        message: "Vibe not found, already expired, or you don't have permission",
+      });
+      return;
+    }
+
+    res.json({
+      message: `Vibe expiry extended by ${hours} hours`,
+      vibe: {
+        id: extendedVibe._id,
+        expiresAt: extendedVibe.expiresAt,
+      },
+    });
+  } catch (error) {
+    console.error("Extend vibe expiry error:", error);
+    res.status(500).json({ message: "Error extending vibe expiry", error });
+  }
+};

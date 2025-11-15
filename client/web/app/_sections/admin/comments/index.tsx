@@ -298,6 +298,7 @@ export default function CommentModerationSection() {
   const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [showVibesList, setShowVibesList] = useState(true);
+  const [commentStats, setCommentStats] = useState<any>(null);
 
   // Fetch vibes for selection
   const fetchVibes = async () => {
@@ -347,6 +348,10 @@ export default function CommentModerationSection() {
 
       if (response.ok) {
         setComments(data.comments || []);
+        // Use stats from API if available
+        if (data.stats) {
+          setCommentStats(data.stats);
+        }
       } else {
         setError(data.message || "Failed to fetch comments");
       }
@@ -476,6 +481,11 @@ export default function CommentModerationSection() {
       };
     }
 
+    // Use stats from API if available, otherwise calculate
+    if (commentStats) {
+      return commentStats;
+    }
+
     const totalComments = comments.length;
     const totalLikes = comments.reduce((acc, c) => acc + c.likesCount, 0);
     const avgLikesPerComment =
@@ -489,7 +499,7 @@ export default function CommentModerationSection() {
       avgLikesPerComment,
       activeComments: comments.filter((c) => c.isActive).length,
     };
-  }, [comments, vibes, selectedVibe]);
+  }, [comments, vibes, selectedVibe, commentStats]);
 
   if (loading && vibes.length === 0) {
     return (

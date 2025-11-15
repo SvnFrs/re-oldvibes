@@ -472,6 +472,13 @@ export default function ReportSection() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
+  const [stats, setStats] = useState({
+    total: 0,
+    spam: 0,
+    inappropriate: 0,
+    abusive: 0,
+    withEvidence: 0,
+  });
 
   // Fetch user information by userId
   const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
@@ -555,6 +562,11 @@ export default function ReportSection() {
 
       if (res.ok) {
         setReports(data.reports || []);
+        
+        // Use stats from API if available
+        if (data.stats) {
+          setStats(data.stats);
+        }
 
         // Fetch user and vibe info for all reports
         const userIds = new Set<string>();
@@ -883,19 +895,22 @@ export default function ReportSection() {
   }, [reports, searchTerm, sortBy, userInfoMap, vibeInfoMap]);
 
   // Calculate statistics
-  const stats = useMemo(() => {
-    const total = reports.length;
-    const spam = reports.filter((r) => r.reportType === "spam").length;
-    const inappropriate = reports.filter(
-      (r) => r.reportType === "inappropriate"
-    ).length;
-    const abusive = reports.filter((r) => r.reportType === "abusive").length;
-    const withEvidence = reports.filter(
-      (r) => r.reportImages && r.reportImages.length > 0
-    ).length;
+  // Stats are now provided by the API, but keep fallback calculation
+  useEffect(() => {
+    if (reports.length > 0 && stats.total === 0) {
+      const total = reports.length;
+      const spam = reports.filter((r) => r.reportType === "spam").length;
+      const inappropriate = reports.filter(
+        (r) => r.reportType === "inappropriate"
+      ).length;
+      const abusive = reports.filter((r) => r.reportType === "abusive").length;
+      const withEvidence = reports.filter(
+        (r) => r.reportImages && r.reportImages.length > 0
+      ).length;
 
-    return { total, spam, inappropriate, abusive, withEvidence };
-  }, [reports]);
+      setStats({ total, spam, inappropriate, abusive, withEvidence });
+    }
+  }, [reports, stats.total]);
 
   // Get type icon
   const getTypeIcon = (type: string) => {

@@ -18,6 +18,8 @@ import {
   getAllVibesAdmin,
   getVibeDetailAdmin,
   banUserForBadComment,
+  // Dashboard stats
+  getDashboardStats,
 } from "../controllers/admin.controllers";
 // Appeal management
 import {
@@ -39,6 +41,54 @@ import {
 } from "../controllers/support.controllers";
 
 const router = Router();
+
+/**
+ * @swagger
+ * /admin/dashboard/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Admin]
+ *     security: [{ cookieAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics including users, vibes, reports, and recent activity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stats:
+ *                   type: object
+ *                   properties:
+ *                     totalUsers:
+ *                       type: object
+ *                       properties:
+ *                         count: { type: integer }
+ *                         growthPercent: { type: integer }
+ *                         label: { type: string }
+ *                     activeVibes:
+ *                       type: object
+ *                       properties:
+ *                         count: { type: integer }
+ *                         growthPercent: { type: integer }
+ *                         label: { type: string }
+ *                     pendingReports:
+ *                       type: object
+ *                       properties:
+ *                         count: { type: integer }
+ *                         diff: { type: integer }
+ *                         label: { type: string }
+ *                     pendingVibes:
+ *                       type: object
+ *                       properties:
+ *                         count: { type: integer }
+ *                         label: { type: string }
+ *                 recentActivity:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ */
+router.get("/dashboard/stats", authenticateToken, requireStaff, getDashboardStats);
 
 /**
  * @swagger

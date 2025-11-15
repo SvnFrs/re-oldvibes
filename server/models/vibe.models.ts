@@ -257,6 +257,95 @@ export class VibeModel {
     return result.modifiedCount;
   }
 
+  async manualArchiveVibe(
+    vibeId: string,
+    userId?: string,
+    isAdmin = false
+  ): Promise<IVibe | null> {
+    const query: any = { _id: vibeId };
+    
+    // Only allow archiving if user is admin or owner
+    if (!isAdmin && userId) {
+      query.userId = userId;
+    }
+
+    // Only archive approved or pending vibes
+    query.status = { $in: ["approved", "pending"] };
+
+    const vibe = await Vibe.findOneAndUpdate(
+      query,
+      {
+        status: "archived",
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    return vibe;
+  }
+
+  async unarchiveVibe(vibeId: string): Promise<IVibe | null> {
+    const vibe = await Vibe.findOne({ _id: vibeId, status: "archived" });
+
+    if (!vibe) {
+      return null;
+    }
+
+    // When unarchiving, set it back to approved and extend expiry by 24 hours
+    const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const updatedVibe = await Vibe.findByIdAndUpdate(
+      vibeId,
+      {
+        status: "approved",
+        expiresAt: newExpiresAt,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    return updatedVibe;
+  }
+
+  async extendVibeExpiry(
+    vibeId: string,
+    userId: string,
+    hoursToExtend: number = 24
+  ): Promise<IVibe | null> {
+    const vibe = await Vibe.findOne({
+      _id: vibeId,
+      userId,
+      status: "approved",
+    });
+
+    if (!vibe) {
+      return null;
+    }
+
+    // Check if vibe is not already expired
+    if (vibe.expiresAt && vibe.expiresAt <= new Date()) {
+      return null;
+    }
+
+    // Extend expiry from current expiresAt or now (whichever is later)
+    const baseTime = vibe.expiresAt && vibe.expiresAt > new Date() 
+      ? vibe.expiresAt.getTime() 
+      : Date.now();
+    
+    const newExpiresAt = new Date(baseTime + hoursToExtend * 60 * 60 * 1000);
+
+    const updatedVibe = await Vibe.findByIdAndUpdate(
+      vibeId,
+      {
+        expiresAt: newExpiresAt,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    return updatedVibe;
+  }
+
   async searchVibes(
     query: string,
     filters: VibeFilters = {}

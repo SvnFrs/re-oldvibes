@@ -322,9 +322,16 @@ export default function FeedbackSection() {
   const [success, setSuccess] = useState("");
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
+  const [stats, setStats] = useState({
+    total: 0,
+    bugs: 0,
+    features: 0,
+    suggestions: 0,
+    withImages: 0,
+  });
 
   // Fetch user information by userId
   const fetchUserInfo = async (userId: string): Promise<UserInfo | null> => {
@@ -374,6 +381,11 @@ export default function FeedbackSection() {
 
       if (res.ok) {
         setFeedbacks(data.feedbacks || []);
+        
+        // Use stats from API if available
+        if (data.stats) {
+          setStats(data.stats);
+        }
 
         // Fetch user info for all feedbacks
         const userIds = new Set<string>();
@@ -535,17 +547,20 @@ export default function FeedbackSection() {
   }, [feedbacks, searchTerm, sortBy, userInfoMap]);
 
   // Calculate statistics
-  const stats = useMemo(() => {
-    const total = feedbacks.length;
-    const bugs = feedbacks.filter((f) => f.feedbackType === "bug").length;
-    const features = feedbacks.filter((f) => f.feedbackType === "feature").length;
-    const suggestions = feedbacks.filter((f) => f.feedbackType === "suggestion").length;
-    const withImages = feedbacks.filter(
-      (f) => f.feedbackImages && f.feedbackImages.length > 0
-    ).length;
+  // Stats are now provided by the API, but keep fallback calculation
+  useEffect(() => {
+    if (feedbacks.length > 0 && stats.total === 0) {
+      const total = feedbacks.length;
+      const bugs = feedbacks.filter((f) => f.feedbackType === "bug").length;
+      const features = feedbacks.filter((f) => f.feedbackType === "feature").length;
+      const suggestions = feedbacks.filter((f) => f.feedbackType === "suggestion").length;
+      const withImages = feedbacks.filter(
+        (f) => f.feedbackImages && f.feedbackImages.length > 0
+      ).length;
 
-    return { total, bugs, features, suggestions, withImages };
-  }, [feedbacks]);
+      setStats({ total, bugs, features, suggestions, withImages });
+    }
+  }, [feedbacks, stats.total]);
 
   // Get type icon
   const getTypeIcon = (type: string) => {

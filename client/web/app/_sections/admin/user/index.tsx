@@ -15,7 +15,8 @@ import {
   IconCalendar,
   IconMail,
   IconDownload,
-  IconShield,
+  IconAlertTriangle,
+  IconClock,
 } from "@tabler/icons-react";
 import Modal from "@/app/_components/reusable/modal";
 import { API } from "@/app/_libs/api";
@@ -114,18 +115,55 @@ function UserDetailModal({
   isOpen,
   onClose,
   onBanToggle,
-  onRoleChange,
+  onRemoveTempBan,
+  onResetBadBehavior,
 }: {
   user: User | null;
   isOpen: boolean;
   onClose: () => void;
   onBanToggle: (userId: string, isActive: boolean) => void;
-  onRoleChange: (userId: string, newRole: string) => void;
+  onRemoveTempBan: (userId: string) => void;
+  onResetBadBehavior: (userId: string) => void;
 }) {
   const [showBanConfirm, setShowBanConfirm] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [showRemoveTempBanConfirm, setShowRemoveTempBanConfirm] = useState(false);
+  const [showResetBadBehaviorConfirm, setShowResetBadBehaviorConfirm] = useState(false);
 
   if (!user) return null;
+
+  const handleRemoveTempBanClick = () => {
+    setShowRemoveTempBanConfirm(true);
+  };
+
+  const handleRemoveTempBanConfirm = () => {
+    onRemoveTempBan(user.id);
+    setShowRemoveTempBanConfirm(false);
+  };
+
+  const handleResetBadBehaviorClick = () => {
+    setShowResetBadBehaviorConfirm(true);
+  };
+
+  const handleResetBadBehaviorConfirm = () => {
+    onResetBadBehavior(user.id);
+    setShowResetBadBehaviorConfirm(false);
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  };
 
   const handleBanClick = () => {
     setShowBanConfirm(true);
@@ -134,17 +172,6 @@ function UserDetailModal({
   const handleBanConfirm = () => {
     onBanToggle(user.id, user.isActive || false);
     setShowBanConfirm(false);
-  };
-
-  const handleRoleClick = (role: string) => {
-    setSelectedRole(role);
-  };
-
-  const handleRoleConfirm = () => {
-    if (selectedRole) {
-      onRoleChange(user.id, selectedRole);
-      setSelectedRole(null);
-    }
   };
 
   return (
@@ -200,30 +227,67 @@ function UserDetailModal({
                 </span>
               </div>
             </div>
-          </div>
 
-          {/* Role Management */}
-          <div>
-            <h4 className="text-sm font-semibold text-gruvbox-dark-fg2 mb-3 flex items-center gap-2">
-              <IconShield size={16} />
-              Role Management
-            </h4>
-            <div className="grid grid-cols-3 gap-2">
-              {["user", "staff", "admin"].map((role) => (
-                <button
-                  key={role}
-                  onClick={() => handleRoleClick(role)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    user.role === role
-                      ? "bg-gradient-to-r from-gruvbox-orange to-gruvbox-yellow text-white"
-                      : "bg-gruvbox-dark-bg2 text-gruvbox-dark-fg1 hover:bg-gruvbox-dark-bg3"
-                  }`}
-                  disabled={user.role === role}
-                >
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </button>
-              ))}
-            </div>
+            {/* Temp Ban Warning */}
+            {user.isTempBanned && (
+              <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <IconAlertTriangle size={20} className="text-yellow-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-yellow-400 mb-1">
+                      Temporarily Banned
+                    </h4>
+                    <p className="text-xs text-gruvbox-dark-fg2 mb-2">
+                      {user.tempBanReason || "No reason provided"}
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-gruvbox-dark-fg3">
+                      <span className="flex items-center gap-1">
+                        <IconClock size={14} />
+                        Banned {user.tempBanAt ? formatTimeAgo(user.tempBanAt) : "recently"}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <IconBan size={14} />
+                        Violations: {user.badBehaviorCount || 0}/3
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveTempBanClick}
+                    className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Remove Ban
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bad Behavior Stats */}
+            {(user.badBehaviorCount || 0) > 0 && (
+              <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-red-400 flex items-center gap-2">
+                    <IconAlertTriangle size={16} />
+                    Violation History
+                  </h4>
+                  <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded-full">
+                    {user.badBehaviorCount || 0} / 3 Violations
+                  </span>
+                </div>
+                <div className="text-xs text-gruvbox-dark-fg3">
+                  <p className="mb-2">
+                    {user.badBehaviorCount === 1 && "User has 1 violation. 2 more will result in permanent ban."}
+                    {user.badBehaviorCount === 2 && "User has 2 violations. 1 more will result in permanent ban."}
+                    {user.badBehaviorCount && user.badBehaviorCount >= 3 && "User has reached 3 violations and may be permanently banned."}
+                  </p>
+                  <button
+                    onClick={handleResetBadBehaviorClick}
+                    className="mt-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Reset Violations (Admin Only)
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -267,15 +331,26 @@ function UserDetailModal({
         type={user.isActive ? "danger" : "warning"}
       />
 
-      {/* Role Change Confirmation Modal */}
+      {/* Remove Temp Ban Confirmation Modal */}
       <ConfirmationModal
-        isOpen={!!selectedRole}
-        onClose={() => setSelectedRole(null)}
-        onConfirm={handleRoleConfirm}
-        title="Change User Role"
-        message={`Are you sure you want to change ${user.name}'s role to ${selectedRole}?`}
-        confirmText="Change Role"
+        isOpen={showRemoveTempBanConfirm}
+        onClose={() => setShowRemoveTempBanConfirm(false)}
+        onConfirm={handleRemoveTempBanConfirm}
+        title="Remove Temporary Ban"
+        message={`Are you sure you want to remove the temporary ban for ${user.name}? Their bad behavior count will remain unchanged.`}
+        confirmText="Remove Temp Ban"
         type="warning"
+      />
+
+      {/* Reset Bad Behavior Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResetBadBehaviorConfirm}
+        onClose={() => setShowResetBadBehaviorConfirm(false)}
+        onConfirm={handleResetBadBehaviorConfirm}
+        title="Reset Bad Behavior Count"
+        message={`Are you sure you want to reset ${user.name}'s bad behavior count? This will clear all violations and remove any temporary ban. This action is irreversible.`}
+        confirmText="Reset Violations"
+        type="danger"
       />
     </>
   );
@@ -292,6 +367,12 @@ export default function UserSection() {
   const [success, setSuccess] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    banned: 0,
+    deleted: 0,
+  });
 
   // Auth check
   useEffect(() => {
@@ -319,6 +400,10 @@ export default function UserSection() {
       const data = await response.json();
       if (response.ok) {
         setUsers(data.users || []);
+        // Use stats from API if available
+        if (data.stats) {
+          setStats(data.stats);
+        }
       } else {
         setError(data.message || "Failed to fetch users");
       }
@@ -334,6 +419,52 @@ export default function UserSection() {
       fetchUsers();
     }
   }, [admin]);
+
+  // Remove temp ban
+  const handleRemoveTempBan = async (userId: string) => {
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${API}/admin/users/${userId}/remove-temp-ban`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setSuccess("Temporary ban removed successfully");
+        fetchUsers();
+        setModalOpen(false);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to remove temporary ban");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to remove temporary ban");
+    }
+  };
+
+  // Reset bad behavior count
+  const handleResetBadBehavior = async (userId: string) => {
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${API}/admin/users/${userId}/reset-bad-behavior`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setSuccess("Bad behavior count reset successfully");
+        fetchUsers();
+        setModalOpen(false);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to reset bad behavior count");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to reset bad behavior count");
+    }
+  };
 
   // Ban/Unban user
   const handleBanToggle = async (id: string, isActive: boolean) => {
@@ -359,30 +490,6 @@ export default function UserSection() {
       }
     } catch (err: any) {
       setError(err.message || `Failed to ${action} user`);
-    }
-  };
-
-  // Change user role
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    try {
-      const response = await fetch(`${API}/users/role/${userId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (response.ok) {
-        setSuccess("User role updated successfully!");
-        fetchUsers();
-        setModalOpen(false);
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.message || "Failed to update user role");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to update user role");
     }
   };
 
@@ -440,16 +547,20 @@ export default function UserSection() {
   }, [users, searchTerm, roleFilter, statusFilter, admin]);
 
   // Calculate statistics
-  const stats = useMemo(() => {
-    const total = users.filter((u) => u.email !== admin?.email).length;
-    const active = users.filter((u) => u.isActive && u.email !== admin?.email).length;
-    const banned = users.filter(
-      (u) => !u.isActive && !u.deletedAt && u.email !== admin?.email
-    ).length;
-    const deleted = users.filter((u) => u.deletedAt && u.email !== admin?.email).length;
-
-    return { total, active, banned, deleted };
-  }, [users, admin]);
+  // Stats are now provided by the API, but keep fallback calculation
+  // Only recalculate if stats weren't provided by API
+  useEffect(() => {
+    if (users.length > 0 && stats.total === 0) {
+      const total = users.filter((u) => u.email !== admin?.email).length;
+      const active = users.filter((u) => u.isActive && u.email !== admin?.email).length;
+      const banned = users.filter(
+        (u) => !u.isActive && !u.deletedAt && u.email !== admin?.email
+      ).length;
+      const deleted = users.filter((u) => u.deletedAt && u.email !== admin?.email).length;
+      
+      setStats({ total, active, banned, deleted });
+    }
+  }, [users, admin, stats.total]);
 
   if (loading) {
     return (
@@ -630,17 +741,25 @@ export default function UserSection() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {user.isActive ? (
-                          <span className="flex items-center gap-1 text-sm text-green-400">
-                            <IconUserCheck size={16} />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-sm text-red-400">
-                            <IconUserX size={16} />
-                            {user.deletedAt ? "Deleted" : "Banned"}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {user.isActive ? (
+                            <span className="flex items-center gap-1 text-sm text-green-400">
+                              <IconUserCheck size={16} />
+                              Active
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-sm text-red-400">
+                              <IconUserX size={16} />
+                              {user.deletedAt ? "Deleted" : "Banned"}
+                            </span>
+                          )}
+                          {user.isTempBanned && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded-full">
+                              <IconAlertTriangle size={12} />
+                              Temp Ban
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {user.isEmailVerified ? (
@@ -686,7 +805,8 @@ export default function UserSection() {
           setSelectedUser(null);
         }}
         onBanToggle={handleBanToggle}
-        onRoleChange={handleRoleChange}
+        onRemoveTempBan={handleRemoveTempBan}
+        onResetBadBehavior={handleResetBadBehavior}
       />
 
       {/* Success/Error Messages */}

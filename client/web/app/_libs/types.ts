@@ -38,6 +38,10 @@ export type User = {
   isEmailVerified?: boolean;
   createdAt?: string;
   deletedAt?: string;
+  isTempBanned?: boolean;
+  tempBanReason?: string;
+  tempBanAt?: string;
+  badBehaviorCount?: number;
 };
 
 export type Staff = {
